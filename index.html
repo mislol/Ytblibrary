@@ -840,9 +840,9 @@
         <h1>مكتبة مرئيات يوتيوب</h1>
       </div>
       <div class="header-actions">
-        <!-- أزرار تسجيل الدخول الآمن بقوقل وتفعيل المزامنة السحابية والحذف التلقائي [799] -->
-        <button id="googleSignInBtn" class="btn btn-secondary" style="background-color: var(--bg-tertiary);"><span class="icon">🔐</span> دخول قوقل</button>
-        <button id="googleSignOutBtn" class="btn btn-secondary" style="background-color: var(--bg-tertiary); display: none;"><span class="icon">🔓</span> خروج</button>
+        <!-- أزرار تسجيل الدخول الآمن بقوقل وتفعيل المزامنة السحابية والحذف التلقائي [799] - ربط مباشر Onclick للوقاية -->
+        <button id="googleSignInBtn" class="btn btn-secondary" style="background-color: var(--bg-tertiary);" onclick="handleGoogleSignIn()"><span class="icon">🔐</span> دخول قوقل</button>
+        <button id="googleSignOutBtn" class="btn btn-secondary" style="background-color: var(--bg-tertiary); display: none;" onclick="handleGoogleSignOut()"><span class="icon">🔓</span> خروج</button>
         <button id="toggleImportBtn" class="btn btn-secondary">📥 استيراد</button>
         <button id="exportCsvBtn" class="btn btn-secondary">📤 تصدير لـ CSV</button>
         <button id="clearListBtn" class="btn btn-secondary" style="color: #ff3333;"><span class="icon">🗑️</span> مسح</button>
@@ -903,6 +903,11 @@
         <div class="input-group">
           <label for="googleClientId">🔐 معرف عميل قوقل (Google OAuth Client ID) - مطلوب للمزامنة والحذف السحابي</label>
           <input type="text" id="googleClientId" placeholder="أدخل معرف OAuth Client ID الخاص بك...">
+          <div style="margin-top: 8px; display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+            <!-- زر فحص معرف عميل قوقل تفاعلياً والمصحح [222] -->
+            <button id="testGoogleClientBtn" class="btn btn-secondary" style="font-size: 0.8rem; padding: 6px 12px;" onclick="testGoogleClientId()">⚡ فحص معرف عميل قوقل</button>
+            <span id="googleClientIdTestStatus" style="font-size: 0.85rem; font-weight: 600;"></span>
+          </div>
         </div>
 
         <!-- لوحة عرض وسحب قوائم تشغيل حسابك الشخصي تلقائياً [1560] -->
@@ -1169,10 +1174,6 @@
       // إطلاق تصنيف يدوي مخصص للمقاطع غير المصنفة "عام"
       classifyCurrentLibraryBtn.addEventListener('click', startManualClassification);
 
-      // ربط أحداث تسجيل دخول وخروج قوقل [1209]
-      googleSignInBtn.addEventListener('click', handleGoogleSignIn);
-      googleSignOutBtn.addEventListener('click', handleGoogleSignOut);
-
       // ربط أحداث استيراد ومزامنة القوائم الشخصية بقوقل [1560]
       importSelectedPlaylistBtn.addEventListener('click', () => {
         const pId = googlePlaylistsSelect.value;
@@ -1182,19 +1183,6 @@
       syncSelectedPlaylistBtn.addEventListener('click', () => {
         const pId = googlePlaylistsSelect.value;
         syncPlaylistById(pId);
-      });
-
-      // ربط حدث زر الإلغاء الفوري برمجياً
-      cancelImportBtn.addEventListener('click', () => {
-        isImportAborted = true;
-        globalImportStatus.textContent = '❌ جاري إلغاء العملية وحفظ التقدم الحالي...';
-        cancelImportBtn.style.display = 'none';
-        continueImportBtn.style.display = 'none';
-      });
-
-      // ربط حدث زر متابعة التصنيف للمجموعات يدوياً
-      continueImportBtn.addEventListener('click', () => {
-        processNextImportBatch();
       });
 
       // تفاعل زر الحبة "الكل" الجديد
@@ -2457,9 +2445,37 @@ ${titles.map((t, idx) => `${idx + 1}. ${t}`).join('\n')}`;
       }
     }
 
+    // فحص واختبار معرف عميل قوقل تفاعلياً والمصحح لتفادي أخطاء الـ Redirect المزعجة [222]
+    function testGoogleClientId() {
+      const idInput = document.getElementById('googleClientId');
+      const testStatus = document.getElementById('googleClientIdTestStatus');
+      const clientId = idInput.value.trim();
+      
+      if (!clientId) {
+        testStatus.textContent = '❌ يرجى إدخال معرف عميل قوقل أولاً.';
+        testStatus.style.color = '#ff3333';
+        return;
+      }
+      
+      const endsWithCorrectSuffix = clientId.endsWith('.apps.googleusercontent.com');
+      const hasHyphen = clientId.includes('-');
+      
+      if (endsWithCorrectSuffix && hasHyphen) {
+        testStatus.innerHTML = `✅ صيغة المعرف سليمة ومطابقة لقوقل!<br>
+        <span style="color: #888888; font-size: 0.75rem; font-weight: normal; line-height: 1.4; display: block; margin-top: 6px;">تأكد من إدخال هذه الإعدادات بدقة في كونسول قوقل السحابي لتفادي حظر الدخول:<br>
+        • JavaScript origins: <b style="color: var(--text-primary);">https://mislol.github.io</b><br>
+        • Redirect URIs: <b style="color: var(--text-primary);">https://mislol.github.io/Ytblibrary/</b></span>`;
+        testStatus.style.color = '#33cc33';
+        localStorage.setItem('user_google_client_id', clientId); // حفظه بالذاكرة للمستخدم
+      } else {
+        testStatus.textContent = '❌ المعرف غير مكتمل أو منقوص. يجب أن ينتهي بـ .apps.googleusercontent.com وتتأكد من نسخه كاملاً وبدون مسافات.';
+        testStatus.style.color = '#ff3333';
+      }
+    }
+
     // --- نظام تسجيل الدخول الآمن بقوقل وتفعيل المزامنة السحابية والحذف التلقائي [1209] ---
     function handleGoogleSignIn() {
-      const clientId = googleClientId.value.trim();
+      const clientId = googleClientId.value.trim() || localStorage.getItem('user_google_client_id') || '';
       if (!clientId) {
         showToast('❌ يرجى إدخال معرف عميل Google Client ID أولاً في تبويب يوتيوب.');
         importPanel.style.display = 'block';
@@ -2637,7 +2653,7 @@ ${titles.map((t, idx) => `${idx + 1}. ${t}`).join('\n')}`;
 
     // إعادة ضبط المصنع
     function resetToDefault() {
-      if (confirm('هل أنت متأكد من رغبتك في حذف القالية والعودة للعينة الافتراضية؟')) {
+      if (confirm('هل أنت متأكد من رغبتك في حذف القائمة الحالية والعودة للعينة الافتراضية؟')) {
         localStorage.removeItem('user_youtube_library');
         localStorage.removeItem('user_youtube_favorites');
         favoriteIds.clear();
@@ -2687,6 +2703,8 @@ ${titles.map((t, idx) => `${idx + 1}. ${t}`).join('\n')}`;
             return (a.category || '').localeCompare(b.category || '', 'ar');
           case 'duration-desc':
             return parseDuration(b.duration) - parseDuration(a.duration);
+          case 'duration-asc':
+            return parseDuration(a.duration) - parseDuration(b.duration);
           case 'id-asc':
           default:
             return a.id - b.id;
