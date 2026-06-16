@@ -904,7 +904,7 @@
           <label for="googleClientId">🔐 معرف عميل قوقل (Google OAuth Client ID) - مطلوب للمزامنة والحذف السحابي</label>
           <input type="text" id="googleClientId" placeholder="أدخل معرف OAuth Client ID الخاص بك...">
           <div style="margin-top: 8px; display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
-            <!-- زر فحص معرف عميل قوقل تفاعلياً والمصحح [222] -->
+            <!-- زر فحص معرف عميل قوقل تفاعلياً والمصحح [222] - Onclick للربط المباشر للوقاية -->
             <button id="testGoogleClientBtn" class="btn btn-secondary" style="font-size: 0.8rem; padding: 6px 12px;" onclick="testGoogleClientId()">⚡ فحص معرف عميل قوقل</button>
             <span id="googleClientIdTestStatus" style="font-size: 0.85rem; font-weight: 600;"></span>
           </div>
@@ -917,8 +917,9 @@
             <select id="googlePlaylistsSelect">
               <option value="">-- جاري التحميل... --</option>
             </select>
-            <button id="importSelectedPlaylistBtn" class="btn btn-primary" style="font-size: 0.8rem;">📥 استيراد</button>
-            <button id="syncSelectedPlaylistBtn" class="btn btn-secondary" style="font-size: 0.8rem; background-color: var(--gold-color); color: #000;">🔄 مزامنة وتحديث</button>
+            <!-- أزرار الاستيراد والمزامنة السحابية الذكية المربوطة تفاعلياً للوقاية [1560] -->
+            <button id="importSelectedPlaylistBtn" class="btn btn-primary" style="font-size: 0.8rem;" onclick="triggerSelectedPlaylistImport()">📥 استيراد</button>
+            <button id="syncSelectedPlaylistBtn" class="btn btn-secondary" style="font-size: 0.8rem; background-color: var(--gold-color); color: #000;" onclick="triggerSelectedPlaylistSync()">🔄 مزامنة وتحديث</button>
           </div>
         </div>
 
@@ -1174,15 +1175,17 @@
       // إطلاق تصنيف يدوي مخصص للمقاطع غير المصنفة "عام"
       classifyCurrentLibraryBtn.addEventListener('click', startManualClassification);
 
-      // ربط أحداث استيراد ومزامنة القوائم الشخصية بقوقل [1560]
-      importSelectedPlaylistBtn.addEventListener('click', () => {
-        const pId = googlePlaylistsSelect.value;
-        importPlaylistById(pId);
+      // ربط حدث زر الإلغاء الفوري برمجياً
+      cancelImportBtn.addEventListener('click', () => {
+        isImportAborted = true;
+        globalImportStatus.textContent = '❌ جاري إلغاء العملية وحفظ التقدم الحالي...';
+        cancelImportBtn.style.display = 'none';
+        continueImportBtn.style.display = 'none';
       });
 
-      syncSelectedPlaylistBtn.addEventListener('click', () => {
-        const pId = googlePlaylistsSelect.value;
-        syncPlaylistById(pId);
+      // ربط حدث زر متابعة التصنيف للمجموعات يدوياً
+      continueImportBtn.addEventListener('click', () => {
+        processNextImportBatch();
       });
 
       // تفاعل زر الحبة "الكل" الجديد
@@ -1833,7 +1836,7 @@
             data.items.forEach(item => {
               const opt = document.createElement('option');
               opt.value = item.id;
-              opt.textContent = `${item.snippet.title} (${item.snippet.localized ? 'حساب شخصي' : 'عامة'})`;
+              opt.textContent = `${item.snippet.title}`;
               googlePlaylistsSelect.appendChild(opt);
             });
             googlePlaylistsContainer.style.display = 'flex'; // إظهار اللوحة المنسدلة فوراً [1560]
@@ -1847,6 +1850,24 @@
         console.error('Error fetching personal playlists', e);
       }
     }
+
+    // ربط استيراد القائمة المختارة سحابياً وتصديرها للأزرار التفاعلية المباشرة [1560]
+    function triggerSelectedPlaylistImport() {
+      const select = document.getElementById('googlePlaylistsSelect');
+      if (select) {
+        importPlaylistById(select.value);
+      }
+    }
+    window.triggerSelectedPlaylistImport = triggerSelectedPlaylistImport;
+
+    // ربط مزامنة القائمة المختارة سحابياً وتصديرها للأزرار التفاعلية المباشرة
+    function triggerSelectedPlaylistSync() {
+      const select = document.getElementById('googlePlaylistsSelect');
+      if (select) {
+        syncPlaylistById(select.value);
+      }
+    }
+    window.triggerSelectedPlaylistSync = triggerSelectedPlaylistSync;
 
     // استيراد قائمة تشغيل محددة من حساب قوقل الشخصي [1560]
     async function importPlaylistById(playlistId) {
@@ -2176,14 +2197,39 @@
       return result;
     }
 
-    // --- ربط ومخاطبة واجهة ذكاء قوقل الاصطناعي Gemini 3.5 Flash بالتطبيق ---
+    // إطلاق تصنيف يدوي تفاعلي مخصص للمقاطع "عام"
+    function startManualClassification() {
+      const geminiKey = geminiApiKey.value.trim() || localStorage.getItem('user_gemini_api_key') || '';
+      if (!geminiKey) {
+        showToast('❌ يرجى إدخال مفتاح Gemini أولاً لبدء التصنيف الذكي.');
+        return;
+      }
+      
+      localStorage.setItem('user_gemini_api_key', geminiKey);
+
+      // حصر الفيديوهات التي لا تزال تحت قسم "عام" فقط وتجنب المكرر للاستئناف الفوري
+      const targets = allVideos.filter(v => {
+        const videoCats = (v.category || '').split('/').map(c => c.trim());
+        return videoCats.includes('عام') || !v.category || v.category === 'عام';
+      });
+
+      if (targets.length === 0) {
+        showToast('✅ جميع مقاطع الفيديو مصنفة مسبقاً! لا يوجد مقاطع مصنفة كـ "عام".');
+        return;
+      }
+
+      // تشغيل المساعد التفاعلي المطور والآمن فوراً
+      runGeminiClassification(targets, geminiKey);
+    }
+
+    // --- نظام مساعد التصنيف التفاعلي خطوة بخطوة (Batch size = 50) مع زر المتابعة والإلغاء ---
     async function runGeminiClassification(videosToClassify, geminiKey) {
       isImportAborted = false;
       globalImportStatusContainer.style.display = 'flex';
       cancelImportBtn.style.display = 'inline-flex';
       continueImportBtn.style.display = 'none';
 
-      // تقسيم الفيديوهات المستوردة إلى مجموعات ذكية وموسعة تضم 50 فيديو للطلب الواحد [2141]
+      // 1. تقسيم الفيديوهات إلى مجموعات ثابتة وصغيرة مكونة من 50 فيديو فقط [2141]
       activeImportBatches = [];
       const batchSize = 50;
       for (let i = 0; i < videosToClassify.length; i += batchSize) {
@@ -2472,6 +2518,7 @@ ${titles.map((t, idx) => `${idx + 1}. ${t}`).join('\n')}`;
         testStatus.style.color = '#ff3333';
       }
     }
+    window.testGoogleClientId = testGoogleClientId; // التصدير العالمي للوقاية من التعليق
 
     // --- نظام تسجيل الدخول الآمن بقوقل وتفعيل المزامنة السحابية والحذف التلقائي [1209] ---
     function handleGoogleSignIn() {
@@ -2493,6 +2540,7 @@ ${titles.map((t, idx) => `${idx + 1}. ${t}`).join('\n')}`;
       // التوجيه الآمن لبوابة قوقل للتفويض الفعلي [1210]
       window.location.href = authUrl;
     }
+    window.handleGoogleSignIn = handleGoogleSignIn;
 
     // تسجيل الخروج ومسح الرموز البرمجية
     function handleGoogleSignOut() {
@@ -2502,6 +2550,7 @@ ${titles.map((t, idx) => `${idx + 1}. ${t}`).join('\n')}`;
       googlePlaylistsContainer.style.display = 'none'; // إخفاء القوائم المنسدلة سحابياً
       updateAuthUI();
     }
+    window.handleGoogleSignOut = handleGoogleSignOut;
 
     // فحص واكتشاف الـ Hash Parameter القادم من قوقل وحفظ الـ Token الفعال [1209]
     function checkOAuthHash() {
@@ -2552,6 +2601,24 @@ ${titles.map((t, idx) => `${idx + 1}. ${t}`).join('\n')}`;
       }
     }
 
+    // ربط استيراد القائمة المختارة سحابياً وتصديرها للأزرار التفاعلية المباشرة للوقاية [1560]
+    function triggerSelectedPlaylistImport() {
+      const select = document.getElementById('googlePlaylistsSelect');
+      if (select) {
+        importPlaylistById(select.value);
+      }
+    }
+    window.triggerSelectedPlaylistImport = triggerSelectedPlaylistImport;
+
+    // ربط مزامنة القائمة المختارة سحابياً وتصديرها للأزرار التفاعلية المباشرة للوقاية
+    function triggerSelectedPlaylistSync() {
+      const select = document.getElementById('googlePlaylistsSelect');
+      if (select) {
+        syncPlaylistById(select.value);
+      }
+    }
+    window.triggerSelectedPlaylistSync = triggerSelectedPlaylistSync;
+
     // تعديل التصنيف السريع والمباشر من البطاقة
     function changeVideoCategory(id, newCat) {
       allVideos = allVideos.map(v => {
@@ -2564,6 +2631,7 @@ ${titles.map((t, idx) => `${idx + 1}. ${t}`).join('\n')}`;
       initApp();
       showToast('تم تعديل تصنيف الفيديو بنجاح.');
     }
+    window.changeVideoCategory = changeVideoCategory;
 
     // إدارة وتعديل المفضلة
     function toggleFavorite(id) {
@@ -2581,24 +2649,7 @@ ${titles.map((t, idx) => `${idx + 1}. ${t}`).join('\n')}`;
 
       applyFiltersAndSort();
     }
-
-    // إدارة أنماط رؤية التصميم
-    function toggleLayout() {
-      currentLayout = (currentLayout === 'grid') ? 'list' : 'grid';
-      localStorage.setItem('user_youtube_layout', currentLayout);
-      updateLayoutUI();
-      renderGrid();
-    }
-
-    function updateLayoutUI() {
-      if (currentLayout === 'list') {
-        videosGrid.classList.add('list-layout');
-        layoutToggleBtn.textContent = '📱 عرض الشبكة';
-      } else {
-        videosGrid.classList.remove('list-layout');
-        layoutToggleBtn.textContent = '📝 عرض القائمة';
-      }
-    }
+    window.toggleFavorite = toggleFavorite;
 
     // حذف فيديو فردي (مع ميزة الحذف السحابي المتزامن من يوتيوب) [799]
     async function deleteVideo(id) {
@@ -2638,6 +2689,7 @@ ${titles.map((t, idx) => `${idx + 1}. ${t}`).join('\n')}`;
         initApp();
       }
     }
+    window.deleteVideo = deleteVideo;
 
     // حذف القائمة النشطة بالكامل
     function clearCurrentLibrary() {
@@ -2703,8 +2755,6 @@ ${titles.map((t, idx) => `${idx + 1}. ${t}`).join('\n')}`;
             return (a.category || '').localeCompare(b.category || '', 'ar');
           case 'duration-desc':
             return parseDuration(b.duration) - parseDuration(a.duration);
-          case 'duration-asc':
-            return parseDuration(a.duration) - parseDuration(b.duration);
           case 'id-asc':
           default:
             return a.id - b.id;
@@ -2806,6 +2856,7 @@ ${titles.map((t, idx) => `${idx + 1}. ${t}`).join('\n')}`;
     function openVideo(url) {
       window.open(url, '_blank');
     }
+    window.openVideo = openVideo;
 
     // نسخ الرابط إلى الحافظة
     function copyLink(url) {
@@ -2815,6 +2866,7 @@ ${titles.map((t, idx) => `${idx + 1}. ${t}`).join('\n')}`;
         showToast('فشل نسخ الرابط.');
       });
     }
+    window.copyLink = copyLink;
 
     // واجهة الترقيم والتنقل
     function renderPagination() {
