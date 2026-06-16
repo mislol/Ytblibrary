@@ -949,6 +949,9 @@
         </div>
       </div>
 
+      <!-- سجل عمليات السحاب التفاعلي المطور والذكي بلون الهاكرز الفسفوري [222] -->
+      <div id="cloudConsoleLogs" style="background-color: #000; color: #33cc33; font-family: monospace; font-size: 0.82rem; padding: 12px; border-radius: 8px; border: 1px solid var(--bg-tertiary); max-height: 150px; overflow-y: auto; margin-top: 15px; display: none; line-height: 1.4; text-align: left; direction: ltr;"></div>
+
     </div>
   </section>
 
@@ -1118,6 +1121,7 @@
     const globalImportStatus = document.getElementById('globalImportStatus');
     const cancelImportBtn = document.getElementById('cancelImportBtn');
     const continueImportBtn = document.getElementById('continueImportBtn');
+    const cloudConsoleLogs = document.getElementById('cloudConsoleLogs');
 
     // متغيرات التحكم بالدفعات المتتالية يدوياً
     let activeImportBatches = [];
@@ -1178,6 +1182,7 @@
       // ربط حدث زر الإلغاء الفوري برمجياً
       cancelImportBtn.addEventListener('click', () => {
         isImportAborted = true;
+        logToCloudConsole('🛑 تم الضغط على زر إلغاء العملية يدوياً.');
         globalImportStatus.textContent = '❌ جاري إلغاء العملية وحفظ التقدم الحالي...';
         cancelImportBtn.style.display = 'none';
         continueImportBtn.style.display = 'none';
@@ -1185,6 +1190,7 @@
 
       // ربط حدث زر متابعة التصنيف للمجموعات يدوياً
       continueImportBtn.addEventListener('click', () => {
+        logToCloudConsole('➡️ تم الضغط على زر متابعة التصنيف للمجموعة التالية.');
         processNextImportBatch();
       });
 
@@ -1209,6 +1215,17 @@
         }
       });
     });
+
+    // دالة كتابة السجلات البرمجية في سجل لوحة التشخيص السحابي الفسفوري [222]
+    function logToCloudConsole(msg) {
+      if (cloudConsoleLogs) {
+        cloudConsoleLogs.style.display = 'block';
+        const time = new Date().toLocaleTimeString();
+        cloudConsoleLogs.innerHTML += `[${time}] ${msg}<br>`;
+        cloudConsoleLogs.scrollTop = cloudConsoleLogs.scrollHeight;
+      }
+    }
+    window.logToCloudConsole = logToCloudConsole;
 
     // التبديل بين تبويبات الاستيراد
     function switchTab(type) {
@@ -1822,6 +1839,7 @@
 
     // --- نظام جلب وسحب جميع قوائم التشغيل الخاصة بحساب قوقل الشخصي تلقائياً [1560] ---
     async function fetchPersonalPlaylists(token) {
+      logToCloudConsole('🌐 جاري الاتصال بقوقل لجلب قوائم التشغيل المتواجدة بحسابك...');
       const url = `https://www.googleapis.com/youtube/v3/playlists?part=snippet&mine=true&maxResults=50`;
       try {
         const res = await fetch(url, {
@@ -1833,6 +1851,7 @@
           const data = await res.json();
           googlePlaylistsSelect.innerHTML = '<option value="">-- اختر قائمة تشغيل --</option>';
           if (data.items && data.items.length > 0) {
+            logToCloudConsole(`📁 تم جلب ${data.items.length} قائمة تشغيل بنجاح وعرضها بالمنسدلة.`);
             data.items.forEach(item => {
               const opt = document.createElement('option');
               opt.value = item.id;
@@ -1841,41 +1860,57 @@
             });
             googlePlaylistsContainer.style.display = 'flex'; // إظهار اللوحة المنسدلة فوراً [1560]
           } else {
+            logToCloudConsole('⚠️ لم يتم العثور على أي قوائم تشغيل عامة أو خاصة في حساب يوتيوب هذا.');
             googlePlaylistsSelect.innerHTML = '<option value="">-- لا توجد قوائم تشغيل بحسابك --</option>';
           }
         } else {
-          console.error('Failed to fetch personal playlists', res.status);
+          const errData = await res.json();
+          logToCloudConsole(`❌ فشل جلب القوائم. كود قوقل: ${res.status}. التفاصيل: ${errData.error?.message || 'غير متوفرة'}`);
         }
       } catch (e) {
         console.error('Error fetching personal playlists', e);
+        logToCloudConsole(`❌ فشل جلب القوائم بسبب خطأ بالاتصال: ${e.message}`);
       }
     }
 
-    // ربط استيراد القائمة المختارة سحابياً وتصديرها للأزرار التفاعلية المباشرة [1560]
+    // ربط استيراد القائمة المختارة سحابياً وتصديرها للأزرار التفاعلية المباشرة للوقاية [1560]
     function triggerSelectedPlaylistImport() {
+      logToCloudConsole('🔘 تم الضغط على زر استيراد القائمة المختارة سحابياً.');
       const select = document.getElementById('googlePlaylistsSelect');
       if (select) {
+        logToCloudConsole(`📁 جاري التحضير لاستيراد القائمة بالـ ID: ${select.value}`);
         importPlaylistById(select.value);
+      } else {
+        logToCloudConsole('❌ خطأ: لم يتم العثور على العنصر googlePlaylistsSelect في الصفحة.');
       }
     }
     window.triggerSelectedPlaylistImport = triggerSelectedPlaylistImport;
 
-    // ربط مزامنة القائمة المختارة سحابياً وتصديرها للأزرار التفاعلية المباشرة
+    // ربط مزامنة القائمة المختارة سحابياً وتصديرها للأزرار التفاعلية المباشرة للوقاية
     function triggerSelectedPlaylistSync() {
+      logToCloudConsole('🔘 تم الضغط على زر مزامنة القائمة المختارة سحابياً.');
       const select = document.getElementById('googlePlaylistsSelect');
       if (select) {
+        logToCloudConsole(`📁 جاري التحضير لمزامنة وتحديث القائمة بالـ ID: ${select.value}`);
         syncPlaylistById(select.value);
+      } else {
+        logToCloudConsole('❌ خطأ: لم يتم العثور على العنصر googlePlaylistsSelect في الصفحة.');
       }
     }
     window.triggerSelectedPlaylistSync = triggerSelectedPlaylistSync;
 
     // استيراد قائمة تشغيل محددة من حساب قوقل الشخصي [1560]
     async function importPlaylistById(playlistId) {
+      logToCloudConsole('⏳ بدء تشغيل دالة الاستيراد السحابي importPlaylistById...');
       const key = youtubeApiKey.value.trim() || localStorage.getItem('user_youtube_api_key') || '';
       const token = getValidAccessToken();
       
+      logToCloudConsole(`🔑 مفتاح واجهة قوقل يوتيوب: ${key ? 'متوفر ومحفوظ' : 'غير متوفر (سيتم تخطي تحديث مدد الفيديوهات)'}`);
+      logToCloudConsole(`🎫 رمز مرور التفويض السحابي (Access Token): ${token ? 'نشط وصالح' : 'غير متوفر أو منتهي الصلاحية'}`);
+
       if (!playlistId) {
         showToast('❌ يرجى اختيار قائمة تشغيل من المنسدلة أولاً.');
+        logToCloudConsole('❌ توقف: لم يتم تحديد أي قائمة تشغيل من المنسدلة.');
         return;
       }
 
@@ -1884,15 +1919,20 @@
       cancelImportBtn.style.display = 'none'; // منع الإلغاء أثناء مرحلة الجلب الأولي
 
       try {
+        logToCloudConsole(`🌐 جاري إرسال طلب جلب عناصر القائمة السحابية إلى قوقل لـ ID: ${playlistId}`);
         const fetchedVideos = await fetchAllPlaylistItemsOAuth(playlistId, token);
+        logToCloudConsole(`✅ تم جلب الفيديوهات بنجاح! العدد المكتشف سحابياً: ${fetchedVideos.length} فيديو.`);
+        
         if (fetchedVideos.length > 0) {
           if (confirm(`تم العثور على ${fetchedVideos.length} مقطع في القائمة الشخصية. هل تريد استبدال مكتبتك بها؟\n(اضغط إلغاء لدمجهم معاً دون حذف القديم)`)) {
             allVideos = fetchedVideos;
+            logToCloudConsole('🧹 تم اختيار: استبدال المكتبة وتصفير المقاطع القديمة.');
           } else {
             fetchedVideos.forEach(v => {
               v.id = allVideos.length + 1;
               allVideos.push(v);
             });
+            logToCloudConsole('➕ تم اختيار: دمج القائمة مع المكتبة القديمة.');
           }
 
           localStorage.setItem('user_youtube_library', JSON.stringify(allVideos));
@@ -1902,19 +1942,25 @@
 
           // جلب المدد الزمنية الحقيقية تلقائياً [799]
           if (key) {
+            logToCloudConsole('⏳ جاري البدء في سحب المدد الزمنية الفعلية (Duration) للفيديوهات من قوقل...');
             await fetchApiMetadataInBatches(fetchedVideos, key);
           }
 
           const geminiKey = geminiApiKey.value.trim() || localStorage.getItem('user_gemini_api_key') || '';
           if (geminiKey) {
+            logToCloudConsole('🤖 جاري الاستعداد لتصنيف الفيديوهات ذكياً بـ جيميناي...');
             await runGeminiClassification(fetchedVideos, geminiKey);
+          } else {
+            logToCloudConsole('💡 توضيح: تم تخطي التصنيف بالذكاء الاصطناعي لعدم إدخال مفتاح Gemini.');
           }
         } else {
           showToast('لم نتمكن من العثور على أي مقاطع في هذه القائمة.');
+          logToCloudConsole('⚠️ القائمة السحابية فارغة ولا تحتوي على أي فيديوهات.');
         }
       } catch (e) {
         console.error(e);
         showToast(`❌ فشل استيراد القائمة السحابية: ${e.message}`);
+        logToCloudConsole(`❌ خطأ فادح أثناء جلب القائمة: ${e.message}`);
       } finally {
         globalImportStatusContainer.style.display = 'none';
       }
@@ -1972,6 +2018,7 @@
 
         count += data.items ? data.items.length : 0;
         globalImportStatus.textContent = `جاري جلب الفيديوهات... تم تحميل ${count}`;
+        logToCloudConsole(`⏳ جاري تحميل عناصر القائمة... تم جلب ${count} عنصر.`);
 
         nextPageToken = data.nextPageToken;
         if (!nextPageToken) {
@@ -1983,11 +2030,13 @@
 
     // --- نظام المزامنة السحابية الذكية ثنائية الاتجاه (Smart Two-Way Sync) ---
     async function syncPlaylistById(playlistId) {
+      logToCloudConsole('⏳ بدء تشغيل دالة المزامنة السحابية الذكية syncPlaylistById...');
       const token = getValidAccessToken();
       const key = youtubeApiKey.value.trim() || localStorage.getItem('user_youtube_api_key') || '';
       
       if (!playlistId) {
         showToast('❌ يرجى اختيار قائمة تشغيل أولاً للمزامنة.');
+        logToCloudConsole('❌ توقف: لم يتم تحديد أي قائمة من المنسدلة للمزامنة.');
         return;
       }
 
@@ -1997,10 +2046,13 @@
 
       try {
         // 1. سحب الحالة الحالية والنهائية للقائمة من يوتيوب
+        logToCloudConsole('🌐 جاري سحب الحالة الحالية والنهائية للقائمة السحابية المقابلة من قوقل...');
         const cloudVideos = await fetchAllPlaylistItemsOAuth(playlistId, token);
+        logToCloudConsole(`✅ تم جلب القائمة السحابية بنجاح. العدد الفعلي الحالي: ${cloudVideos.length} فيديو.`);
         
         // 2. حصر الفيديوهات المحلية المخزنة بالهاتف التابعة لهذه القائمة بالتحديد
         const localFiltered = allVideos.filter(v => v.parentPlaylistId === playlistId);
+        logToCloudConsole(`💻 عدد الفيديوهات المخزنة محلياً في هاتفك التابعة لهذه القائمة: ${localFiltered.length} فيديو.`);
         
         // 3. رصد وإضافة المقاطع المضافة حديثاً من يوتيوب (Add New)
         const newCloudVideos = cloudVideos.filter(cv => {
@@ -2013,16 +2065,22 @@
           return !cloudVideos.some(cv => cv.playlistItemId === lv.playlistItemId);
         });
 
+        logToCloudConsole(`🔍 نتيجة الفحص السحابي المزدوج:<br>
+        • عدد الفيديوهات الجديدة المكتشفة للإضافة: ${newCloudVideos.length} فيديو.<br>
+        • عدد الفيديوهات المكتشف حذفها لتطبيق إزالتها: ${deletedLocalVideos.length} فيديو.`);
+
         // تطبيق الحذف الفوري محلياً لمزامنة الأعداد
         if (deletedLocalVideos.length > 0) {
           allVideos = allVideos.filter(v => {
             return !deletedLocalVideos.some(dlv => dlv.playlistItemId === v.playlistItemId);
           });
+          logToCloudConsole('🧹 تم تطبيق عمليات الحذف المكتشفة وتطهير قاعدة البيانات المحلية منها.');
         }
 
         // في حال كانت القائمة متطابقة تماماً ولا توجد تغييرات
         if (newCloudVideos.length === 0 && deletedLocalVideos.length === 0) {
           showToast('✅ قائمة التشغيل متطابقة تماماً مع حساب يوتيوب! لا توجد تغييرات جديدة.');
+          logToCloudConsole('✅ تطابق كامل 100%! لا توجد أي تغييرات جديدة للمزامنة والتحديث.');
           globalImportStatusContainer.style.display = 'none';
           initApp();
           return;
@@ -2042,24 +2100,30 @@
 
           // تحديث المدد الزمنية
           if (key) {
+            logToCloudConsole('⏳ جاري البدء في جلب المدد الزمنية الفعلية (Duration) للفيديوهات الجديدة المضافة...');
             await fetchApiMetadataInBatches(newCloudVideos, key);
           }
 
           // تشغيل تصنيف Gemini 3.5 Flash للمقاطع الجديدة المكتشفة فقط
           const geminiKey = geminiApiKey.value.trim() || localStorage.getItem('user_gemini_api_key') || '';
           if (geminiKey) {
+            logToCloudConsole('🤖 جاري الاستعداد لتصنيف المجموعات المكتشفة حديثاً بـ جيميناي...');
             await runGeminiClassification(newCloudVideos, geminiKey);
+          } else {
+            logToCloudConsole('💡 تم تخطي تصنيف الفيديوهات الجديدة لعدم إدخال مفتاح Gemini.');
           }
         } else if (deletedLocalVideos.length > 0) {
           // في حال حدوث عمليات حذف فقط
           localStorage.setItem('user_youtube_library', JSON.stringify(allVideos));
           initApp();
           showToast(`✅ تم تحديث المكتبة بنجاح وحذف ${deletedLocalVideos.length} فيديو للتطابق الكامل مع يوتيوب.`);
+          logToCloudConsole('✅ تمت عملية المزامنة السحابية للحذف والمطابقة بنجاح تام!');
         }
 
       } catch (e) {
         console.error(e);
         showToast(`❌ فشلت عملية المزامنة السحابية: ${e.message}`);
+        logToCloudConsole(`❌ خطأ فادح أثناء عملية المزامنة السحابية: ${e.message}`);
       } finally {
         globalImportStatusContainer.style.display = 'none';
       }
@@ -2197,39 +2261,15 @@
       return result;
     }
 
-    // إطلاق تصنيف يدوي تفاعلي مخصص للمقاطع "عام"
-    function startManualClassification() {
-      const geminiKey = geminiApiKey.value.trim() || localStorage.getItem('user_gemini_api_key') || '';
-      if (!geminiKey) {
-        showToast('❌ يرجى إدخال مفتاح Gemini أولاً لبدء التصنيف الذكي.');
-        return;
-      }
-      
-      localStorage.setItem('user_gemini_api_key', geminiKey);
-
-      // حصر الفيديوهات التي لا تزال تحت قسم "عام" فقط وتجنب المكرر للاستئناف الفوري
-      const targets = allVideos.filter(v => {
-        const videoCats = (v.category || '').split('/').map(c => c.trim());
-        return videoCats.includes('عام') || !v.category || v.category === 'عام';
-      });
-
-      if (targets.length === 0) {
-        showToast('✅ جميع مقاطع الفيديو مصنفة مسبقاً! لا يوجد مقاطع مصنفة كـ "عام".');
-        return;
-      }
-
-      // تشغيل المساعد التفاعلي المطور والآمن فوراً
-      runGeminiClassification(targets, geminiKey);
-    }
-
-    // --- نظام مساعد التصنيف التفاعلي خطوة بخطوة (Batch size = 50) مع زر المتابعة والإلغاء ---
+    // --- ربط ومخاطبة واجهة ذكاء قوقل الاصطناعي Gemini 3.5 Flash بالتطبيق ---
     async function runGeminiClassification(videosToClassify, geminiKey) {
       isImportAborted = false;
       globalImportStatusContainer.style.display = 'flex';
       cancelImportBtn.style.display = 'inline-flex';
       continueImportBtn.style.display = 'none';
+      logToCloudConsole(`⏳ بدء معالجة تصنيف ${videosToClassify.length} فيديو بالذكاء الاصطناعي...`);
 
-      // 1. تقسيم الفيديوهات إلى مجموعات ثابتة وصغيرة مكونة من 50 فيديو فقط [2141]
+      // تقسيم الفيديوهات المستوردة إلى مجموعات ذكية وموسعة تضم 50 فيديو للطلب الواحد [2141]
       activeImportBatches = [];
       const batchSize = 50;
       for (let i = 0; i < videosToClassify.length; i += batchSize) {
@@ -2253,6 +2293,7 @@
       // التحقق من اكتمال كافة المجموعات بنجاح
       if (currentImportBatchIdx >= activeImportBatches.length) {
         globalImportStatus.textContent = '✅ تم تصنيف كافة مقاطع الفيديو بالذكاء الاصطناعي بنجاح!';
+        logToCloudConsole('✅ مبروك! تم الانتهاء بنجاح من تصنيف كامل الفيديوهات المحددة بـ Gemini 3.5 Flash.');
         cancelImportBtn.style.display = 'none';
         continueImportBtn.style.display = 'none';
         setTimeout(() => {
@@ -2266,6 +2307,7 @@
       const titles = batchVideos.map(v => v.title);
       
       globalImportStatus.textContent = `جاري معالجة الدفعة ${currentImportBatchIdx + 1} من أصل ${activeImportBatches.length} بالذكاء الاصطناعي (Gemini 3.5 Flash)...`;
+      logToCloudConsole(`⏳ جاري إرسال طلب تصنيف الدفعة رقم ${currentImportBatchIdx + 1}/${activeImportBatches.length} (تضم ${batchVideos.length} فيديو) إلى Gemini...`);
       continueImportBtn.style.display = 'none'; // إخفاء زر متابعة أثناء الإرسال والاتصال لقوقل
 
       let success = false;
@@ -2286,13 +2328,17 @@
               video.category = categories[idx];
             });
             success = true;
+            logToCloudConsole(`✅ تم تصنيف الدفعة ${currentImportBatchIdx + 1} بنجاح من قوقل جيميناي.`);
           } else {
             throw { status: 'FAIL', message: 'رد غير متوقع من الذكاء الاصطناعي.' };
           }
         } catch (err) {
           console.error('Error during interactive batch', currentImportBatchIdx, 'retry', retryCount, err);
+          logToCloudConsole(`⚠️ تعثر استجابة الدفعة ${currentImportBatchIdx + 1} (المحاولة ${retryCount + 1}). الخطأ: ${err.message || 'غير معروف'}`);
+          
           // رصد واكتشاف خطأ نفاد الحصة (429) برمجياً وجدولته تلقائياً للاستئناف بعد 30 ثانية
           if (err.status === 429) {
+            logToCloudConsole('⏳ تجاوزنا حدود قوقل المؤقتة (429). جاري تفعيل مؤقت الانتظار الآمن التلقائي (30 ثانية)...');
             for (let s = 0; s < 60; s++) {
               if (isImportAborted) {
                 handleAbortedImport();
@@ -2314,6 +2360,7 @@
         batchVideos.forEach(video => {
           video.category = video.category || "عام";
         });
+        logToCloudConsole(`❌ فشل تصنيف الدفعة ${currentImportBatchIdx + 1} بالكامل بعد إعادة المحاولات. تم تصنيف عناصرها مؤقتاً كـ "عام".`);
       }
 
       currentImportBatchIdx++;
@@ -2325,6 +2372,7 @@
       // الوقوف التام وإظهار زر المتابعة يدوياً للدفعة التالية
       if (currentImportBatchIdx < activeImportBatches.length) {
         globalImportStatus.textContent = `✅ تم تصنيف الدفعة ${currentImportBatchIdx} بنجاح وظهرت فئاتها على الشاشة. اضغط "متابعة" لتصنيف الدفعة التالية (${currentImportBatchIdx + 1}/${activeImportBatches.length})`;
+        logToCloudConsole(`⏸️ تم الوقوف مؤقتاً بعد الدفعة ${currentImportBatchIdx} لراحة الحساب. يرجى الضغط على زر "متابعة التصنيف" على الشاشة للمواصلة.`);
         continueImportBtn.style.display = 'inline-flex';
         continueImportBtn.textContent = `متابعة التصنيف ➡️ (${currentImportBatchIdx + 1}/${activeImportBatches.length})`;
       } else {
@@ -2338,6 +2386,7 @@
       localStorage.setItem('user_youtube_library', JSON.stringify(allVideos));
       initApp();
       globalImportStatus.textContent = '❌ تم إلغاء العملية وحفظ التقدم بنجاح!';
+      logToCloudConsole('❌ تم إلغاء العملية وتأمين حفظ الفيديوهات التي اكتمل تصنيفها بنجاح حتى الآن.');
       cancelImportBtn.style.display = 'none';
       continueImportBtn.style.display = 'none';
       setTimeout(() => {
@@ -2522,11 +2571,13 @@ ${titles.map((t, idx) => `${idx + 1}. ${t}`).join('\n')}`;
 
     // --- نظام تسجيل الدخول الآمن بقوقل وتفعيل المزامنة السحابية والحذف التلقائي [1209] ---
     function handleGoogleSignIn() {
+      logToCloudConsole('🔘 تم الضغط على زر تسجيل دخول قوقل.');
       const clientId = googleClientId.value.trim() || localStorage.getItem('user_google_client_id') || '';
       if (!clientId) {
         showToast('❌ يرجى إدخال معرف عميل Google Client ID أولاً في تبويب يوتيوب.');
         importPanel.style.display = 'block';
         switchTab('youtube');
+        logToCloudConsole('❌ توقف: لم يتم العثور على Google Client ID في خانة الإدخال.');
         return;
       }
 
@@ -2537,6 +2588,7 @@ ${titles.map((t, idx) => `${idx + 1}. ${t}`).join('\n')}`;
       const scope = 'https://www.googleapis.com/auth/youtube';
       const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&response_type=token&scope=${encodeURIComponent(scope)}`;
       
+      logToCloudConsole('🔐 جاري توجيهك الآن بأمان إلى بوابة قوقل الرسمية لتسجيل الدخول والترخيص السحابي...');
       // التوجيه الآمن لبوابة قوقل للتفويض الفعلي [1210]
       window.location.href = authUrl;
     }
@@ -2546,6 +2598,7 @@ ${titles.map((t, idx) => `${idx + 1}. ${t}`).join('\n')}`;
     function handleGoogleSignOut() {
       localStorage.removeItem('user_youtube_access_token');
       localStorage.removeItem('user_youtube_token_expires');
+      logToCloudConsole('🔐 تم الضغط على زر تسجيل الخروج، وتم مسح التراخيص والرموز السحابية بنجاح.');
       showToast('🔐 تم تسجيل الخروج بنجاح وإلغاء المزامنة السحابية.');
       googlePlaylistsContainer.style.display = 'none'; // إخفاء القوائم المنسدلة سحابياً
       updateAuthUI();
@@ -2603,18 +2656,26 @@ ${titles.map((t, idx) => `${idx + 1}. ${t}`).join('\n')}`;
 
     // ربط استيراد القائمة المختارة سحابياً وتصديرها للأزرار التفاعلية المباشرة للوقاية [1560]
     function triggerSelectedPlaylistImport() {
+      logToCloudConsole('🔘 تم الضغط على زر استيراد القائمة المختارة سحابياً.');
       const select = document.getElementById('googlePlaylistsSelect');
       if (select) {
+        logToCloudConsole(`📁 جاري التحضير لاستيراد القائمة بالـ ID: ${select.value}`);
         importPlaylistById(select.value);
+      } else {
+        logToCloudConsole('❌ خطأ: لم يتم العثور على العنصر googlePlaylistsSelect في الصفحة.');
       }
     }
     window.triggerSelectedPlaylistImport = triggerSelectedPlaylistImport;
 
     // ربط مزامنة القائمة المختارة سحابياً وتصديرها للأزرار التفاعلية المباشرة للوقاية
     function triggerSelectedPlaylistSync() {
+      logToCloudConsole('🔘 تم الضغط على زر مزامنة القائمة المختارة سحابياً.');
       const select = document.getElementById('googlePlaylistsSelect');
       if (select) {
+        logToCloudConsole(`📁 جاري التحضير لمزامنة وتحديث القائمة بالـ ID: ${select.value}`);
         syncPlaylistById(select.value);
+      } else {
+        logToCloudConsole('❌ خطأ: لم يتم العثور على العنصر googlePlaylistsSelect في الصفحة.');
       }
     }
     window.triggerSelectedPlaylistSync = triggerSelectedPlaylistSync;
@@ -2755,6 +2816,8 @@ ${titles.map((t, idx) => `${idx + 1}. ${t}`).join('\n')}`;
             return (a.category || '').localeCompare(b.category || '', 'ar');
           case 'duration-desc':
             return parseDuration(b.duration) - parseDuration(a.duration);
+          case 'duration-asc':
+            return parseDuration(a.duration) - parseDuration(b.duration);
           case 'id-asc':
           default:
             return a.id - b.id;
