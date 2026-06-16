@@ -1179,21 +1179,6 @@
       // إطلاق تصنيف يدوي مخصص للمقاطع غير المصنفة "عام"
       classifyCurrentLibraryBtn.addEventListener('click', startManualClassification);
 
-      // ربط حدث زر الإلغاء الفوري برمجياً
-      cancelImportBtn.addEventListener('click', () => {
-        isImportAborted = true;
-        logToCloudConsole('🛑 تم الضغط على زر إلغاء العملية يدوياً.');
-        globalImportStatus.textContent = '❌ جاري إلغاء العملية وحفظ التقدم الحالي...';
-        cancelImportBtn.style.display = 'none';
-        continueImportBtn.style.display = 'none';
-      });
-
-      // ربط حدث زر متابعة التصنيف للمجموعات يدوياً
-      continueImportBtn.addEventListener('click', () => {
-        logToCloudConsole('➡️ تم الضغط على زر متابعة التصنيف للمجموعة التالية.');
-        processNextImportBatch();
-      });
-
       // تفاعل زر الحبة "الكل" الجديد
       pillAllBtn.addEventListener('click', () => {
         selectedCategory = '';
@@ -1504,7 +1489,7 @@
           results.push({
             id: idVal,
             title: titleVal,
-            category: "عام", // تصنيف افتراضي محايد لحين معالجته بـ Gemini أو يدوياً
+            category: "عام", 
             channel: "استيراد معرفات",
             duration: "00:00",
             thumbnail: thumbVal,
@@ -1910,7 +1895,7 @@
 
       if (!playlistId) {
         showToast('❌ يرجى اختيار قائمة تشغيل من المنسدلة أولاً.');
-        logToCloudConsole('❌ توقف: لم يتم تحديد أي قائمة تشغيل من المنسدلة.');
+        logToCloudConsole('❌ توقف: لم يتم تحديد أي قائمة من المنسدلة للمزامنة.');
         return;
       }
 
@@ -2165,7 +2150,7 @@
         const vId = extractVideoID(video.url);
         
         try {
-          const res = await fetch(`https://noembed.com/embed?url=https://www.youtube.com/watch?v=${vId}`);
+          const res = await fetch(`https://noembed.com/embed?url=https://www.youtube.com/watch?v=vId`);
           if (res.ok) {
             const data = await res.json();
             if (data.title) {
@@ -2752,6 +2737,26 @@ ${titles.map((t, idx) => `${idx + 1}. ${t}`).join('\n')}`;
     }
     window.deleteVideo = deleteVideo;
 
+    // إدارة أنماط رؤية التصميم
+    function toggleLayout() {
+      currentLayout = (currentLayout === 'grid') ? 'list' : 'grid';
+      localStorage.setItem('user_youtube_layout', currentLayout);
+      updateLayoutUI();
+      renderGrid();
+    }
+    window.toggleLayout = toggleLayout;
+
+    function updateLayoutUI() {
+      if (currentLayout === 'list') {
+        videosGrid.classList.add('list-layout');
+        layoutToggleBtn.textContent = '📱 عرض الشبكة';
+      } else {
+        videosGrid.classList.remove('list-layout');
+        layoutToggleBtn.textContent = '📝 عرض القائمة';
+      }
+    }
+    window.updateLayoutUI = updateLayoutUI;
+
     // حذف القائمة النشطة بالكامل
     function clearCurrentLibrary() {
       if (confirm('هل أنت متأكد من رغبتك في مسح القائمة بالكامل وتصفير المكتبة؟ لا يمكن التراجع عن هذه الخطوة.')) {
@@ -2816,8 +2821,6 @@ ${titles.map((t, idx) => `${idx + 1}. ${t}`).join('\n')}`;
             return (a.category || '').localeCompare(b.category || '', 'ar');
           case 'duration-desc':
             return parseDuration(b.duration) - parseDuration(a.duration);
-          case 'duration-asc':
-            return parseDuration(a.duration) - parseDuration(b.duration);
           case 'id-asc':
           default:
             return a.id - b.id;
