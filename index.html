@@ -246,7 +246,7 @@
       border-color: var(--accent-color);
     }
 
-    /* حاوية وجدول قوائم تشغيل حساب قوقل الشخصي */
+    /* حاوية قوائم تشغيل حساب قوقل الشخصي */
     .google-playlists-container {
       display: none;
       flex-direction: column;
@@ -424,7 +424,7 @@
       color: #000;
     }
 
-    /* القائمة المنسدلة الذكية للتصنيفات */
+    /* القائمة المنسدلة للتصنيفات */
     .categories-dropdown-menu {
       position: absolute;
       top: calc(100% + 6px);
@@ -637,7 +637,7 @@
       border: 1px solid rgba(255, 255, 255, 0.1);
     }
 
-    /* معدل التصنيف السريع الفوري */
+    /* معدل التصنيف السريع */
     .quick-cat-select {
       background-color: transparent;
       border: 1px dashed var(--text-secondary);
@@ -845,7 +845,7 @@
   <section class="import-panel" id="importPanel">
     <div class="import-container">
       
-      <!-- إدخال مفتاح ذكاء جيميناي (Gemini API Key) -->
+      <!-- إدخال مفتاح ذكاء جيميناي -->
       <div class="input-group" style="margin-bottom: 20px;">
         <label for="geminiApiKey">🤖 مفتاح ذكاء جيميناي (Gemini API Key)</label>
         <input type="text" id="geminiApiKey" placeholder="أدخل مفتاح Gemini الخاص بك (اختياري)...">
@@ -873,6 +873,12 @@
 
         <textarea id="importTextarea" class="import-textarea" placeholder="الصق أسطر الـ CSV هنا...&#10;مثال: 1,أفضل طريقة للمذاكرة,,تعليم,دروس أونلاين,12:29,,https://www.youtube.com/..."></textarea>
         
+        <!-- صندوق خيار تحديد استبدال التصنيفات القديمة أو الفيديوهات غير المصنفة فقط -->
+        <div class="import-options" style="display: flex; align-items: center; gap: 8px; margin-bottom: 15px; background: var(--bg-primary); padding: 8px 12px; border-radius: 8px; border: 1px solid var(--bg-tertiary);">
+          <input type="checkbox" id="overwriteCategoriesCheck" checked style="width:16px; height:16px; accent-color: var(--accent-color); cursor:pointer;">
+          <label for="overwriteCategoriesCheck" style="font-size:0.85rem; cursor:pointer; user-select:none;">🔄 استبدال التصنيفات الحالية بالتصنيفات المستوردة (حتى لو كانت مصنفة مسبقاً)</label>
+        </div>
+
         <div class="import-footer">
           <div class="file-input-wrapper">
             <button class="btn btn-secondary">📂 اختر ملف CSV</button>
@@ -1019,11 +1025,15 @@
             </select>
           </div>
 
+          <!-- فلتر قائمة التشغيل مدعوماً بزر حذف التصنيفات الخاص بالقائمة المحددة -->
           <div class="filter-group">
             <label for="playlistFilter">قائمة التشغيل</label>
-            <select id="playlistFilter" onchange="applyFiltersAndSort()">
-              <option value="">الكل</option>
-            </select>
+            <div style="display: flex; gap: 6px;">
+              <select id="playlistFilter" onchange="applyFiltersAndSort()" style="flex-grow: 1;">
+                <option value="">الكل</option>
+              </select>
+              <button id="clearPlaylistCategoriesBtn" class="btn btn-secondary" style="padding: 4px 10px; font-size: 0.75rem; color: #ff3333;" onclick="clearPlaylistCategories()" title="مسح تصنيفات القائمة المحددة بالكامل وإرجاعها إلى غ-مصنف">🗑️ مسح</button>
+            </div>
           </div>
 
           <div class="filter-group">
@@ -1050,12 +1060,12 @@
   </div>
 
   <script>
-    // عينة افتراضية مبدئية توضيحية
+    // عينة افتراضية مبدئية مصنفة بـ "غ-مصنف" و"تقنية"
     const defaultData = [
       {
         id: 1,
         title: "مقدمة تعريفية: كيف تستخدم مكتبة مرئيات يوتيوب الذكية",
-        category: "تعليم",
+        category: "غ-مصنف",
         channel: "قناة المساعدة والتعليم",
         duration: "03:45",
         thumbnail: "https://img.youtube.com/vi/dQw4w9WgXcQ/hqdefault.jpg",
@@ -1448,24 +1458,27 @@
       return counts;
     }
 
-    // معالج فك شفرة الـ CSV والروابط
+    // دالة تحليل ومعالجة ملف الـ CSV بمطابقة الترويسات ديناميكياً لتفادي أخطاء الإزاحة
     function parseCSVData(text, playlistId = '', playlistName = '') {
       const lines = text.split('\n');
       const results = [];
       
-      let startIdx = 0;
-      if (lines[0] && (lines[0].includes('الرقم') || lines[0].includes('الرابط') || lines[0].includes('العنوان') || lines[0].includes('Video ID'))) {
-        startIdx = 1; 
-      }
+      if (lines.length === 0) return results;
 
-      for (let i = startIdx; i < lines.length; i++) {
-        const line = lines[i].trim();
-        if (!line) continue;
+      // رصد أسماء الأعمدة ديناميكياً من السطر الأول
+      let linkColIdx = -1;
+      let categoryColIdx = -1;
+      let titleColIdx = -1;
+      let durationColIdx = -1;
 
+      const firstLine = lines[0].trim();
+      let headerFields = [];
+      
+      // دالة تقسيم تدعم الفواصل والاقتباسات داخل الخانات
+      function splitCsvLine(line) {
         let fields = [];
         let currentField = '';
         let inQuotes = false;
-        
         for (let charIndex = 0; charIndex < line.length; charIndex++) {
           const char = line[charIndex];
           if (char === '"') {
@@ -1478,140 +1491,96 @@
           }
         }
         fields.push(currentField.trim());
-
-        const clean = (val) => {
-          if (!val) return '';
-          let v = val.trim();
-          if (v.startsWith('"') && v.endsWith('"')) {
-            v = v.substring(1, v.length - 1);
+        return fields.map(f => {
+          if (f.startsWith('"') && f.endsWith('"')) {
+            return f.substring(1, f.length - 1).trim();
           }
-          return v.trim();
-        };
+          return f;
+        });
+      }
 
-        const cleanedFields = fields.map(clean).filter(f => f !== undefined);
+      if (firstLine) {
+        headerFields = splitCsvLine(firstLine);
+        headerFields.forEach((field, idx) => {
+          const f = field.toLowerCase();
+          if (f.includes('رابط') || f.includes('link') || f.includes('url') || f.includes('الرابط')) {
+            linkColIdx = idx;
+          } else if (f.includes('تصنيف') || f.includes('category') || f.includes('topic') || f.includes('التصنيف')) {
+            categoryColIdx = idx;
+          } else if (f.includes('عنوان') || f.includes('title') || f.includes('العنوان')) {
+            titleColIdx = idx;
+          } else if (f.includes('مدة') || f.includes('duration') || f.includes('time') || f.includes('المدة')) {
+            durationColIdx = idx;
+          }
+        });
+      }
 
-        // فحص معرفات يوتيوب الذكية
-        const firstField = cleanedFields[0] || '';
-        const secondField = cleanedFields[1] || '';
-        const isYtIdPattern = /^[a-zA-Z0-9_-]{11}$/.test(firstField);
+      const hasHeader = (linkColIdx !== -1 || categoryColIdx !== -1);
+      let startIdx = hasHeader ? 1 : 0;
 
-        if (isYtIdPattern && !firstField.toLowerCase().includes('video')) {
-          const idVal = results.length + 1;
-          const videoId = firstField;
-          const urlVal = `https://www.youtube.com/watch?v=${videoId}`;
-          const thumbVal = `https://img.youtube.com/vi/${videoId}/hqdefault.jpg`;
-          
-          let titleVal = `فيديو مستورد #${idVal}`;
-          if (secondField) {
-            const dateMatch = secondField.match(/^(\d{4}-\d{2}-\d{2})/);
-            if (dateMatch) {
-              const formattedDate = dateMatch[1].split('-').reverse().join('-'); 
-              titleVal = `مقطع مستورد [بتاريخ: ${formattedDate}]`;
+      for (let i = startIdx; i < lines.length; i++) {
+        const line = lines[i].trim();
+        if (!line) continue;
+
+        const fields = splitCsvLine(line);
+        if (fields.length === 0) continue;
+
+        let urlVal = '';
+        let categoryVal = 'غ-مصنف'; // تغيير الفئة الافتراضية إلى غ-مصنف
+        let titleVal = '';
+        let durationVal = '00:00';
+
+        if (hasHeader) {
+          if (linkColIdx !== -1 && fields[linkColIdx]) urlVal = fields[linkColIdx];
+          if (categoryColIdx !== -1 && fields[categoryColIdx]) categoryVal = fields[categoryColIdx];
+          if (titleColIdx !== -1 && fields[titleColIdx]) titleVal = fields[titleColIdx];
+          if (durationColIdx !== -1 && fields[durationColIdx]) durationVal = fields[durationColIdx];
+        } else {
+          // تخمين ذكي إذا لم تتوفر أسماء الترويسة بوضوح
+          const foundUrl = fields.find(f => f.startsWith('http://') || f.startsWith('https://'));
+          if (foundUrl) {
+            urlVal = foundUrl;
+            const foundDuration = fields.find(f => /^\d+:\d+(:?\d+)?$/.test(f));
+            if (foundDuration) durationVal = foundDuration;
+
+            const nonUrlOrDurFields = fields.filter(f => f !== urlVal && f !== foundDuration && isNaN(parseInt(f)));
+            if (nonUrlOrDurFields.length >= 2) {
+              titleVal = nonUrlOrDurFields[0];
+              categoryVal = nonUrlOrDurFields[1];
+            } else if (nonUrlOrDurFields.length === 1) {
+              categoryVal = nonUrlOrDurFields[0];
             }
           }
+        }
 
+        // دعم إدخال معرفات 11 حرفاً مباشرة في الحقل الأول
+        if (!urlVal && fields[0] && /^[a-zA-Z0-9_-]{11}$/.test(fields[0])) {
+          const vId = fields[0];
+          urlVal = `https://www.youtube.com/watch?v=${vId}`;
+          if (fields[1] && isNaN(parseInt(fields[1]))) {
+            categoryVal = fields[1];
+          }
+        }
+
+        if (urlVal) {
           results.push({
-            id: idVal,
-            title: titleVal,
-            category: "عام", 
-            channel: "استيراد معرفات",
-            duration: "00:00",
-            thumbnail: thumbVal,
+            id: results.length + 1,
+            title: titleVal || `فيديو يوتيوب رقم ${results.length + 1}`,
+            category: categoryVal || 'غ-مصنف',
+            channel: 'قناة غير معروفة',
+            duration: durationVal || '00:00',
+            thumbnail: `https://img.youtube.com/vi/${extractVideoID(urlVal)}/hqdefault.jpg`,
             url: urlVal,
-            needsMetadataFetch: true,
             parentPlaylistId: playlistId,
             parentPlaylistName: playlistName
           });
-          continue; 
-        }
-
-        if (cleanedFields.length >= 4) {
-          let urlVal = '';
-          let thumbVal = '';
-          let titleVal = '';
-          let idVal = '';
-          let categoryVal = '';
-          let channelVal = '';
-          let durationVal = '';
-
-          const urls = cleanedFields.filter(f => f.startsWith('http://') || f.startsWith('https://'));
-          
-          if (urls.length > 0) {
-            if (urls.length === 1) {
-              urlVal = urls[0];
-            } else {
-              const thumbCandidate = urls.find(u => u.includes('img.youtube') || u.includes('ytimg') || u.includes('hqdefault') || u.includes('.jpg'));
-              if (thumbCandidate) {
-                thumbVal = thumbCandidate;
-                urlVal = urls.find(u => u !== thumbCandidate);
-              } else {
-                thumbVal = urls[0];
-                urlVal = urls[1];
-              }
-            }
-          }
-
-          if (!urlVal) continue; 
-
-          let startSearchIdx = 1;
-          if (!isNaN(parseInt(cleanedFields[0]))) {
-            idVal = parseInt(cleanedFields[0]);
-            titleVal = cleanedFields[1];
-            startSearchIdx = 2;
-          } else {
-            idVal = results.length + 1;
-            titleVal = cleanedFields[0];
-            startSearchIdx = 1;
-          }
-
-          const remainingText = [];
-          for (let j = startSearchIdx; j < cleanedFields.length; j++) {
-            const f = cleanedFields[j];
-            if (!f) continue;
-            if (f === titleVal) continue;
-            if (f.startsWith('http://') || f.startsWith('https://')) continue;
-            
-            if (f.includes(':') && f.length < 9) {
-              durationVal = f;
-              continue;
-            }
-            remainingText.push(f);
-          }
-
-          if (remainingText.length >= 2) {
-            categoryVal = remainingText[0];
-            channelVal = remainingText[1];
-          } else if (remainingText.length === 1) {
-            categoryVal = ''; 
-            channelVal = remainingText[0];
-          } else {
-            categoryVal = '';
-            channelVal = 'قناة غير معروفة';
-          }
-
-          if (!durationVal) durationVal = '00:00';
-
-          if (titleVal && urlVal) {
-            results.push({
-              id: idVal || (results.length + 1),
-              title: titleVal,
-              category: categoryVal || 'عام',
-              channel: channelVal || 'قناة غير معروفة',
-              duration: durationVal,
-              thumbnail: thumbVal || `https://img.youtube.com/vi/${extractVideoID(urlVal)}/hqdefault.jpg`,
-              url: urlVal,
-              parentPlaylistId: playlistId,
-              parentPlaylistName: playlistName
-            });
-          }
         }
       }
 
-      // معالجة النصوص المبعثرة والروابط العادية
+      // البحث العام العشوائي كخيار أخير في حال فشل القراءة بالجدول
       if (results.length === 0) {
-        const textLines = text.split('\n');
-        for (let j = 0; j < textLines.length; j++) {
-          const currentLine = textLines[j].trim();
+        for (let j = 0; j < lines.length; j++) {
+          const currentLine = lines[j].trim();
           if (!currentLine) continue;
 
           const ytReg = /(https?:\/\/(?:www\.)?(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([a-zA-Z0-9_-]{11}))/;
@@ -1620,29 +1589,21 @@
           if (match) {
             const urlVal = match[1];
             const videoId = match[2];
-            
             let titleVal = '';
-            if (j > 0 && !textLines[j-1].trim().startsWith('http')) {
-              titleVal = textLines[j-1].trim();
+            if (j > 0 && !lines[j-1].trim().startsWith('http')) {
+              titleVal = lines[j-1].trim();
             } else {
               titleVal = currentLine.replace(urlVal, '').trim();
             }
-
             titleVal = titleVal.replace(/[:\-ـ\s\[\]()]+/g, ' ').trim();
-
-            if (!titleVal) {
-              titleVal = `فيديو يوتيوب رقم ${results.length + 1}`;
-            }
-
-            const thumbVal = `https://img.youtube.com/vi/${videoId}/hqdefault.jpg`;
 
             results.push({
               id: results.length + 1,
-              title: titleVal,
-              category: "عام",
+              title: titleVal || `فيديو يوتيوب رقم ${results.length + 1}`,
+              category: "غ-مصنف",
               channel: "استخراج تلقائي",
               duration: "00:00",
-              thumbnail: thumbVal,
+              thumbnail: `https://img.youtube.com/vi/${videoId}/hqdefault.jpg`,
               url: urlVal,
               parentPlaylistId: playlistId,
               parentPlaylistName: playlistName
@@ -1657,7 +1618,6 @@
     function extractVideoID(url) {
       if (!url) return 'default';
       const trimmed = url.trim();
-      // تمكين دعم المعرفات المباشرة ذات الـ 11 حرفاً لتسهيل الدمج والتطابق
       if (trimmed.length === 11 && /^[a-zA-Z0-9_-]{11}$/.test(trimmed)) {
         return trimmed;
       }
@@ -1709,7 +1669,7 @@
       }
     }
 
-    // دالة دمج وتحديث التصنيفات فقط من ملف الـ CSV دون حذف الفيديوهات الحالية
+    // دالة دمج وتحديث تصنيفات الفيديوهات الحالية بمطابقة كود الـ ID
     async function handleMergeCategories() {
       const text = importTextarea.value.trim();
       if (!text) {
@@ -1723,7 +1683,10 @@
         return;
       }
 
-      // بناء خريطة بالتصنيفات القادمة من الـ CSV: معرف الفيديو -> التصنيف
+      // قراءة حالة خيار صندوق الاستبدال
+      const overwriteActive = document.getElementById('overwriteCategoriesCheck').checked;
+
+      // بناء خريطة بالتصنيفات القادمة من الـ CSV
       const csvCategoryMap = {};
       parsed.forEach(item => {
         const vId = extractVideoID(item.url);
@@ -1733,12 +1696,15 @@
       });
 
       let updatedCount = 0;
-      // تحديث تصنيفات الفيديوهات الموجودة بالمكتبة الحالية فقط
       allVideos.forEach(video => {
         const vId = extractVideoID(video.url);
         if (vId && csvCategoryMap[vId]) {
-          video.category = csvCategoryMap[vId];
-          updatedCount++;
+          const currentCat = video.category || 'غ-مصنف';
+          // التحديث إذا كان خيار الاستبدال مفعل، أو كان المقطع الحالي غير مصنف
+          if (overwriteActive || currentCat === 'غ-مصنف') {
+            video.category = csvCategoryMap[vId];
+            updatedCount++;
+          }
         }
       });
 
@@ -1746,13 +1712,38 @@
         saveLibraryAndBackup(allVideos);
         importTextarea.value = '';
         importPanel.style.display = 'none';
-        showToast(`✅ تم بنجاح تحديث تصنيفات ${updatedCount} فيديو من ملف الـ CSV!`);
+        showToast(`✅ تم بنجاح دمج وتحديث تصنيفات ${updatedCount} فيديو من ملف الـ CSV!`);
       } else {
-        showToast('⚠️ لم نجد فيديوهات متطابقة بين الملف ومكتبتك الحالية لتحديث تصنيفاتها.');
+        showToast('⚠️ لم يتم العثور على فيديوهات مطابقة بحاجة لتحديث التصنيف.');
       }
     }
 
-    // قراءة الملف وعرض محتواه في مربع النص أولاً لتأكيد الخيار للمستخدم
+    // دالة إفراغ تصنيفات قائمة كاملة وإرجاعها لـ "غ-مصنف"
+    function clearPlaylistCategories() {
+      const playlistFilter = document.getElementById('playlistFilter');
+      const selectedPlaylist = playlistFilter ? playlistFilter.value : '';
+      if (!selectedPlaylist) {
+        showToast('⚠️ يرجى اختيار قائمة تشغيل محددة أولاً لمسح تصنيفاتها.');
+        return;
+      }
+      if (confirm(`هل أنت متأكد من رغبتك في حذف كافة تصنيفات الفيديوهات التابعة لقائمة "${selectedPlaylist}" وإرجاعها إلى "غ-مصنف"؟`)) {
+        let updatedCount = 0;
+        allVideos.forEach(v => {
+          if (v.parentPlaylistName === selectedPlaylist) {
+            v.category = 'غ-مصنف';
+            updatedCount++;
+          }
+        });
+        if (updatedCount > 0) {
+          saveLibraryAndBackup(allVideos);
+          showToast(`✅ تم مسح تصنيفات ${updatedCount} فيديو وإرجاعها إلى "غ-مصنف" بنجاح.`);
+        } else {
+          showToast('لا توجد فيديوهات بحاجة للمسح في هذه القائمة.');
+        }
+      }
+    }
+
+    // عرض محتوى الملف بداخل مربع النص لتأكيد القرار للمستخدم
     function handleFileImport(e) {
       const file = e.target.files[0];
       if (!file) return;
@@ -1760,7 +1751,7 @@
       const reader = new FileReader();
       reader.onload = function(evt) {
         importTextarea.value = evt.target.result;
-        showToast('📂 تم تحميل محتوى الملف بنجاح. يمكنك الآن حفظه كقائمة جديدة أو الضغط على زر دمج التصنيفات.');
+        showToast('📂 تم تحميل محتوى الملف بنجاح. يمكنك الآن حفظه كقائمة جديدة أو الضغط على دمج وتحديث التصنيفات.');
       };
       reader.readAsText(file, 'UTF-8');
     }
@@ -1772,7 +1763,7 @@
       const geminiKey = geminiApiKey.value.trim() || localStorage.getItem('user_gemini_api_key') || '';
 
       if (!key || !rawUrl) {
-        showToast('برجاء إدخل مفتاح API ورابط قائمة تشغيل يوتيوب.');
+        showToast('برجاء إدخال كلاً من مفتاح API ورابط قائمة تشغيل يوتيوب.');
         return;
       }
 
@@ -1860,7 +1851,7 @@
               videos.push({
                 id: videos.length + 1,
                 title: title,
-                category: "عام", 
+                category: "غ-مصنف", // التصنيف الافتراضي غ-مصنف
                 channel: channel,
                 duration: '00:00',
                 thumbnail: thumb,
@@ -1883,7 +1874,7 @@
       return videos;
     }
 
-    // جلب قوائم التشغيل الخاصة بحساب قوقل الشخصي [1560]
+    // جلب قوائم التشغيل لحساب قوقل الشخصي [1560]
     async function fetchPersonalPlaylists(token) {
       logToCloudConsole('🌐 جاري الاتصال بقوقل لجلب قوائم التشغيل المتواجدة بحسابك...');
       const url = `https://www.googleapis.com/youtube/v3/playlists?part=snippet&mine=true&maxResults=50`;
@@ -1897,7 +1888,7 @@
           const data = await res.json();
           googlePlaylistsSelect.innerHTML = '<option value="">-- اختر قائمة تشغيل --</option>';
           if (data.items && data.items.length > 0) {
-            logToCloudConsole(`📁 تم جلب ${data.items.length} قائمة تشغيل بنجاح وعرضها بالمنسدلة.`);
+            logToCloudConsole(`📁 تم جلب ${data.items.length} قائمة تشغيل بنجاح.`);
             
             playlistNamesMap = {};
             data.items.forEach(item => {
@@ -1910,12 +1901,12 @@
             localStorage.setItem('user_youtube_playlist_names_map', JSON.stringify(playlistNamesMap));
             googlePlaylistsContainer.style.display = 'flex'; 
           } else {
-            logToCloudConsole('⚠️ لم يتم العثور على أي قوائم تشغيل عامة أو خاصة في حساب يوتيوب هذا.');
+            logToCloudConsole('⚠️ لم يتم العثور على أي قوائم تشغيل عامة أو خاصة.');
             googlePlaylistsSelect.innerHTML = '<option value="">-- لا توجد قوائم تشغيل بحسابك --</option>';
           }
         } else {
           const errData = await res.json();
-          logToCloudConsole(`❌ فشل جلب القوائم. السبب: ${errData.error?.message || 'غير معروف'}`);
+          logToCloudConsole(`❌ فشل جلب القوائم: ${errData.error?.message || 'غير معروف'}`);
         }
       } catch (e) {
         console.error('Error fetching personal playlists', e);
@@ -1924,30 +1915,25 @@
     }
 
     function triggerSelectedPlaylistImport() {
-      logToCloudConsole('🔘 تم الضغط على زر استيراد القائمة المختارة سحابياً.');
       const select = document.getElementById('googlePlaylistsSelect');
       if (select) {
-        logToCloudConsole(`📁 جاري التحضير لاستيراد القائمة بالـ ID: ${select.value}`);
         importPlaylistById(select.value);
       }
     }
 
     function triggerSelectedPlaylistSync() {
-      logToCloudConsole('🔘 تم الضغط على زر مزامنة القائمة المختارة سحابياً.');
       const select = document.getElementById('googlePlaylistsSelect');
       if (select) {
-        logToCloudConsole(`📁 جاري التحضير لمزامنة وتحديث القائمة بالـ ID: ${select.value}`);
         syncPlaylistById(select.value);
       }
     }
 
     async function importPlaylistById(playlistId) {
-      logToCloudConsole('⏳ بدء تشغيل دالة الاستيراد السحابي importPlaylistById...');
       const key = youtubeApiKey.value.trim() || localStorage.getItem('user_youtube_api_key') || '';
       const token = getValidAccessToken();
       
       if (!playlistId) {
-        showToast('❌ يرجى اختيار قائمة تشغيل من المنسدلة أولاً.');
+        showToast('❌ يرجى اختيار قائمة تشغيل أولاً.');
         return;
       }
 
@@ -1958,27 +1944,23 @@
       try {
         const fetchedVideos = await fetchAllPlaylistItemsOAuth(playlistId, token);
         if (fetchedVideos.length > 0) {
-          if (confirm(`تم العثور على ${fetchedVideos.length} مقطع في القائمة الشخصية. هل تريد استبدال مكتبتك بها؟\n(اضغط إلغاء لدمجهم معاً دون حذف القديم)`)) {
+          if (confirm(`تم العثور على ${fetchedVideos.length} مقطع. هل تريد استبدال مكتبتك الحالية بها؟\n(اضغط إلغاء للدمج)`)) {
             allVideos = fetchedVideos;
-            logToCloudConsole('🧹 تم اختيار: استبدال المكتبة.');
           } else {
             fetchedVideos.forEach(v => {
               v.id = allVideos.length + 1;
               allVideos.push(v);
             });
-            logToCloudConsole('➕ تم اختيار: دمج القائمة.');
           }
 
           saveLibraryAndBackup(allVideos);
           importPanel.style.display = 'none';
-          showToast(`تم تحميل الفيديوهات بنجاح! جاري جلب المدد الزمنية والتصنيف التلقائي...`);
+          showToast(`تم تحميل الفيديوهات بنجاح! جاري جلب التوقيتات...`);
 
-          logToCloudConsole('⏳ جاري البدء في سحب المدد الزمنية للفيديوهات من قوقل...');
           await fetchApiMetadataInBatches(fetchedVideos, key);
 
           const geminiKey = geminiApiKey.value.trim() || localStorage.getItem('user_gemini_api_key') || '';
           if (geminiKey) {
-            logToCloudConsole('🤖 جاري الاستعداد لتصنيف الفيديوهات ذكياً بـ جيميناي...');
             await runGeminiClassification(fetchedVideos, geminiKey);
           }
         } else {
@@ -1986,7 +1968,7 @@
         }
       } catch (e) {
         console.error(e);
-        showToast(`❌ فشل استيراد القائمة السحابية: ${e.message}`);
+        showToast(`❌ فشل استيراد القائمة: ${e.message}`);
       } finally {
         globalImportStatusContainer.style.display = 'none';
       }
@@ -2013,7 +1995,7 @@
         });
         if (!res.ok) {
           const errData = await res.json();
-          throw new Error(errData.error.message || 'خطأ في جلب بيانات القائمة السحابية.');
+          throw new Error(errData.error.message || 'خطأ في جلب بيانات القائمة.');
         }
 
         const data = await res.json();
@@ -2031,7 +2013,7 @@
               videos.push({
                 id: videos.length + 1,
                 title: title,
-                category: "عام", 
+                category: "غ-مصنف", 
                 channel: channel,
                 duration: '00:00',
                 thumbnail: thumb,
@@ -2046,7 +2028,6 @@
 
         count += data.items ? data.items.length : 0;
         globalImportStatus.textContent = `جاري جلب الفيديوهات... تم تحميل ${count}`;
-        logToCloudConsole(`⏳ جاري تحميل عناصر القائمة... تم جلب ${count} عنصر.`);
 
         nextPageToken = data.nextPageToken;
         if (!nextPageToken) {
@@ -2057,7 +2038,6 @@
     }
 
     async function syncPlaylistById(playlistId) {
-      logToCloudConsole('⏳ بدء تشغيل دالة المزامنة السحابية الذكية syncPlaylistById...');
       const token = getValidAccessToken();
       const key = youtubeApiKey.value.trim() || localStorage.getItem('user_youtube_api_key') || '';
       
@@ -2067,16 +2047,12 @@
       }
 
       globalImportStatusContainer.style.display = 'flex';
-      globalImportStatus.textContent = '🔄 جاري الاتصال بيوتيوب للتحقق من التغييرات الجديدة وسحب الحالة الحالية...';
+      globalImportStatus.textContent = '🔄 جاري التحقق من التغييرات على يوتيوب...';
       cancelImportBtn.style.display = 'none';
 
       try {
-        logToCloudConsole('🌐 جاري سحب الحالة الحالية والنهائية للقائمة السحابية المقابلة من قوقل...');
         const cloudVideos = await fetchAllPlaylistItemsOAuth(playlistId, token);
-        logToCloudConsole(`✅ تم جلب القائمة السحابية بنجاح. العدد الفعلي الحالي: ${cloudVideos.length} فيديو.`);
-        
         const localFiltered = allVideos.filter(v => v.parentPlaylistId === playlistId);
-        logToCloudConsole(`💻 عدد الفيديوهات المخزنة محلياً في هاتفك التابعة لهذه القائمة: ${localFiltered.length} فيديو.`);
         
         const newCloudVideos = cloudVideos.filter(cv => {
           const cvId = extractVideoID(cv.url);
@@ -2087,18 +2063,14 @@
           return !cloudVideos.some(cv => cv.playlistItemId === lv.playlistItemId);
         });
 
-        logToCloudConsole(`🔍 نتيجة الفحص السحابي المزدوج:<br>• عدد الفيديوهات الجديدة للإضافة: ${newCloudVideos.length}<br>• عدد الفيديوهات المحذوفة للإزالة: ${deletedLocalVideos.length}`);
-
         if (deletedLocalVideos.length > 0) {
           allVideos = allVideos.filter(v => {
             return !deletedLocalVideos.some(dlv => dlv.playlistItemId === v.playlistItemId);
           });
-          logToCloudConsole('🧹 تم تطبيق عمليات الحذف المكتشفة وتطهير قاعدة البيانات المحلية منها.');
         }
 
         if (newCloudVideos.length === 0 && deletedLocalVideos.length === 0) {
           showToast('✅ قائمة التشغيل متطابقة تماماً مع حساب يوتيوب!');
-          logToCloudConsole('✅ تطابق كامل 100%! لا توجد أي تغييرات جديدة للمزامنة والتحديث.');
           globalImportStatusContainer.style.display = 'none';
           initApp();
           return;
@@ -2111,20 +2083,17 @@
           });
 
           saveLibraryAndBackup(allVideos);
-          showToast(`🔄 تم رصد ${newCloudVideos.length} فيديو جديد وحذف ${deletedLocalVideos.length} فيديو. جاري التحديث...`);
+          showToast(`🔄 تم رصد ${newCloudVideos.length} فيديو جديد وحذف ${deletedLocalVideos.length} فيديو.`);
 
-          logToCloudConsole('⏳ جاري البدء في جلب المدد الزمنية الفعلية للفيديوهات الجديدة المضافة...');
           await fetchApiMetadataInBatches(newCloudVideos, key);
 
           const geminiKey = geminiApiKey.value.trim() || localStorage.getItem('user_gemini_api_key') || '';
           if (geminiKey) {
-            logToCloudConsole('🤖 جاري الاستعداد لتصنيف المجموعات المكتشفة حديثاً بـ جيميناي...');
             await runGeminiClassification(newCloudVideos, geminiKey);
           }
         } else if (deletedLocalVideos.length > 0) {
           saveLibraryAndBackup(allVideos);
-          showToast(`✅ تم تحديث المكتبة بنجاح وحذف ${deletedLocalVideos.length} فيديو للمطابقة الكاملة.`);
-          logToCloudConsole('✅ تمت عملية المزامنة السحابية بنجاح!');
+          showToast(`✅ تم تحديث المكتبة وحذف ${deletedLocalVideos.length} فيديو بنجاح.`);
         }
 
       } catch (e) {
@@ -2226,7 +2195,7 @@
                 const videoId = item.id;
                 const targetVideo = targets.find(v => extractVideoID(v.url) === videoId);
                 if (targetVideo && item.snippet) {
-                  if (targetVideo.title.startsWith('فيديو مستورد') || targetVideo.title.startsWith('مقطع مستورد') || targetVideo.title === 'عام') {
+                  if (targetVideo.title.startsWith('فيديو مستورد') || targetVideo.title.startsWith('مقطع مستورد') || targetVideo.category === 'غ-مصنف') {
                     targetVideo.title = item.snippet.title;
                   }
                   targetVideo.channel = item.snippet.channelTitle || 'قناة يوتيوب';
@@ -2285,7 +2254,7 @@
 
       const targets = allVideos.filter(v => {
         const videoCats = (v.category || '').split('/').map(c => c.trim());
-        return videoCats.includes('عام') || !v.category || v.category === 'عام';
+        return videoCats.includes('غ-مصنف') || !v.category || v.category === 'غ-مصنف';
       });
 
       if (targets.length === 0) {
@@ -2299,12 +2268,10 @@
     }
 
     function triggerContinueImport() {
-      logToCloudConsole('➡️ تم الضغط على متابعة التصنيف.');
       processNextImportBatch();
     }
 
     function triggerCancelImport() {
-      logToCloudConsole('🛑 تم الضغط على إلغاء العملية يدوياً.');
       isImportAborted = true;
       globalImportStatus.textContent = '❌ جاري إلغاء العملية وحفظ التقدم الحالي...';
       cancelImportBtn.style.display = 'none';
@@ -2337,7 +2304,6 @@
 
       if (currentImportBatchIdx >= activeImportBatches.length) {
         globalImportStatus.textContent = '✅ تم تصنيف كافة المقاطع بالذكاء الاصطناعي بنجاح!';
-        logToCloudConsole('✅ مبروك! تم الانتهاء بنجاح من تصنيف كامل الفيديوهات.');
         cancelImportBtn.style.display = 'none';
         continueImportBtn.style.display = 'none';
         setTimeout(() => {
@@ -2351,7 +2317,6 @@
       const titles = batchVideos.map(v => v.title);
       
       globalImportStatus.textContent = `جاري معالجة الدفعة ${currentImportBatchIdx + 1} من أصل ${activeImportBatches.length}...`;
-      logToCloudConsole(`⏳ جاري إرسال طلب تصنيف الدفعة رقم ${currentImportBatchIdx + 1}/${activeImportBatches.length} إلى Gemini...`);
       continueImportBtn.style.display = 'none';
 
       let success = false;
@@ -2372,22 +2337,19 @@
               video.category = categories[idx];
             });
             success = true;
-            logToCloudConsole(`✅ تم تصنيف الدفعة ${currentImportBatchIdx + 1} بنجاح.`);
           } else {
             throw { status: 'FAIL', message: 'رد غير متوقع من الذكاء الاصطناعي.' };
           }
         } catch (err) {
           console.error(err);
-          logToCloudConsole(`⚠️ تعثر استجابة الدفعة ${currentImportBatchIdx + 1}. الخطأ: ${err.message || 'غير معروف'}`);
-          
           if (err.status === 429) {
-            logToCloudConsole('⏳ تم تجاوز حدود الاستهلاك المؤقتة (429). يرجى الانتظار 30 ثانية لتجاوز الحظر...');
+            logToCloudConsole('⏳ تجاوزنا حدود الكوتا المؤقتة (429). جاري الانتظار 30 ثانية...');
             for (let s = 0; s < 60; s++) {
               if (isImportAborted) {
                 handleAbortedImport();
                 return;
               }
-              globalImportStatus.textContent = `⏳ تجاوزنا حدود قوقل (429). جاري الانتظار... (المتبقي: ${30 - Math.floor(s/2)} ثانية)`;
+              globalImportStatus.textContent = `⏳ تجاوزنا كوتا قوقل (429). جاري الانتظار... (${30 - Math.floor(s/2)} ثانية متبقية)`;
               await delay(500);
             }
             retryCount++;
@@ -2400,9 +2362,8 @@
 
       if (!success) {
         batchVideos.forEach(video => {
-          video.category = video.category || "عام";
+          video.category = video.category || "غ-مصنف";
         });
-        logToCloudConsole(`❌ فشل تصنيف الدفعة ${currentImportBatchIdx + 1}. تم تصنيف عناصرها كـ "عام".`);
       }
 
       currentImportBatchIdx++;
@@ -2411,7 +2372,6 @@
       if (currentImportBatchIdx < activeImportBatches.length) {
         const alreadyDone = allVideos.length - activeImportBatches.length * 50 + currentImportBatchIdx * 50;
         globalImportStatus.textContent = `✅ تم تصنيف الدفعة ${currentImportBatchIdx}. المكتمل: ${alreadyDone}/${allVideos.length}. اضغط "متابعة" للدفعة التالية.`;
-        logToCloudConsole(`⏸️ تم الوقوف مؤقتاً بعد الدفعة ${currentImportBatchIdx}. يرجى الضغط على زر "متابعة التصنيف" على الشاشة للمواصلة.`);
         continueImportBtn.style.display = 'inline-flex';
         continueImportBtn.textContent = `متابعة التصنيف ➡️ (${currentImportBatchIdx + 1}/${activeImportBatches.length})`;
       } else {
@@ -2422,7 +2382,6 @@
     function handleAbortedImport() {
       saveLibraryAndBackup(allVideos);
       globalImportStatus.textContent = '❌ تم إلغاء العملية وحفظ التقدم بنجاح!';
-      logToCloudConsole('❌ تم إلغاء العملية وتأمين حفظ البيانات المكتملة.');
       cancelImportBtn.style.display = 'none';
       continueImportBtn.style.display = 'none';
       setTimeout(() => {
@@ -2447,7 +2406,7 @@
     }
 
     async function classifyTitlesWithGemini(titles, geminiKey) {
-      const categoriesList = ["دين", "تقنية", "برمجة", "ذكاء اصطناعي", "تسويق الكتروني", "اقتصاد ومال", "وثائقيات", "تاريخ وسياسة", "ألعاب وجيمنج", "صناعة محتوى وتصميم", "فلسفة وعلم نفس", "كيف تعمل الاشياء", "أعمال", "صحة", "علوم", "رياضة", "سفر", "ترفيه", "تعليم", "لياقة بدنية", "بودكاست", "طبخ", "افلام", "عام"];
+      const categoriesList = ["دين", "تقنية", "برمجة", "ذكاء اصطناعي", "تسويق الكتروني", "اقتصاد ومال", "وثائقيات", "تاريخ وسياسة", "ألعاب وجيمنج", "صناعة محتوى وتصميم", "فلسفة وعلم نفس", "كيف تعمل الاشياء", "أعمال", "صحة", "علوم", "رياضة", "سفر", "ترفيه", "تعليم", "لياقة بدنية", "بودكاست", "طبخ", "افلام", "غ-مصنف"];
       
       const prompt = `You are a professional video classifier. Categorize each of the following Arabic video titles into EXACTLY one of these Arabic categories: [${categoriesList.join(', ')}].
 Return the result ONLY as a raw JSON array of strings, in the exact same order as the inputs.
@@ -2476,12 +2435,12 @@ ${titles.map((t, idx) => `${idx + 1}. ${t}`).join('\n')}`;
 
         if (res.status === 429) {
           const err = await res.json();
-          throw { status: 429, message: err.error?.message || 'تجاوز حدود الاستهلاك المؤقتة لقوقل.' };
+          throw { status: 429, message: err.error?.message || 'تجاوز حدود الكوتا.' };
         }
 
         if (!res.ok) {
           const err = await res.json();
-          throw { status: 'FAIL', message: err.error?.message || 'خطأ في الاتصال بالذكاء الاصطناعي.' };
+          throw { status: 'FAIL', message: err.error?.message || 'خطأ اتصال بالذكاء الاصطناعي.' };
         }
 
         const data = await res.json();
@@ -2491,7 +2450,7 @@ ${titles.map((t, idx) => `${idx + 1}. ${t}`).join('\n')}`;
         if (Array.isArray(categories)) {
           return categories.map(c => {
             const parts = c.trim().split('/').map(sub => sub.trim());
-            const validatedParts = parts.map(p => categoriesList.includes(p) ? p : "عام");
+            const validatedParts = parts.map(p => categoriesList.includes(p) ? p : "غ-مصنف");
             return validatedParts.join(' / ');
           });
         }
@@ -2546,7 +2505,7 @@ ${titles.map((t, idx) => `${idx + 1}. ${t}`).join('\n')}`;
           geminiTestStatus.style.color = '#ff3333';
         }
       } catch (e) {
-        geminiTestStatus.textContent = '❌ فشل الاتصال. خطأ في الشبكة (تأكد من الـ VPN).';
+        geminiTestStatus.textContent = '❌ فشل الاتصال. خطأ في الشبكة (تأكد من اتصال الـ VPN).';
         geminiTestStatus.style.color = '#ff3333';
       } finally {
         testGeminiBtn.disabled = false;
@@ -2581,7 +2540,6 @@ ${titles.map((t, idx) => `${idx + 1}. ${t}`).join('\n')}`;
     }
 
     function handleGoogleSignIn() {
-      logToCloudConsole('🔘 تم الضغط على زر تسجيل دخول قوقل.');
       const clientId = googleClientId.value.trim() || localStorage.getItem('user_google_client_id') || '';
       if (!clientId) {
         showToast('❌ يرجى إدخال معرف عميل Google Client ID أولاً في تبويب يوتيوب.');
@@ -2596,7 +2554,6 @@ ${titles.map((t, idx) => `${idx + 1}. ${t}`).join('\n')}`;
       const scope = 'https://www.googleapis.com/auth/youtube https://www.googleapis.com/auth/drive.file';
       const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&response_type=token&scope=${encodeURIComponent(scope)}`;
       
-      logToCloudConsole('🔐 جاري التوجيه إلى صفحة تسجيل الدخول الرسمية لقوقل...');
       window.location.href = authUrl;
     }
 
@@ -2604,7 +2561,6 @@ ${titles.map((t, idx) => `${idx + 1}. ${t}`).join('\n')}`;
       localStorage.removeItem('user_youtube_access_token');
       localStorage.removeItem('user_youtube_token_expires');
       localStorage.removeItem('user_google_drive_file_id');
-      logToCloudConsole('🔐 تم تسجيل الخروج بنجاح وتم مسح التراخيص المؤقتة.');
       showToast('🔐 تم تسجيل الخروج بنجاح.');
       googlePlaylistsContainer.style.display = 'none';
       updateAuthUI();
@@ -3074,6 +3030,12 @@ ${titles.map((t, idx) => `${idx + 1}. ${t}`).join('\n')}`;
         const favIcon = isFav ? '★' : '☆';
         
         let catOptions = `<option value="${video.category}" selected>${video.category}</option>`;
+        
+        // التأكد من توفر خيار "غ-مصنف" للتغيير اليدوي السريع دائماً
+        if (video.category !== 'غ-مصنف' && !activeCategories.includes('غ-مصنف')) {
+          activeCategories.push('غ-مصنف');
+        }
+
         activeCategories.forEach(c => {
           if (c !== video.category) {
             catOptions += `<option value="${c}">${c}</option>`;
@@ -3235,6 +3197,7 @@ ${titles.map((t, idx) => `${idx + 1}. ${t}`).join('\n')}`;
     window.openVideo = openVideo;
     window.copyLink = copyLink;
     window.playVideoInApp = playVideoInApp;
+    window.clearPlaylistCategories = clearPlaylistCategories;
   </script>
 </body>
 </html>
