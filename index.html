@@ -876,6 +876,12 @@
       <div id="tabCsvContent" class="tab-content active">
         <p>قم بلصق محتوى ملف CSV الخاص بك أو قم برفع الملف. تتوفر ميزة التصنيف التلقائي الذكي للفيديوهات غير المصنفة.</p>
         
+        <!-- خانة كتابة اسم قائمة الـ CSV وتذييلها تلقائياً بـ (م) لفلترتها [222] -->
+        <div class="input-group">
+          <label for="csvPlaylistName">اسم قائمة التشغيل (يدوي) - سيتم تذييله تلقائياً بـ (م)</label>
+          <input type="text" id="csvPlaylistName" placeholder="مثال: كورس تصميم">
+        </div>
+
         <div class="import-options" style="display: none;">
           <!-- تم إخفاء خيار الفلترة اللغوية البسيطة للكلمات لاستبداله كلياً بالذكاء الاصطناعي -->
           <input type="checkbox" id="autoCategorizeCheck" checked>
@@ -954,6 +960,19 @@
 
     </div>
   </section>
+
+  <!-- نافذة إدارة التكرار التفاعلية المفتوحة والذكية [222] -->
+  <div id="duplicateModal" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.85); z-index: 200; display: none; align-items: center; justify-content: center; padding: 20px;">
+    <div style="background-color: var(--bg-secondary); border: 1px solid var(--bg-tertiary); border-radius: var(--border-radius); padding: 22px; max-width: 500px; width: 100%; box-shadow: var(--card-shadow); text-align: right;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; border-bottom: 1px solid var(--bg-tertiary); padding-bottom: 12px;">
+        <h3 style="font-size: 1.1rem; font-weight: 700; color: var(--gold-color);">⚙️ إدارة النسخ المكررة للفيديو</h3>
+        <button class="btn btn-secondary" style="padding: 4px 10px; font-size: 0.8rem; color: #ff3333;" onclick="closeDuplicateModal()">إغلاق ❌</button>
+      </div>
+      <div id="dupModalBody" style="display: flex; flex-direction: column; gap: 15px;">
+        <!-- يتم توليد التفاصيل وقائمة القوائم هنا برمجياً بـ JS [222] -->
+      </div>
+    </div>
+  </div>
 
   <!-- مساحة الإحصائيات العلوية الفوقية -->
   <section class="stats-section">
@@ -1183,6 +1202,21 @@
       // اختبار الـ API لـ Gemini تفاعلياً
       testGeminiBtn.addEventListener('click', testGeminiConnection);
 
+      // ربط حدث زر الإلغاء الفوري برمجياً
+      cancelImportBtn.addEventListener('click', () => {
+        isImportAborted = true;
+        logToCloudConsole('🛑 تم الضغط على زر إلغاء العملية يدوياً.');
+        globalImportStatus.textContent = '❌ جاري إلغاء العملية وحفظ التقدم الحالي...';
+        cancelImportBtn.style.display = 'none';
+        continueImportBtn.style.display = 'none';
+      });
+
+      // ربط حدث زر متابعة التصنيف للمجموعات يدوياً
+      continueImportBtn.addEventListener('click', () => {
+        logToCloudConsole('➡️ تم الضغط على زر متابعة التصنيف للمجموعة التالية.');
+        processNextImportBatch();
+      });
+
       // تفاعل زر الحبة "الكل" الجديد
       pillAllBtn.addEventListener('click', () => {
         selectedCategory = '';
@@ -1365,7 +1399,7 @@
       }
     }
 
-    // بناء القائمة المنسدلة التفاعلية الجديدة كلياً المخصصة للهواتف [2234]
+    // بناء القائمة المنسدلة التفاعلية الجديدة كلياً المخصصة للهواتف والفرز المكرر [2234]
     function renderCategoryMenu() {
       categoriesDropdownMenu.innerHTML = '';
       
@@ -1381,6 +1415,16 @@
         }
       });
 
+      // حساب إجمالي عدد الفيديوهات المكررة لعرضها بالشارة [222]
+      const dupCountsForBadge = getDuplicateCounts();
+      let totalDupsCount = 0;
+      allVideos.forEach(v => {
+        const vId = extractVideoID(v.url);
+        if (vId && dupCountsForBadge[vId] > 1) {
+          totalDupsCount++;
+        }
+      });
+
       // تحديث رقم شارة الزر الثابت "الكل" [2232]
       pillAllBadge.textContent = allVideos.length;
 
@@ -1393,7 +1437,17 @@
       favItem.addEventListener('click', () => selectCategoryFromMenu('favorites'));
       categoriesDropdownMenu.appendChild(favItem);
 
-      // 2. باقي التصنيفات الديناميكية المفككة مع أعدادها
+      // 2. خيار "المكرر ⚠️" المبتكر لعزل وفلترة المكررات يدوياً [222]
+      const dupItem = document.createElement('li');
+      dupItem.className = 'dropdown-item-cat fav-style';
+      dupItem.style.color = '#ff3333';
+      dupItem.dataset.category = 'duplicates_only';
+      if (selectedCategory === 'duplicates_only') dupItem.classList.add('active');
+      dupItem.innerHTML = `<span>المكرر ⚠️</span> <span class="category-badge" style="background-color: #ff3333; color: #fff;">${totalDupsCount}</span>`;
+      dupItem.addEventListener('click', () => selectCategoryFromMenu('duplicates_only'));
+      categoriesDropdownMenu.appendChild(dupItem);
+
+      // 3. باقي التصنيفات الديناميكية المفككة مع أعدادها
       Object.keys(counts).sort().forEach(cat => {
         const item = document.createElement('li');
         item.className = 'dropdown-item-cat';
@@ -1434,12 +1488,16 @@
       } else {
         pillAllBtn.classList.remove('active');
         if (selectedCategory === 'favorites') {
-          // حالة اختيار "المفضلة" باللون الذهبي
           pillCategoriesDropdownBtn.classList.remove('active');
           pillCategoriesDropdownBtn.classList.add('active-gold');
           pillCategoriesDropdownBtn.innerHTML = `التصنيفات: المفضلة ⭐ <span class="arrow">▾</span>`;
+        } else if (selectedCategory === 'duplicates_only') {
+          // حالة اختيار "المكرر" باللون الأحمر
+          pillCategoriesDropdownBtn.classList.add('active');
+          pillCategoriesDropdownBtn.classList.remove('active-gold');
+          pillCategoriesDropdownBtn.innerHTML = `التصنيفات: المكرر ⚠️ <span class="arrow">▾</span>`;
         } else {
-          // حالة اختيار تصنيف مخصص آخر باللون الأحمر
+          // حالة اختيار تصنيف مخصص آخر
           pillCategoriesDropdownBtn.classList.add('active');
           pillCategoriesDropdownBtn.classList.remove('active-gold');
           pillCategoriesDropdownBtn.innerHTML = `التصنيفات: ${selectedCategory} <span class="arrow">▾</span>`;
@@ -1450,11 +1508,22 @@
       categoryFilter.value = selectedCategory;
     }
 
+    // دالة جرد وإحصاء تكرار المعرفات في قاعدة البيانات المحلية [222]
+    function getDuplicateCounts() {
+      const counts = {};
+      allVideos.forEach(v => {
+        const vId = extractVideoID(v.url);
+        if (vId && vId !== 'default') {
+          counts[vId] = (counts[vId] || 0) + 1;
+        }
+      });
+      return counts;
+    }
+
     // معالج مرن ومتكيف لتفكيك الـ CSV (تحليل ذكي ومقاوم للإزاحة)
-    function parseCSVData(text) {
+    function parseCSVData(text, playlistId = '', playlistName = '') {
       const lines = text.split('\n');
       const results = [];
-      const autoClassifyActive = autoCategorizeCheck.checked;
       
       let startIdx = 0;
       if (lines[0] && (lines[0].includes('الرقم') || lines[0].includes('الرابط') || lines[0].includes('العنوان') || lines[0].includes('Video ID'))) {
@@ -1521,7 +1590,9 @@
             duration: "00:00",
             thumbnail: thumbVal,
             url: urlVal,
-            needsMetadataFetch: true 
+            needsMetadataFetch: true,
+            parentPlaylistId: playlistId,
+            parentPlaylistName: playlistName
           });
           continue; 
         }
@@ -1601,7 +1672,9 @@
               channel: channelVal || 'قناة غير معروفة',
               duration: durationVal,
               thumbnail: thumbVal || `https://img.youtube.com/vi/${extractVideoID(urlVal)}/hqdefault.jpg`,
-              url: urlVal
+              url: urlVal,
+              parentPlaylistId: playlistId,
+              parentPlaylistName: playlistName
             });
           }
         }
@@ -1643,7 +1716,9 @@
               channel: "استخراج تلقائي",
               duration: "00:00",
               thumbnail: thumbVal,
-              url: urlVal
+              url: urlVal,
+              parentPlaylistId: playlistId,
+              parentPlaylistName: playlistName
             });
           }
         }
@@ -1666,7 +1741,7 @@
       return match ? match[1] : url.trim();
     }
 
-    // استيراد ومعالجة النص الملصق
+    // استيراد ومعالجة النص الملصق (مع دمج تذييل م وتسمية القائمة الفورية للفرز) [222]
     async function handleTextImport() {
       const text = importTextarea.value.trim();
       if (!text) {
@@ -1674,21 +1749,30 @@
         return;
       }
 
-      const parsed = parseCSVData(text);
+      // قراءة اسم قائمة الـ CSV وتذييلها تلقائياً بـ (م) برمجياً لتمييزها [222]
+      const csvPlaylistName = document.getElementById('csvPlaylistName');
+      let playlistName = (csvPlaylistName ? csvPlaylistName.value.trim() : '') || 'استيراد يدوي';
+      if (!playlistName.endsWith('(م)')) {
+        playlistName += ' (م)';
+      }
+      const manualPlaylistId = 'manual_' + Date.now();
+
+      const parsed = parseCSVData(text, manualPlaylistId, playlistName);
       if (parsed.length > 0) {
         allVideos = parsed;
         localStorage.setItem('user_youtube_library', JSON.stringify(allVideos));
         importTextarea.value = '';
+        if (csvPlaylistName) csvPlaylistName.value = ''; // تصفير الحقل
         importPanel.style.display = 'none';
         
         // حفظ مفتاح جيميناي تلقائياً في الهاتف لسهولة الاستخدام
-        const geminiKey = geminiApiKey.value.trim();
+        const geminiKey = geminiApiKey.value.trim() || localStorage.getItem('user_gemini_api_key') || '';
         if (geminiKey) {
           localStorage.setItem('user_gemini_api_key', geminiKey);
         }
 
         initApp();
-        showToast(`تم استيراد ${parsed.length} فيديو بنجاح!`);
+        showToast(`تم استيراد ${parsed.length} فيديو بنجاح تحت قائمة "${playlistName}"!`);
 
         // تشغيل معالجة العناوين والتصنيف بالذكاء الاصطناعي بالتوازي
         await triggerSmartMetadataFetch(parsed, geminiKey);
@@ -1705,19 +1789,28 @@
       const reader = new FileReader();
       reader.onload = async function(evt) {
         const text = evt.target.result;
-        const parsed = parseCSVData(text);
+        
+        const csvPlaylistName = document.getElementById('csvPlaylistName');
+        let playlistName = (csvPlaylistName ? csvPlaylistName.value.trim() : '') || 'ملف CSV مرفوع';
+        if (!playlistName.endsWith('(م)')) {
+          playlistName += ' (م)';
+        }
+        const manualPlaylistId = 'manual_' + Date.now();
+
+        const parsed = parseCSVData(text, manualPlaylistId, playlistName);
         if (parsed.length > 0) {
           allVideos = parsed;
           localStorage.setItem('user_youtube_library', JSON.stringify(allVideos));
           importPanel.style.display = 'none';
+          if (csvPlaylistName) csvPlaylistName.value = ''; // تصفير الحقل
           
-          const geminiKey = geminiApiKey.value.trim();
+          const geminiKey = geminiApiKey.value.trim() || localStorage.getItem('user_gemini_api_key') || '';
           if (geminiKey) {
             localStorage.setItem('user_gemini_api_key', geminiKey);
           }
 
           initApp();
-          showToast(`تم رفع وقراءة ${parsed.length} فيديو بنجاح!`);
+          showToast(`تم رفع وقراءة ${parsed.length} فيديو بنجاح تحت قائمة "${playlistName}"!`);
 
           // تشغيل جلب العناوين والتصنيف
           await triggerSmartMetadataFetch(parsed, geminiKey);
@@ -1730,9 +1823,9 @@
 
     // استيراد ذكي لقائمة تشغيل يوتيوب بأكملها عبر Google API
     async function handleYoutubePlaylistImport() {
-      const key = youtubeApiKey.value.trim();
+      const key = youtubeApiKey.value.trim() || localStorage.getItem('user_youtube_api_key') || '';
       const rawUrl = youtubePlaylistUrl.value.trim();
-      const geminiKey = geminiApiKey.value.trim();
+      const geminiKey = geminiApiKey.value.trim() || localStorage.getItem('user_gemini_api_key') || '';
 
       if (!key || !rawUrl) {
         showToast('برجاء إدخال كلاً من مفتاح API ورابط قائمة تشغيل يوتيوب.');
@@ -1936,10 +2029,7 @@
       cancelImportBtn.style.display = 'none'; // منع الإلغاء أثناء مرحلة الجلب الأولي
 
       try {
-        logToCloudConsole(`🌐 جاري إرسال طلب جلب عناصر القائمة السحابية إلى قوقل لـ ID: ${playlistId}`);
         const fetchedVideos = await fetchAllPlaylistItemsOAuth(playlistId, token);
-        logToCloudConsole(`✅ تم جلب الفيديوهات بنجاح! العدد المكتشف سحابياً: ${fetchedVideos.length} فيديو.`);
-        
         if (fetchedVideos.length > 0) {
           if (confirm(`تم العثور على ${fetchedVideos.length} مقطع في القائمة الشخصية. هل تريد استبدال مكتبتك بها؟\n(اضغط إلغاء لدمجهم معاً دون حذف القديم)`)) {
             allVideos = fetchedVideos;
@@ -2845,6 +2935,102 @@ ${titles.map((t, idx) => `${idx + 1}. ${t}`).join('\n')}`;
     }
     window.saveLibraryAndBackup = saveLibraryAndBackup;
 
+    // فتح شاشة تصفية وإدارة الفيديوهات المكررة تفاعلياً [222]
+    function openDuplicateModal(videoId) {
+      const modal = document.getElementById('duplicateModal');
+      const body = document.getElementById('dupModalBody');
+      if (!modal || !body) return;
+
+      // حصر النسخ المكررة الإجمالية لهذا الفيديو بالذات
+      const copies = allVideos.filter(v => extractVideoID(v.url) === videoId);
+      if (copies.length === 0) {
+        closeDuplicateModal();
+        return;
+      }
+
+      const sample = copies[0];
+      let listHtml = '';
+      
+      copies.forEach(v => {
+        const playlistName = v.parentPlaylistName || 'عام / غير مسمّاة';
+        listHtml += `
+          <div style="display: flex; justify-content: space-between; align-items: center; background-color: var(--bg-primary); padding: 12px 18px; border-radius: 8px; border: 1px solid var(--bg-tertiary);">
+            <span style="font-size: 0.9rem; font-weight: 700; color: var(--text-primary);">📁 القائمة: ${playlistName}</span>
+            <button class="btn btn-secondary" style="color: #ff3333; font-size: 0.75rem; padding: 4px 10px;" onclick="deleteSpecificVideoCopy(${v.id}, '${videoId}')">حذف من هذه القائمة 🗑️</button>
+          </div>
+        `;
+      });
+
+      body.innerHTML = `
+        <div style="display: flex; gap: 14px; align-items: center;">
+          <img src="${sample.thumbnail}" style="width: 110px; aspect-ratio: 16/9; object-fit: cover; border-radius: 6px; border: 1px solid var(--bg-tertiary);">
+          <div style="flex: 1;">
+            <h4 style="font-size: 0.95rem; font-weight: 700; line-height: 1.4; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; color: var(--text-primary);">${sample.title}</h4>
+            <p style="color: var(--text-secondary); font-size: 0.8rem; margin-top: 4px;">🎙️ ${sample.channel}</p>
+          </div>
+        </div>
+        <div style="display: flex; flex-direction: column; gap: 10px; margin-top: 10px;">
+          <p style="font-size: 0.85rem; color: var(--text-secondary);">يتواجد هذا الفيديو مكرراً في القوائم السحابية التالية. اختر القائمة التي ترغب في حذف الفيديو منها لفرزه وتطهيره سحابياً:</p>
+          ${listHtml}
+        </div>
+      `;
+
+      modal.style.display = 'flex';
+    }
+    window.openDuplicateModal = openDuplicateModal;
+
+    // إغلاق نافذة إدارة التكرار
+    function closeDuplicateModal() {
+      const modal = document.getElementById('duplicateModal');
+      if (modal) modal.style.display = 'none';
+    }
+    window.closeDuplicateModal = closeDuplicateModal;
+
+    // حذف نسخة محددة ومستهدفة لفيديو مكرر من قائمة معينة يدوياً سحابياً ومحلياً [222, 799]
+    async function deleteSpecificVideoCopy(id, videoId) {
+      const video = allVideos.find(v => v.id === id);
+      if (!video) return;
+
+      if (confirm(`هل أنت متأكد من رغبتك في حذف هذا الفيديو من هذه القائمة بالتحديد؟`)) {
+        const token = getValidAccessToken();
+        if (token && video.playlistItemId) {
+          try {
+            showToast('⏳ جاري الحذف سحابياً من يوتيوب...');
+            const res = await fetch(`https://www.googleapis.com/youtube/v3/playlistItems?id=${video.playlistItemId}`, {
+              method: 'DELETE',
+              headers: {
+                'Authorization': `Bearer ${token}`
+              }
+            });
+            if (res.status === 204) {
+              showToast('✅ تم حذف الفيديو سحابياً من يوتيوب!');
+            } else {
+              console.error('Cloud delete failed', res.status);
+              showToast('⚠️ تم الحذف محلياً فقط.');
+            }
+          } catch (err) {
+            console.error('Cloud delete network error', err);
+            showToast('⚠️ تم الحذف محلياً فقط.');
+          }
+        }
+
+        const filteredList = allVideos.filter(v => v.id !== id);
+        favoriteIds.delete(id);
+        localStorage.setItem('user_youtube_favorites', JSON.stringify([...favoriteIds]));
+        saveLibraryAndBackup(filteredList);
+
+        // جرد النسخ المتبقية؛ إذا بقي للفيديو نسخة واحدة فقط، يختفي التكرار تلقائياً وتغلق اللوحة [222]
+        const remainingCopies = allVideos.filter(v => extractVideoID(v.url) === videoId);
+        if (remainingCopies.length <= 1) {
+          closeDuplicateModal();
+          showToast('✅ تم تصفية وإزالة التكرار لهذا الفيديو بنجاح!');
+        } else {
+          openDuplicateModal(videoId); // تحديث القائمة المنسدلة للنافذة المنبثقة
+        }
+      }
+    }
+    window.deleteSpecificVideoCopy = deleteSpecificVideoCopy;
+
     // ربط استيراد القائمة المختارة سحابياً وتصديرها للأزرار التفاعلية المباشرة للوقاية [1560]
     function triggerSelectedPlaylistImport() {
       logToCloudConsole('🔘 تم الضغط على زر استيراد القائمة المختارة سحابياً.');
@@ -2901,45 +3087,6 @@ ${titles.map((t, idx) => `${idx + 1}. ${t}`).join('\n')}`;
       applyFiltersAndSort();
     }
     window.toggleFavorite = toggleFavorite;
-
-    // حذف فيديو فردي (مع ميزة الحذف السحابي المتزامن من يوتيوب) [799]
-    async function deleteVideo(id) {
-      const video = allVideos.find(v => v.id === id);
-      if (!video) return;
-
-      if (confirm('هل أنت متأكد من رغبتك في حذف هذا الفيديو نهائياً من القائمة؟')) {
-        // التحقق من تفعيل المزامنة السحابية وربط الحساب للتوجيه الفعلي [799]
-        const token = getValidAccessToken();
-        if (token && video.playlistItemId) {
-          try {
-            showToast('⏳ جاري الحذف من قائمتك السحابية على يوتيوب...');
-            const res = await fetch(`https://www.googleapis.com/youtube/v3/playlistItems?id=${video.playlistItemId}`, {
-              method: 'DELETE',
-              headers: {
-                'Authorization': `Bearer ${token}`
-              }
-            });
-            if (res.status === 204) {
-              showToast('✅ تم حذف الفيديو سحابياً من يوتيوب!');
-            } else {
-              console.error('Cloud delete failed', res.status);
-              showToast('⚠️ تم الحذف محلياً فقط (فشل الحذف السحابي، يرجى التحقق من المفتاح وصلاحيات القائمة).');
-            }
-          } catch (err) {
-            console.error('Cloud delete network error', err);
-            showToast('⚠️ تم الحذف محلياً فقط (حدث خطأ في شبكة المزامنة).');
-          }
-        } else if (video.playlistItemId) {
-          showToast('💡 تم الحذف محلياً فقط. (للحذف سحابياً وتعديل قائمتك على يوتيوب مباشرة، يرجى تسجيل الدخول أولاً).');
-        }
-
-        const filteredList = allVideos.filter(v => v.id !== id);
-        favoriteIds.delete(id); 
-        localStorage.setItem('user_youtube_favorites', JSON.stringify([...favoriteIds]));
-        saveLibraryAndBackup(filteredList);
-      }
-    }
-    window.deleteVideo = deleteVideo;
 
     // إدارة أنماط رؤية التصميم
     function toggleLayout() {
@@ -3001,6 +3148,11 @@ ${titles.map((t, idx) => `${idx + 1}. ${t}`).join('\n')}`;
         let matchesCategory = false;
         if (selectedCategory === 'favorites') {
           matchesCategory = favoriteIds.has(v.id);
+        } else if (selectedCategory === 'duplicates_only') {
+          // عزل المكرر فقط لفرزه ومعالجته [222]
+          const vId = extractVideoID(v.url);
+          const counts = getDuplicateCounts();
+          matchesCategory = vId && counts[vId] > 1;
         } else if (!selectedCategory) {
           matchesCategory = true;
         } else {
@@ -3035,6 +3187,15 @@ ${titles.map((t, idx) => `${idx + 1}. ${t}`).join('\n')}`;
             return a.id - b.id;
         }
       });
+
+      // الفرز والتجاور البصري السليم للمكررات ليسهل تتبعها وحذفها يدوياً [222]
+      if (selectedCategory === 'duplicates_only') {
+        filteredVideos.sort((a, b) => {
+          const aId = extractVideoID(a.url);
+          const bId = extractVideoID(b.url);
+          return aId.localeCompare(bId); // سيعرض النسخ المتطابقة من نفس الفيديو متجاورة تماماً
+        });
+      }
 
       renderGrid();
     }
@@ -3076,6 +3237,9 @@ ${titles.map((t, idx) => `${idx + 1}. ${t}`).join('\n')}`;
       });
       const activeCategories = [...new Set(allCats)].sort();
 
+      // حساب التكرارات الفعلي قبل بناء البطاقات
+      const dupCounts = getDuplicateCounts();
+
       paginatedItems.forEach(video => {
         const isFav = favoriteIds.has(video.id);
         const favIcon = isFav ? '★' : '☆';
@@ -3086,6 +3250,11 @@ ${titles.map((t, idx) => `${idx + 1}. ${t}`).join('\n')}`;
             catOptions += `<option value="${c}">${c}</option>`;
           }
         });
+
+        // تحضير وتجهيز شارة التكرار التفاعلية المخصصة [222]
+        const vId = extractVideoID(video.url);
+        const isDuplicate = vId && dupCounts[vId] > 1;
+        const dupBadgeHtml = isDuplicate ? `<span class="category-tag" style="background-color: var(--accent-color); color: #fff; border-color: var(--accent-color); cursor: pointer;" onclick="openDuplicateModal('${vId}')" title="اضغط لإدارة وحذف النسخ المكررة بالتحديد">⚠️ مكرر</span>` : '';
 
         // تحضير الوسوم المتعددة لعرضها بشكل جذاب منفصل
         const displayTags = (video.category || '').split('/').map(c => c.trim()).filter(Boolean);
@@ -3104,8 +3273,9 @@ ${titles.map((t, idx) => `${idx + 1}. ${t}`).join('\n')}`;
           <div class="card-body">
             <div class="card-info-block">
               <div class="meta-tags-row">
-                <div style="display: flex; gap: 4px; flex-wrap: wrap;">
+                <div style="display: flex; gap: 4px; flex-wrap: wrap; align-items: center;">
                   ${tagsHtml}
+                  ${dupBadgeHtml}
                 </div>
                 <select class="quick-cat-select" onchange="changeVideoCategory(${video.id}, this.value)" title="تعديل الفئة سريعاً">
                   ${catOptions}
