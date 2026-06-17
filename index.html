@@ -860,8 +860,8 @@
         <input type="text" id="geminiApiKey" placeholder="أدخل مفتاح Gemini الخاص بك (اختياري)...">
         <div style="margin-top: 8px; display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
           <button id="testGeminiBtn" class="btn btn-secondary" style="font-size: 0.8rem; padding: 6px 12px;">⚡ فحص اتصال الذكاء الاصطناعي</button>
-          <!-- زر التصنيف المباشر اليدوي والذكي لتسهيل الاستئناف -->
-          <button id="classifyCurrentLibraryBtn" class="btn btn-primary" style="font-size: 0.8rem; padding: 6px 12px; background-color: var(--gold-color); color: #000;">🏷️ تصنيف</button>
+          <!-- زر التصنيف المباشر اليدوي والذكي لتسهيل الاستئناف - ربط Onclick مباشر للرصد -->
+          <button id="classifyCurrentLibraryBtn" class="btn btn-primary" style="font-size: 0.8rem; padding: 6px 12px; background-color: var(--gold-color); color: #000;" onclick="startManualClassification()">🏷️ تصنيف</button>
           <span id="geminiTestStatus" style="font-size: 0.85rem; font-weight: 600;"></span>
         </div>
       </div>
@@ -1176,8 +1176,20 @@
       // اختبار الـ API لـ Gemini تفاعلياً
       testGeminiBtn.addEventListener('click', testGeminiConnection);
 
-      // إطلاق تصنيف يدوي مخصص للمقاطع غير المصنفة "عام"
-      classifyCurrentLibraryBtn.addEventListener('click', startManualClassification);
+      // ربط حدث زر الإلغاء الفوري برمجياً
+      cancelImportBtn.addEventListener('click', () => {
+        isImportAborted = true;
+        logToCloudConsole('🛑 تم الضغط على زر إلغاء العملية يدوياً.');
+        globalImportStatus.textContent = '❌ جاري إلغاء العملية وحفظ التقدم الحالي...';
+        cancelImportBtn.style.display = 'none';
+        continueImportBtn.style.display = 'none';
+      });
+
+      // ربط حدث زر متابعة التصنيف للمجموعات يدوياً
+      continueImportBtn.addEventListener('click', () => {
+        logToCloudConsole('➡️ تم الضغط على زر متابعة التصنيف للمجموعة التالية.');
+        processNextImportBatch();
+      });
 
       // تفاعل زر الحبة "الكل" الجديد
       pillAllBtn.addEventListener('click', () => {
@@ -1193,7 +1205,7 @@
         categoriesDropdownMenu.classList.toggle('show');
       });
 
-      // ميزة الإغلاق الذكي المدمجة عند النقر في أي مكان آخر خارج المنسدلة
+      // ميزة الإغلاق الذكي المدمجة عند النقر في أي مكان خارج المنسدلة
       document.addEventListener('click', (e) => {
         if (!pillCategoriesDropdownBtn.contains(e.target) && !categoriesDropdownMenu.contains(e.target)) {
           categoriesDropdownMenu.classList.remove('show');
@@ -1489,7 +1501,7 @@
           results.push({
             id: idVal,
             title: titleVal,
-            category: "عام", 
+            category: "عام", // تصنيف افتراضي محايد لحين معالجته بـ Gemini أو يدوياً
             channel: "استيراد معرفات",
             duration: "00:00",
             thumbnail: thumbVal,
@@ -2150,7 +2162,7 @@
         const vId = extractVideoID(video.url);
         
         try {
-          const res = await fetch(`https://noembed.com/embed?url=https://www.youtube.com/watch?v=vId`);
+          const res = await fetch(`https://noembed.com/embed?url=https://www.youtube.com/watch?v=${vId}`);
           if (res.ok) {
             const data = await res.json();
             if (data.title) {
@@ -2245,6 +2257,36 @@
       result += (seconds < 10 ? '0' : '') + seconds;
       return result;
     }
+
+    // إطلاق تصنيف يدوي تفاعلي مخصص للمقاطع "عام" [2141]
+    function startManualClassification() {
+      logToCloudConsole('🔘 تم البدء في طلب تصنيف يدوي للمكتبة.');
+      const geminiKey = geminiApiKey.value.trim() || localStorage.getItem('user_gemini_api_key') || '';
+      if (!geminiKey) {
+        showToast('❌ يرجى إدخال مفتاح Gemini أولاً لبدء التصنيف الذكي.');
+        logToCloudConsole('❌ فشل: لم يتم العثور على مفتاح Gemini في خانة الإدخال.');
+        return;
+      }
+      
+      localStorage.setItem('user_gemini_api_key', geminiKey);
+
+      // حصر الفيديوهات التي لا تزال تحت قسم "عام" فقط وتجنب المكرر للاستئناف الفوري
+      const targets = allVideos.filter(v => {
+        const videoCats = (v.category || '').split('/').map(c => c.trim());
+        return videoCats.includes('عام') || !v.category || v.category === 'عام';
+      });
+
+      if (targets.length === 0) {
+        showToast('✅ جميع مقاطع الفيديو مصنفة مسبقاً! لا يوجد مقاطع مصنفة كـ "عام".');
+        logToCloudConsole('✅ تصنيف كامل 100%! لا يوجد أي مقاطع متبقية مصنفة كـ "عام" للمزامنة.');
+        return;
+      }
+
+      // تشغيل المساعد التفاعلي المطور والآمن فوراً
+      logToCloudConsole(`⏳ تم رصد ${targets.length} فيديو غير مصنف (عام). جاري إطلاق معالج جيميناي التفاعلي...`);
+      runGeminiClassification(targets, geminiKey);
+    }
+    window.startManualClassification = startManualClassification; // تصدير الدالة المفقودة بنجاح!
 
     // --- ربط ومخاطبة واجهة ذكاء قوقل الاصطناعي Gemini 3.5 Flash بالتطبيق ---
     async function runGeminiClassification(videosToClassify, geminiKey) {
