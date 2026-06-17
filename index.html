@@ -1060,7 +1060,7 @@
   </div>
 
   <script>
-    // عينة افتراضية مبدئية في حال لم تكن هناك بيانات محفوظة
+    // عينة افتراضية مبدئية لتبدأ مكتبتك فارغة ونظيفة تماماً ومستعدة للفيديوهات السحابية [222]
     const defaultData = [];
 
     let allVideos = [];
@@ -1160,6 +1160,8 @@
       sortSelect.addEventListener('change', () => { applyFiltersAndSort(); });
       exportCsvBtn.addEventListener('click', exportToCSV);
       clearListBtn.addEventListener('click', clearCurrentLibrary);
+
+      // تفاعلات الأزرار المشتركة والمعالجة الذكية
       layoutToggleBtn.addEventListener('click', toggleLayout);
 
       // تشغيل إعدادات لوحة التحكم
@@ -1180,21 +1182,6 @@
 
       // اختبار الـ API لـ Gemini تفاعلياً
       testGeminiBtn.addEventListener('click', testGeminiConnection);
-
-      // ربط حدث زر الإلغاء الفوري برمجياً
-      cancelImportBtn.addEventListener('click', () => {
-        isImportAborted = true;
-        logToCloudConsole('🛑 تم الضغط على زر إلغاء العملية يدوياً.');
-        globalImportStatus.textContent = '❌ جاري إلغاء العملية وحفظ التقدم الحالي...';
-        cancelImportBtn.style.display = 'none';
-        continueImportBtn.style.display = 'none';
-      });
-
-      // ربط حدث زر متابعة التصنيف للمجموعات يدوياً
-      continueImportBtn.addEventListener('click', () => {
-        logToCloudConsole('➡️ تم الضغط على زر متابعة التصنيف للمجموعة التالية.');
-        processNextImportBatch();
-      });
 
       // تفاعل زر الحبة "الكل" الجديد
       pillAllBtn.addEventListener('click', () => {
@@ -1529,7 +1516,7 @@
           results.push({
             id: idVal,
             title: titleVal,
-            category: "عام", // تصنيف افتراضي محايد لحين معالجته بـ Gemini أو يدوياً
+            category: "عام", 
             channel: "استيراد معرفات",
             duration: "00:00",
             thumbnail: thumbVal,
@@ -1965,13 +1952,12 @@
             logToCloudConsole('➕ تم اختيار: دمج القائمة مع المكتبة القديمة.');
           }
 
-          localStorage.setItem('user_youtube_library', JSON.stringify(allVideos));
+          saveLibraryAndBackup(allVideos);
           importPanel.style.display = 'none';
-          initApp();
           showToast(`تم تحميل الفيديوهات بنجاح! جاري جلب المدد الزمنية والتصنيف التلقائي...`);
 
           // جلب المدد الزمنية الحقيقية تلقائياً دون الحاجة للمفتاح العادي [799]
-          logToCloudConsole('⏳ جاري البدء في سحب المدد الزمنية الفعلية (Duration) للفيديوهات سحابياً...');
+          logToCloudConsole('⏳ جاري البدء في سحب المدد الزمنية الفعلية (Duration) للفيديوهات من قوقل...');
           await fetchApiMetadataInBatches(fetchedVideos, key);
 
           const geminiKey = geminiApiKey.value.trim() || localStorage.getItem('user_gemini_api_key') || '';
@@ -2125,8 +2111,7 @@
             allVideos.push(nv);
           });
 
-          localStorage.setItem('user_youtube_library', JSON.stringify(allVideos));
-          initApp();
+          saveLibraryAndBackup(allVideos);
 
           showToast(`🔄 تم رصد ${newCloudVideos.length} فيديو جديد وحذف ${deletedLocalVideos.length} فيديو. جاري تحديث المدد والتصنيف...`);
 
@@ -2144,8 +2129,7 @@
           }
         } else if (deletedLocalVideos.length > 0) {
           // في حال حدوث عمليات حذف فقط
-          localStorage.setItem('user_youtube_library', JSON.stringify(allVideos));
-          initApp();
+          saveLibraryAndBackup(allVideos);
           showToast(`✅ تم تحديث المكتبة بنجاح وحذف ${deletedLocalVideos.length} فيديو للتطابق الكامل مع يوتيوب.`);
           logToCloudConsole('✅ تمت عملية المزامنة السحابية للحذف والمطابقة بنجاح تام!');
         }
@@ -2192,7 +2176,7 @@
         const vId = extractVideoID(video.url);
         
         try {
-          const res = await fetch(`https://noembed.com/embed?url=https://www.youtube.com/watch?v=${vId}`);
+          const res = await fetch(`https://noembed.com/embed?url=https://www.youtube.com/watch?v=vId`);
           if (res.ok) {
             const data = await res.json();
             if (data.title) {
@@ -2209,8 +2193,7 @@
         importStatus.textContent = `جاري جلب العناوين الحقيقية من يوتيوب... (${count}/${targets.length})`;
 
         if (count % 10 === 0 || count === targets.length) {
-          localStorage.setItem('user_youtube_library', JSON.stringify(allVideos));
-          initApp();
+          saveLibraryAndBackup(allVideos);
         }
       }
 
@@ -2282,8 +2265,7 @@
 
         count += batches[b].length;
         importStatus.textContent = `جاري جلب التفاصيل الحقيقية من قوقل... (${count}/${ids.length})`;
-        localStorage.setItem('user_youtube_library', JSON.stringify(allVideos));
-        initApp();
+        saveLibraryAndBackup(allVideos);
       }
 
       importStatus.textContent = 'تم استيراد كافة التفاصيل والمدد الفعلية من قوقل!';
@@ -2445,8 +2427,7 @@
       currentImportBatchIdx++;
 
       // حفظ التقدم وتحديث واجهة الشاشة أمام المستخدم فوراً [2141]
-      localStorage.setItem('user_youtube_library', JSON.stringify(allVideos));
-      initApp(); // سيقوم المتصفح فوراً بتحديث الشاشة لتشاهد التصنيفات الـ 50 الجديدة تظهر على البطاقات في نفس اللحظة
+      saveLibraryAndBackup(allVideos);
 
       // الوقوف التام وإظهار زر المتابعة يدوياً للدفعة التالية
       if (currentImportBatchIdx < activeImportBatches.length) {
@@ -2462,8 +2443,7 @@
 
     // إدارة تصفية وحفظ البيانات عند إلغاء العملية يدوياً لمنع تصفير ما تم إنجازه
     function handleAbortedImport() {
-      localStorage.setItem('user_youtube_library', JSON.stringify(allVideos));
-      initApp();
+      saveLibraryAndBackup(allVideos);
       globalImportStatus.textContent = '❌ تم إلغاء العملية وحفظ التقدم بنجاح!';
       logToCloudConsole('❌ تم إلغاء العملية وتأمين حفظ الفيديوهات التي اكتمل تصنيفها بنجاح حتى الآن.');
       cancelImportBtn.style.display = 'none';
@@ -2664,10 +2644,10 @@ ${titles.map((t, idx) => `${idx + 1}. ${t}`).join('\n')}`;
       localStorage.setItem('user_google_client_id', clientId);
 
       const redirectUri = window.location.origin + window.location.pathname;
-      const scope = 'https://www.googleapis.com/auth/youtube';
+      const scope = 'https://www.googleapis.com/auth/youtube https://www.googleapis.com/auth/drive.file';
       const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&response_type=token&scope=${encodeURIComponent(scope)}`;
       
-      logToCloudConsole('🔐 جاري توجيهك الآن بأمان إلى بوابة قوقل الرسمية لتسجيل الدخول والترخيص السحابي...');
+      logToCloudConsole('🔐 جاري توجيهك الآن بأمان إلى بوابة قوقل الرسمية لتسجيل الدخول والترخيص السحابي والـ Drive...');
       // التوجيه الآمن لبوابة قوقل للتفويض الفعلي [1210]
       window.location.href = authUrl;
     }
@@ -2677,7 +2657,8 @@ ${titles.map((t, idx) => `${idx + 1}. ${t}`).join('\n')}`;
     function handleGoogleSignOut() {
       localStorage.removeItem('user_youtube_access_token');
       localStorage.removeItem('user_youtube_token_expires');
-      logToCloudConsole('🔐 تم الضغط على زر تسجيل الخروج، وتم مسح التراخيص والرموز السحابية بنجاح.');
+      localStorage.removeItem('user_google_drive_file_id');
+      logToCloudConsole('🔐 تم الضغط على زر تسجيل الخروج، وتم مسح التراخيص والرموز السحابية ومجلد Drive بنجاح.');
       showToast('🔐 تم تسجيل الخروج بنجاح وإلغاء المزامنة السحابية.');
       googlePlaylistsContainer.style.display = 'none'; // إخفاء القوائم المنسدلة سحابياً
       updateAuthUI();
@@ -2707,6 +2688,8 @@ ${titles.map((t, idx) => `${idx + 1}. ${t}`).join('\n')}`;
       if (token) {
         // سحب قوائم حسابك الشخصي تلقائياً بمجرد تسجيل الدخول الناجح [1560]
         fetchPersonalPlaylists(token);
+        // سحب نسخة جوجل درايف الاحتياطية تلقائياً إن وجدت [1209]
+        loadBackupFromGoogleDrive(token);
       }
       updateAuthUI();
     }
@@ -2733,6 +2716,161 @@ ${titles.map((t, idx) => `${idx + 1}. ${t}`).join('\n')}`;
       }
     }
 
+    // --- نظام مزامنة وحفظ النسخة الاحتياطية سحابياً إلى Google Drive الشخصي [1209] ---
+    async function saveBackupToGoogleDrive() {
+      const token = getValidAccessToken();
+      if (!token) return;
+
+      logToCloudConsole('💾 جاري محاولة رفع نسخة احتياطية من مكتبتك سحابياً إلى Google Drive الخاص بك...');
+      
+      const fileId = localStorage.getItem('user_google_drive_file_id');
+      const boundary = 'xxxxxxxxxx';
+      const metadata = {
+        name: 'yt_library_db.json',
+        mimeType: 'application/json'
+      };
+      
+      // في حال كان الملف موجوداً مسبقاً، نقوم بتحديث محتوياته فوراً (PATCH)
+      if (fileId) {
+        const url = `https://www.googleapis.com/upload/drive/v3/files/${fileId}?uploadType=media`;
+        try {
+          const res = await fetch(url, {
+            method: 'PATCH',
+            headers: {
+              'Authorization': `Bearer ${token}`,
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(allVideos)
+          });
+          if (res.ok) {
+            logToCloudConsole('✅ تم تحديث وحفظ النسخة الاحتياطية سحابياً بنجاح على Google Drive الخاص بك!');
+          } else {
+            const err = await res.json();
+            logToCloudConsole(`❌ فشل تحديث ملف Google Drive. كود الخطأ: ${res.status}. السبب: ${err.error?.message || 'غير معروف'}`);
+          }
+        } catch (e) {
+          console.error(e);
+          logToCloudConsole(`❌ خطأ شبكة أثناء تحديث نسخة Google Drive الاحتياطية: ${e.message}`);
+        }
+      } else {
+        // في حال لم يكن الملف موجوداً، نقوم بإنشائه لأول مرة عبر صيغة Multipart POST
+        const url = `https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart`;
+        const body = `--${boundary}\r\nContent-Type: application/json; charset=UTF-8\r\n\r\n${JSON.stringify(metadata)}\r\n--${boundary}\r\nContent-Type: application/json\r\n\r\n${JSON.stringify(allVideos)}\r\n--${boundary}--`;
+        
+        try {
+          const res = await fetch(url, {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${token}`,
+              'Content-Type': `multipart/related; boundary=${boundary}`
+            },
+            body: body
+          });
+          if (res.ok) {
+            const data = await res.json();
+            localStorage.setItem('user_google_drive_file_id', data.id);
+            logToCloudConsole('✅ تم إنشاء وحفظ نسخة احتياطية سحابية خاصة لأول مرة بنجاح في Google Drive الخاص بك!');
+          } else {
+            const err = await res.json();
+            logToCloudConsole(`❌ فشل إنشاء ملف Google Drive. كود الخطأ: ${res.status}. السبب: ${err.error?.message || 'غير معروف'}`);
+          }
+        } catch (e) {
+          console.error(e);
+          logToCloudConsole(`❌ خطأ شبكة أثناء إنشاء ملف النسخة الاحتياطية بـ Google Drive: ${e.message}`);
+        }
+      }
+    }
+    window.saveBackupToGoogleDrive = saveBackupToGoogleDrive;
+
+    // سحب وقراءة النسخة الاحتياطية سحابياً من Google Drive الخاص بالمستخدم تلقائياً [1209]
+    async function loadBackupFromGoogleDrive(token) {
+      logToCloudConsole('🔍 جاري البحث في Google Drive عن نسخة احتياطية سابقة للمكتبة...');
+      const url = `https://www.googleapis.com/drive/v3/files?q=name='yt_library_db.json'+and+trashed=false&fields=files(id,name)`;
+      try {
+        const res = await fetch(url, {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        });
+        if (res.ok) {
+          const data = await res.json();
+          if (data.files && data.files.length > 0) {
+            const file = data.files[0];
+            localStorage.setItem('user_google_drive_file_id', file.id);
+            logToCloudConsole(`📁 تم العثور على ملف احتياطي بالمعرف سحابياً: ${file.id}. جاري سحب البيانات...`);
+            
+            // سحب محتويات ملف الـ JSON
+            const contentUrl = `https://www.googleapis.com/drive/v3/files/${file.id}?alt=media`;
+            const contentRes = await fetch(contentUrl, {
+              headers: {
+                'Authorization': `Bearer ${token}`
+              }
+            });
+            if (contentRes.ok) {
+              const backupVideos = await contentRes.json();
+              if (Array.isArray(backupVideos) && backupVideos.length > 0) {
+                if (confirm(`تم العثور على نسخة احتياطية سحابية في Google Drive تحتوي على ${backupVideos.length} فيديو.\nهل تود استرجاعها وعرضها الآن بالمتصفح؟`)) {
+                  allVideos = backupVideos;
+                  localStorage.setItem('user_youtube_library', JSON.stringify(allVideos));
+                  initApp();
+                  logToCloudConsole('✅ تم استرجاع ومزامنة النسخة الاحتياطية سحابياً من Google Drive بنجاح تام!');
+                  showToast('✅ تم استرجاع مكتبتك السحابية من Google Drive بنجاح!');
+                } else {
+                  logToCloudConsole('🧹 تم اختيار: عدم استرجاع النسخة والبدء بمكتبة فارغة حالياً (الملف السحابي لا يزال محفوظاً بالدرايف).');
+                }
+              }
+            }
+          } else {
+            logToCloudConsole('ℹ️ لم يتم العثور على أي نسخ احتياطية سابقة للمكتبة في حساب Google Drive الخاص بك (سيتم إنشاء ملف جديد تلقائياً عند أول حفظ).');
+          }
+        }
+      } catch (e) {
+        console.error(e);
+        logToCloudConsole(`❌ خطأ أثناء البحث وسحب نسخة Google Drive: ${e.message}`);
+      }
+    }
+    window.loadBackupFromGoogleDrive = loadBackupFromGoogleDrive;
+
+    // دالة وسيطة موحدة لحفظ البيانات محلياً وتحديث النسخة السحابية على Google Drive فوراً تلقائياً
+    function saveLibraryAndBackup(videosArray) {
+      allVideos = videosArray;
+      localStorage.setItem('user_youtube_library', JSON.stringify(allVideos));
+      initApp();
+      
+      // الرفع التلقائي السحابي المحدث الفوري في الخلفية
+      const token = getValidAccessToken();
+      if (token) {
+        saveBackupToGoogleDrive();
+      }
+    }
+    window.saveLibraryAndBackup = saveLibraryAndBackup;
+
+    // ربط استيراد القائمة المختارة سحابياً وتصديرها للأزرار التفاعلية المباشرة للوقاية [1560]
+    function triggerSelectedPlaylistImport() {
+      logToCloudConsole('🔘 تم الضغط على زر استيراد القائمة المختارة سحابياً.');
+      const select = document.getElementById('googlePlaylistsSelect');
+      if (select) {
+        logToCloudConsole(`📁 جاري التحضير لاستيراد القائمة بالـ ID: ${select.value}`);
+        importPlaylistById(select.value);
+      } else {
+        logToCloudConsole('❌ خطأ: لم يتم العثور على العنصر googlePlaylistsSelect في الصفحة.');
+      }
+    }
+    window.triggerSelectedPlaylistImport = triggerSelectedPlaylistImport;
+
+    // ربط مزامنة القائمة المختارة سحابياً وتصديرها للأزرار التفاعلية المباشرة للوقاية
+    function triggerSelectedPlaylistSync() {
+      logToCloudConsole('🔘 تم الضغط على زر مزامنة القائمة المختارة سحابياً.');
+      const select = document.getElementById('googlePlaylistsSelect');
+      if (select) {
+        logToCloudConsole(`📁 جاري التحضير لمزامنة وتحديث القائمة بالـ ID: ${select.value}`);
+        syncPlaylistById(select.value);
+      } else {
+        logToCloudConsole('❌ خطأ: لم يتم العثور على العنصر googlePlaylistsSelect في الصفحة.');
+      }
+    }
+    window.triggerSelectedPlaylistSync = triggerSelectedPlaylistSync;
+
     // تعديل التصنيف السريع والمباشر من البطاقة
     function changeVideoCategory(id, newCat) {
       allVideos = allVideos.map(v => {
@@ -2741,8 +2879,7 @@ ${titles.map((t, idx) => `${idx + 1}. ${t}`).join('\n')}`;
         }
         return v;
       });
-      localStorage.setItem('user_youtube_library', JSON.stringify(allVideos));
-      initApp();
+      saveLibraryAndBackup(allVideos);
       showToast('تم تعديل تصنيف الفيديو بنجاح.');
     }
     window.changeVideoCategory = changeVideoCategory;
@@ -2764,26 +2901,6 @@ ${titles.map((t, idx) => `${idx + 1}. ${t}`).join('\n')}`;
       applyFiltersAndSort();
     }
     window.toggleFavorite = toggleFavorite;
-
-    // إدارة أنماط رؤية التصميم
-    function toggleLayout() {
-      currentLayout = (currentLayout === 'grid') ? 'list' : 'grid';
-      localStorage.setItem('user_youtube_layout', currentLayout);
-      updateLayoutUI();
-      renderGrid();
-    }
-    window.toggleLayout = toggleLayout;
-
-    function updateLayoutUI() {
-      if (currentLayout === 'list') {
-        videosGrid.classList.add('list-layout');
-        layoutToggleBtn.textContent = '📱 عرض الشبكة';
-      } else {
-        videosGrid.classList.remove('list-layout');
-        layoutToggleBtn.textContent = '📝 عرض القائمة';
-      }
-    }
-    window.updateLayoutUI = updateLayoutUI;
 
     // حذف فيديو فردي (مع ميزة الحذف السحابي المتزامن من يوتيوب) [799]
     async function deleteVideo(id) {
@@ -2816,23 +2933,40 @@ ${titles.map((t, idx) => `${idx + 1}. ${t}`).join('\n')}`;
           showToast('💡 تم الحذف محلياً فقط. (للحذف سحابياً وتعديل قائمتك على يوتيوب مباشرة، يرجى تسجيل الدخول أولاً).');
         }
 
-        allVideos = allVideos.filter(v => v.id !== id);
+        const filteredList = allVideos.filter(v => v.id !== id);
         favoriteIds.delete(id); 
-        localStorage.setItem('user_youtube_library', JSON.stringify(allVideos));
         localStorage.setItem('user_youtube_favorites', JSON.stringify([...favoriteIds]));
-        initApp();
+        saveLibraryAndBackup(filteredList);
       }
     }
     window.deleteVideo = deleteVideo;
 
+    // إدارة أنماط رؤية التصميم
+    function toggleLayout() {
+      currentLayout = (currentLayout === 'grid') ? 'list' : 'grid';
+      localStorage.setItem('user_youtube_layout', currentLayout);
+      updateLayoutUI();
+      renderGrid();
+    }
+    window.toggleLayout = toggleLayout;
+
+    function updateLayoutUI() {
+      if (currentLayout === 'list') {
+        videosGrid.classList.add('list-layout');
+        layoutToggleBtn.textContent = '📱 عرض الشبكة';
+      } else {
+        videosGrid.classList.remove('list-layout');
+        layoutToggleBtn.textContent = '📝 عرض القائمة';
+      }
+    }
+    window.updateLayoutUI = updateLayoutUI;
+
     // حذف القائمة النشطة بالكامل
     function clearCurrentLibrary() {
       if (confirm('هل أنت متأكد من رغبتك في مسح القائمة بالكامل وتصفير المكتبة؟ لا يمكن التراجع عن هذه الخطوة.')) {
-        allVideos = [];
+        saveLibraryAndBackup([]);
         favoriteIds.clear();
-        localStorage.setItem('user_youtube_library', JSON.stringify([]));
         localStorage.setItem('user_youtube_favorites', JSON.stringify([]));
-        initApp();
         showToast('تم مسح وإفراغ القائمة بالكامل.');
       }
     }
@@ -2842,9 +2976,9 @@ ${titles.map((t, idx) => `${idx + 1}. ${t}`).join('\n')}`;
       if (confirm('هل أنت متأكد من رغبتك في حذف القائمة الحالية والعودة للعينة الافتراضية؟')) {
         localStorage.removeItem('user_youtube_library');
         localStorage.removeItem('user_youtube_favorites');
+        localStorage.removeItem('user_google_drive_file_id');
         favoriteIds.clear();
-        allVideos = [...defaultData];
-        initApp();
+        saveLibraryAndBackup([...defaultData]);
         showToast('تمت إعادة تهيئة البيانات الافتراضية بنجاح.');
       }
     }
