@@ -818,7 +818,7 @@
       color: #ffffff;
       padding: 12px 24px;
       border-radius: 8px;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
       border-right: 4px solid var(--accent-color);
       z-index: 1000;
       animation: slideIn 0.3s ease-out;
@@ -1524,6 +1524,7 @@
     function parseCSVData(text, playlistId = '', playlistName = '') {
       const lines = text.split('\n');
       const results = [];
+      const autoClassifyActive = autoCategorizeCheck.checked;
       
       let startIdx = 0;
       if (lines[0] && (lines[0].includes('الرقم') || lines[0].includes('الرابط') || lines[0].includes('العنوان') || lines[0].includes('Video ID'))) {
@@ -2472,7 +2473,7 @@
         }
 
         try {
-          const categories = await classifyTitlesWithGemini(titles, activeImportGeminiKey);
+          const categories = await classifyTitlesWithGemini(titles, geminiKey);
 
           if (categories && categories.length === batchVideos.length) {
             batchVideos.forEach((video, idx) => {
@@ -2921,13 +2922,12 @@ ${titles.map((t, idx) => `${idx + 1}. ${t}`).join('\n')}`;
     }
     window.loadBackupFromGoogleDrive = loadBackupFromGoogleDrive;
 
-    // دالة وسيطة موحدة لحفظ البيانات محلياً وتحديث النسخة السحابية على Google Drive فوراً تلقائياً
+    // دالة وسيطة لحفظ التعديلات وتفادي أخطاء الأداء
     function saveLibraryAndBackup(videosArray) {
       allVideos = videosArray;
       localStorage.setItem('user_youtube_library', JSON.stringify(allVideos));
       initApp();
       
-      // الرفع التلقائي السحابي المحدث الفوري في الخلفية
       const token = getValidAccessToken();
       if (token) {
         saveBackupToGoogleDrive();
@@ -3088,6 +3088,45 @@ ${titles.map((t, idx) => `${idx + 1}. ${t}`).join('\n')}`;
     }
     window.toggleFavorite = toggleFavorite;
 
+    // حذف فيديو فردي (مع ميزة الحذف السحابي المتزامن من يوتيوب) [799]
+    async function deleteVideo(id) {
+      const video = allVideos.find(v => v.id === id);
+      if (!video) return;
+
+      if (confirm('هل أنت متأكد من رغبتك في حذف هذا الفيديو نهائياً من القائمة؟')) {
+        // التحقق من تفعيل المزامنة السحابية وربط الحساب للتوجيه الفعلي [799]
+        const token = getValidAccessToken();
+        if (token && video.playlistItemId) {
+          try {
+            showToast('⏳ جاري الحذف من قائمتك السحابية على يوتيوب...');
+            const res = await fetch(`https://www.googleapis.com/youtube/v3/playlistItems?id=${video.playlistItemId}`, {
+              method: 'DELETE',
+              headers: {
+                'Authorization': `Bearer ${token}`
+              }
+            });
+            if (res.status === 204) {
+              showToast('✅ تم حذف الفيديو سحابياً من يوتيوب!');
+            } else {
+              console.error('Cloud delete failed', res.status);
+              showToast('⚠️ تم الحذف محلياً فقط (فشل الحذف السحابي، يرجى التحقق من المفتاح وصلاحيات القائمة).');
+            }
+          } catch (err) {
+            console.error('Cloud delete network error', err);
+            showToast('⚠️ تم الحذف محلياً فقط (حدث خطأ في شبكة المزامنة).');
+          }
+        } else if (video.playlistItemId) {
+          showToast('💡 تم الحذف محلياً فقط. (للحذف سحابياً وتعديل قائمتك على يوتيوب مباشرة، يرجى تسجيل الدخول أولاً).');
+        }
+
+        const filteredList = allVideos.filter(v => v.id !== id);
+        favoriteIds.delete(id); 
+        localStorage.setItem('user_youtube_favorites', JSON.stringify([...favoriteIds]));
+        saveLibraryAndBackup(filteredList);
+      }
+    }
+    window.deleteVideo = deleteVideo;
+
     // إدارة أنماط رؤية التصميم
     function toggleLayout() {
       currentLayout = (currentLayout === 'grid') ? 'list' : 'grid';
@@ -3130,7 +3169,7 @@ ${titles.map((t, idx) => `${idx + 1}. ${t}`).join('\n')}`;
       }
     }
 
-    // الفرز والبحث
+    // الفرز والبحث الفوقي المطور - حل عقبة الـ O(N^2) برسم الخوارزميات خارج حلقة الفلترة [222]
     function applyFiltersAndSort() {
       const query = searchInput.value.trim().toLowerCase();
       const chanVal = channelFilter.value;
@@ -3138,6 +3177,9 @@ ${titles.map((t, idx) => `${idx + 1}. ${t}`).join('\n')}`;
       // رصد وتصفية الفيديوهات بحسب اسم القائمة الأم المختارة [2232]
       const playlistFilter = document.getElementById('playlistFilter');
       const playlistVal = playlistFilter ? playlistFilter.value : '';
+
+      // جرد التكرار الفعلي مرة واحدة فقط خارج حلقة الفلترة المتكررة لتفادي تجمد المتصفح [222]
+      const dupCountsForFilter = getDuplicateCounts();
 
       filteredVideos = allVideos.filter(v => {
         const matchesSearch = !query || 
@@ -3149,10 +3191,9 @@ ${titles.map((t, idx) => `${idx + 1}. ${t}`).join('\n')}`;
         if (selectedCategory === 'favorites') {
           matchesCategory = favoriteIds.has(v.id);
         } else if (selectedCategory === 'duplicates_only') {
-          // عزل المكرر فقط لفرزه ومعالجته [222]
+          // عزل المكرر فقط برصد الـ O(1) السريع والآمن [222]
           const vId = extractVideoID(v.url);
-          const counts = getDuplicateCounts();
-          matchesCategory = vId && counts[vId] > 1;
+          matchesCategory = vId && dupCountsForFilter[vId] > 1;
         } else if (!selectedCategory) {
           matchesCategory = true;
         } else {
