@@ -1024,6 +1024,14 @@
             </select>
           </div>
 
+          <!-- فلتر "قائمة التشغيل" الجديد المبتكر [2232] -->
+          <div class="filter-group">
+            <label for="playlistFilter">قائمة التشغيل</label>
+            <select id="playlistFilter" onchange="applyFiltersAndSort()">
+              <option value="">الكل</option>
+            </select>
+          </div>
+
           <div class="filter-group">
             <label for="sortSelect">ترتيب حسب</label>
             <select id="sortSelect">
@@ -1066,6 +1074,7 @@
     const itemsPerPage = 50;
     let selectedCategory = '';
     let currentLayout = 'grid'; // 'grid' أو 'list'
+    let playlistNamesMap = {}; // خريطة حفظ أسماء قوائم التشغيل للمزامنة والفلترة [1560]
 
     // ربط العناصر البرمجية بالواجهة
     const videosGrid = document.getElementById('videosGrid');
@@ -1257,6 +1266,16 @@
         googleClientId.value = savedClientId;
       }
 
+      // استرجاع خريطة حفظ أسماء القوائم للمزامنة [1560]
+      const savedMap = localStorage.getItem('user_youtube_playlist_names_map');
+      if (savedMap) {
+        try {
+          playlistNamesMap = JSON.parse(savedMap);
+        } catch(e) {
+          playlistNamesMap = {};
+        }
+      }
+
       // 1. استرجاع الفيديوهات المفضلة
       const storedFavs = localStorage.getItem('user_youtube_favorites');
       if (storedFavs) {
@@ -1348,6 +1367,19 @@
         opt.textContent = chan;
         channelFilter.appendChild(opt);
       });
+
+      // تغذية وفلترة قائمة تشغيل يوتيوب الأم [2232]
+      const playlistFilter = document.getElementById('playlistFilter');
+      if (playlistFilter) {
+        playlistFilter.innerHTML = '<option value="">الكل</option>';
+        const playlistNames = [...new Set(allVideos.map(v => v.parentPlaylistName).filter(Boolean))].sort();
+        playlistNames.forEach(pName => {
+          const opt = document.createElement('option');
+          opt.value = pName;
+          opt.textContent = pName;
+          playlistFilter.appendChild(opt);
+        });
+      }
     }
 
     // بناء القائمة المنسدلة التفاعلية الجديدة كلياً المخصصة للهواتف [2234]
@@ -1793,7 +1825,7 @@
         const res = await fetch(url);
         if (!res.ok) {
           const errData = await res.json();
-          throw new Error(errData.error.message || 'خطأ مجهول في استرجاع البيانات من قوقل.');
+          throw new Error(errData.error.message || 'خطأ في جلب بيانات القائمة.');
         }
 
         const data = await res.json();
@@ -1849,12 +1881,17 @@
           googlePlaylistsSelect.innerHTML = '<option value="">-- اختر قائمة تشغيل --</option>';
           if (data.items && data.items.length > 0) {
             logToCloudConsole(`📁 تم جلب ${data.items.length} قائمة تشغيل بنجاح وعرضها بالمنسدلة.`);
+            
+            // تهيئة وتخزين خريطة أسماء القوائم لمزامنتها وعزلها لاحقاً [1560]
+            playlistNamesMap = {};
             data.items.forEach(item => {
+              playlistNamesMap[item.id] = item.snippet.title; // حفظ الاقتران
               const opt = document.createElement('option');
               opt.value = item.id;
               opt.textContent = `${item.snippet.title}`;
               googlePlaylistsSelect.appendChild(opt);
             });
+            localStorage.setItem('user_youtube_playlist_names_map', JSON.stringify(playlistNamesMap));
             googlePlaylistsContainer.style.display = 'flex'; // إظهار اللوحة المنسدلة فوراً [1560]
           } else {
             logToCloudConsole('⚠️ لم يتم العثور على أي قوائم تشغيل عامة أو خاصة في حساب يوتيوب هذا.');
@@ -1902,7 +1939,7 @@
       const key = youtubeApiKey.value.trim() || localStorage.getItem('user_youtube_api_key') || '';
       const token = getValidAccessToken();
       
-      logToCloudConsole(`🔑 مفتاح واجهة قوقل يوتيوب: ${key ? 'متوفر ومحفوظ' : 'غير متوفر (سيتم تخطي تحديث مدد الفيديوهات)'}`);
+      logToCloudConsole(`🔑 مفتاح واجهة قوقل يوتيوب العادي: ${key ? 'متوفر ومحفوظ' : 'غير متوفر (سيتم استخدام جلسة التسجيل لتحديث التوقيت)'}`);
       logToCloudConsole(`🎫 رمز مرور التفويض السحابي (Access Token): ${token ? 'نشط وصالح' : 'غير متوفر أو منتهي الصلاحية'}`);
 
       if (!playlistId) {
@@ -1937,11 +1974,9 @@
           initApp();
           showToast(`تم تحميل الفيديوهات بنجاح! جاري جلب المدد الزمنية والتصنيف التلقائي...`);
 
-          // جلب المدد الزمنية الحقيقية تلقائياً [799]
-          if (key) {
-            logToCloudConsole('⏳ جاري البدء في سحب المدد الزمنية الفعلية (Duration) للفيديوهات من قوقل...');
-            await fetchApiMetadataInBatches(fetchedVideos, key);
-          }
+          // جلب المدد الزمنية الحقيقية تلقائياً دون الحاجة للمفتاح العادي [799]
+          logToCloudConsole('⏳ جاري البدء في سحب المدد الزمنية الفعلية (Duration) للفيديوهات سحابياً...');
+          await fetchApiMetadataInBatches(fetchedVideos, key);
 
           const geminiKey = geminiApiKey.value.trim() || localStorage.getItem('user_gemini_api_key') || '';
           if (geminiKey) {
@@ -1963,12 +1998,15 @@
       }
     }
 
-    // جلب عناصر القائمة الشخصية باستخدام الـ OAuth Token الآمن [1209]
+    // جلب عناصر القائمة الشخصية باستخدام الـ OAuth Token الآمن ووسمها باسمها الحقيقي للفلترة [1209, 1560]
     async function fetchAllPlaylistItemsOAuth(playlistId, token) {
       let videos = [];
       let nextPageToken = '';
       let hasNextPage = true;
       let count = 0;
+
+      // رصد اسم القائمة الحقيقي لوسم المقاطع [1560]
+      const playlistName = playlistNamesMap[playlistId] || 'قائمة سحابية مستوردة';
 
       while (hasNextPage) {
         let url = `https://www.googleapis.com/youtube/v3/playlistItems?part=snippet&maxResults=50&playlistId=${playlistId}`;
@@ -2007,7 +2045,8 @@
                 thumbnail: thumb,
                 url: videoUrl,
                 playlistItemId: playlistItemId,
-                parentPlaylistId: playlistId // وسم الفيديوهات بمعرف القائمة لمزامنتها لاحقاً
+                parentPlaylistId: playlistId, // معرف القائمة
+                parentPlaylistName: playlistName // حفظ وسم اسم القائمة لفلترتها وتصفيتها [1560]
               });
             }
           });
@@ -2095,11 +2134,9 @@
 
           showToast(`🔄 تم رصد ${newCloudVideos.length} فيديو جديد وحذف ${deletedLocalVideos.length} فيديو. جاري تحديث المدد والتصنيف...`);
 
-          // تحديث المدد الزمنية
-          if (key) {
-            logToCloudConsole('⏳ جاري البدء في جلب المدد الزمنية الفعلية (Duration) للفيديوهات الجديدة المضافة...');
-            await fetchApiMetadataInBatches(newCloudVideos, key);
-          }
+          // تحديث المدد الزمنية سحابياً
+          logToCloudConsole('⏳ جاري البدء في جلب المدد الزمنية الفعلية (Duration) للفيديوهات الجديدة المضافة سحابياً...');
+          await fetchApiMetadataInBatches(newCloudVideos, key);
 
           // تشغيل تصنيف Gemini 3.5 Flash للمقاطع الجديدة المكتشفة فقط
           const geminiKey = geminiApiKey.value.trim() || localStorage.getItem('user_gemini_api_key') || '';
@@ -2139,11 +2176,8 @@
 
       const apiKey = youtubeApiKey.value.trim() || localStorage.getItem('user_youtube_api_key') || '';
 
-      if (apiKey) {
-        await fetchApiMetadataInBatches(targets, apiKey);
-      } else {
-        await fetchoEmbedMetadataInBatches(targets);
-      }
+      // جلب المدد الزمنية بالاستفادة التلقائية من التراخيص
+      await fetchApiMetadataInBatches(targets, apiKey);
 
       // بعد اكتمال جلب العناوين بنجاح، نقوم بتصنيفها كلياً بدقة متناهية عبر ذكاء جيميناي الاصطناعي
       if (geminiKey) {
@@ -2188,8 +2222,15 @@
       setTimeout(() => { importStatus.textContent = ''; }, 3000);
     }
 
-    // جلب العناوين برمجياً وبشكل فائق السرعة عبر مفتاح API في مجموعات من 50 فيديو
+    // جلب العناوين وتحديث التوقيت الفعلي - تم ترقيتها لتدعم الربط المشترك بـ الـ API Key أو الـ OAuth Token لمنع الأصفار [799]
     async function fetchApiMetadataInBatches(targets, apiKey) {
+      const token = getValidAccessToken();
+      
+      if (!apiKey && !token) {
+        logToCloudConsole('⚠️ تحذير: لم يتم العثور على مفتاح API يوتيوب أو رمز تفويض سحابي نشط؛ سيتم تخطي تحديث توقيتات الفيديوهات الحالية.');
+        return;
+      }
+
       const ids = targets.map(v => extractVideoID(v.url));
       const batches = [];
       for (let i = 0; i < ids.length; i += 50) {
@@ -2202,10 +2243,21 @@
 
       for (let b = 0; b < batches.length; b++) {
         const batchIds = batches[b].join(',');
-        const url = `https://www.googleapis.com/youtube/v3/videos?part=snippet,contentDetails&id=${batchIds}&key=${apiKey}`;
         
+        // بناء الرابط والتراويح برمجياً لتمكين المزامنة ثنائية الاتجاه [1209]
+        let url = `https://www.googleapis.com/youtube/v3/videos?part=snippet,contentDetails&id=${batchIds}`;
+        const headers = {};
+
+        if (token) {
+          // استعلام مشفر وآمن بالـ OAuth Token دون الحاجة للمفتاح العادي [1209]
+          headers['Authorization'] = `Bearer ${token}`;
+        } else if (apiKey) {
+          // استعلام بالمفتاح التقليدي العادي
+          url += `&key=${apiKey}`;
+        }
+
         try {
-          const res = await fetch(url);
+          const res = await fetch(url, { headers });
           if (res.ok) {
             const data = await res.json();
             if (data.items) {
@@ -2223,9 +2275,13 @@
                 }
               });
             }
+          } else {
+            const errData = await res.json();
+            logToCloudConsole(`❌ فشل جلب التوقيت للمجموعة ${b+1}. كود قوقل: ${res.status}. السبب: ${errData.error?.message || 'غير معروف'}`);
           }
         } catch (err) {
           console.error('API batch fetch error', b, err);
+          logToCloudConsole(`❌ خطأ شبكة أثناء جلب التوقيت للمجموعة ${b+1}: ${err.message}`);
         }
 
         count += batches[b].length;
@@ -2681,32 +2737,6 @@ ${titles.map((t, idx) => `${idx + 1}. ${t}`).join('\n')}`;
       }
     }
 
-    // ربط استيراد القائمة المختارة سحابياً وتصديرها للأزرار التفاعلية المباشرة للوقاية [1560]
-    function triggerSelectedPlaylistImport() {
-      logToCloudConsole('🔘 تم الضغط على زر استيراد القائمة المختارة سحابياً.');
-      const select = document.getElementById('googlePlaylistsSelect');
-      if (select) {
-        logToCloudConsole(`📁 جاري التحضير لاستيراد القائمة بالـ ID: ${select.value}`);
-        importPlaylistById(select.value);
-      } else {
-        logToCloudConsole('❌ خطأ: لم يتم العثور على العنصر googlePlaylistsSelect في الصفحة.');
-      }
-    }
-    window.triggerSelectedPlaylistImport = triggerSelectedPlaylistImport;
-
-    // ربط مزامنة القائمة المختارة سحابياً وتصديرها للأزرار التفاعلية المباشرة للوقاية
-    function triggerSelectedPlaylistSync() {
-      logToCloudConsole('🔘 تم الضغط على زر مزامنة القائمة المختارة سحابياً.');
-      const select = document.getElementById('googlePlaylistsSelect');
-      if (select) {
-        logToCloudConsole(`📁 جاري التحضير لمزامنة وتحديث القائمة بالـ ID: ${select.value}`);
-        syncPlaylistById(select.value);
-      } else {
-        logToCloudConsole('❌ خطأ: لم يتم العثور على العنصر googlePlaylistsSelect في الصفحة.');
-      }
-    }
-    window.triggerSelectedPlaylistSync = triggerSelectedPlaylistSync;
-
     // تعديل التصنيف السريع والمباشر من البطاقة
     function changeVideoCategory(id, newCat) {
       allVideos = allVideos.map(v => {
@@ -2738,6 +2768,26 @@ ${titles.map((t, idx) => `${idx + 1}. ${t}`).join('\n')}`;
       applyFiltersAndSort();
     }
     window.toggleFavorite = toggleFavorite;
+
+    // إدارة أنماط رؤية التصميم
+    function toggleLayout() {
+      currentLayout = (currentLayout === 'grid') ? 'list' : 'grid';
+      localStorage.setItem('user_youtube_layout', currentLayout);
+      updateLayoutUI();
+      renderGrid();
+    }
+    window.toggleLayout = toggleLayout;
+
+    function updateLayoutUI() {
+      if (currentLayout === 'list') {
+        videosGrid.classList.add('list-layout');
+        layoutToggleBtn.textContent = '📱 عرض الشبكة';
+      } else {
+        videosGrid.classList.remove('list-layout');
+        layoutToggleBtn.textContent = '📝 عرض القائمة';
+      }
+    }
+    window.updateLayoutUI = updateLayoutUI;
 
     // حذف فيديو فردي (مع ميزة الحذف السحابي المتزامن من يوتيوب) [799]
     async function deleteVideo(id) {
@@ -2779,26 +2829,6 @@ ${titles.map((t, idx) => `${idx + 1}. ${t}`).join('\n')}`;
     }
     window.deleteVideo = deleteVideo;
 
-    // إدارة أنماط رؤية التصميم
-    function toggleLayout() {
-      currentLayout = (currentLayout === 'grid') ? 'list' : 'grid';
-      localStorage.setItem('user_youtube_layout', currentLayout);
-      updateLayoutUI();
-      renderGrid();
-    }
-    window.toggleLayout = toggleLayout;
-
-    function updateLayoutUI() {
-      if (currentLayout === 'list') {
-        videosGrid.classList.add('list-layout');
-        layoutToggleBtn.textContent = '📱 عرض الشبكة';
-      } else {
-        videosGrid.classList.remove('list-layout');
-        layoutToggleBtn.textContent = '📝 عرض القائمة';
-      }
-    }
-    window.updateLayoutUI = updateLayoutUI;
-
     // حذف القائمة النشطة بالكامل
     function clearCurrentLibrary() {
       if (confirm('هل أنت متأكد من رغبتك في مسح القائمة بالكامل وتصفير المكتبة؟ لا يمكن التراجع عن هذه الخطوة.')) {
@@ -2828,6 +2858,10 @@ ${titles.map((t, idx) => `${idx + 1}. ${t}`).join('\n')}`;
       const query = searchInput.value.trim().toLowerCase();
       const chanVal = channelFilter.value;
 
+      // رصد وتصفية الفيديوهات بحسب اسم القائمة الأم المختارة [2232]
+      const playlistFilter = document.getElementById('playlistFilter');
+      const playlistVal = playlistFilter ? playlistFilter.value : '';
+
       filteredVideos = allVideos.filter(v => {
         const matchesSearch = !query || 
           (v.title && v.title.toLowerCase().includes(query)) ||
@@ -2847,7 +2881,10 @@ ${titles.map((t, idx) => `${idx + 1}. ${t}`).join('\n')}`;
 
         const matchesChannel = !chanVal || v.channel === chanVal;
 
-        return matchesSearch && matchesCategory && matchesChannel;
+        // مطابقة فلتر اسم القائمة الأم [2232]
+        const matchesPlaylist = !playlistVal || v.parentPlaylistName === playlistVal;
+
+        return matchesSearch && matchesCategory && matchesChannel && matchesPlaylist;
       });
 
       const sortVal = sortSelect.value;
