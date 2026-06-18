@@ -217,7 +217,7 @@
       user-select: none;
     }
 
-    /* حقول الإدخال لمستورد يوتيوب وGemini */
+    /* حقول الإدخال */
     .input-group {
       display: flex;
       flex-direction: column;
@@ -834,7 +834,8 @@
       <div class="header-actions">
         <button id="googleSignInBtn" class="btn btn-secondary" style="background-color: var(--bg-tertiary);" onclick="handleGoogleSignIn()"><span class="icon">🔐</span> دخول قوقل</button>
         <button id="googleSignOutBtn" class="btn btn-secondary" style="background-color: var(--bg-tertiary); display: none;" onclick="handleGoogleSignOut()"><span class="icon">🔓</span> خروج</button>
-        <!-- زر تحديث التوقيتات سحابياً الذكي للمستخدمين المسجلين -->
+        <!-- زر المزامنة والاستيراد السحابي المباشر -->
+        <button id="cloudRestoreBtn" class="btn btn-secondary" style="background-color: var(--bg-tertiary); display: none;" onclick="triggerManualCloudRestore()"><span class="icon">☁️</span> استيراد سحابي</button>
         <button id="updateDurationsFromApiBtn" class="btn btn-secondary" style="background-color: var(--bg-tertiary);" onclick="updateDurationsFromApi()"><span class="icon">🔄</span> تحديث التوقيتات</button>
         <button id="toggleImportBtn" class="btn btn-secondary">📥 استيراد</button>
         <button id="exportCsvBtn" class="btn btn-secondary">📤 تصدير لـ CSV</button>
@@ -1160,7 +1161,7 @@
 
     // تشغيل وإعداد واجهة التحكم عند تحميل المستند
     window.addEventListener('DOMContentLoaded', () => {
-      // تعديل هام جداً: تحميل البيانات المحلية أولاً ليعلم البرنامج ما بداخل جهازك قبل الاتصال بالسحاب ومزامنة الـ Hash
+      // تعديل الترتيب لمنع تصفير التوقيتات: تحميل البيانات المحلية أولاً ليعلم البرنامج ما بداخل جهازك قبل التزامن
       loadLibraryData();
       checkOAuthHash();
 
@@ -1761,6 +1762,66 @@
       }
     }
 
+    // دالة استرجاع يدوية قسرية من السحاب لجميع الأجهزة للتغلب على مشاكل تعارض المتصفحات [1209, 1560]
+    async function triggerManualCloudRestore() {
+      const token = getValidAccessToken();
+      if (!token) {
+        showToast('⚠️ يرجى تسجيل الدخول بقوقل أولاً لاستيراد نسختك السحابية.');
+        return;
+      }
+      if (confirm('هل أنت متأكد من رغبتك في تحميل واسترجاع آخر نسخة احتياطية من Google Drive واستبدال البيانات الحالية على هذا الجهاز بها؟')) {
+        globalImportStatusContainer.style.display = 'flex';
+        globalImportStatus.textContent = '⏳ جاري جلب النسخة الاحتياطية من السحاب...';
+        try {
+          await forceLoadBackupFromGoogleDrive(token);
+        } catch (e) {
+          console.error(e);
+          showToast(`❌ فشل الاستيراد السحابي: ${e.message}`);
+        } finally {
+          globalImportStatusContainer.style.display = 'none';
+        }
+      }
+    }
+    window.triggerManualCloudRestore = triggerManualCloudRestore;
+
+    async function forceLoadBackupFromGoogleDrive(token) {
+      logToCloudConsole('🔍 جاري البحث القسري في Google Drive عن النسخة الاحتياطية للمزامنة...');
+      const url = `https://www.googleapis.com/drive/v3/files?q=name='yt_library_db.json'+and+trashed=false&fields=files(id,name)`;
+      const res = await fetch(url, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      if (res.ok) {
+        const data = await res.json();
+        if (data.files && data.files.length > 0) {
+          const file = data.files[0];
+          localStorage.setItem('user_google_drive_file_id', file.id);
+          
+          const contentUrl = `https://www.googleapis.com/drive/v3/files/${file.id}?alt=media`;
+          const contentRes = await fetch(contentUrl, {
+            headers: {
+              'Authorization': `Bearer ${token}`
+            }
+          });
+          if (contentRes.ok) {
+            const backupVideos = await contentRes.json();
+            if (Array.isArray(backupVideos) && backupVideos.length > 0) {
+              allVideos = backupVideos;
+              localStorage.setItem('user_youtube_library', JSON.stringify(allVideos));
+              initApp();
+              logToCloudConsole('✅ تم تحميل واسترجاع النسخة الاحتياطية وتحديث التوقيتات بنجاح من السحابة!');
+              showToast('✅ تم استرجاع مكتبتك وتحديث التوقيتات بنجاح من السحابة!');
+            }
+          }
+        } else {
+          showToast('❌ لم يتم العثور على أي ملف احتياطي سحابي في حساب Google Drive الخاص بك.');
+        }
+      } else {
+        throw new Error('فشل الاتصال بخوادم قوقل درايف.');
+      }
+    }
+
     // دالة إفراغ تصنيفات قائمة كاملة وإرجاعها لـ "غ-مصنف"
     function clearPlaylistCategories() {
       const playlistFilter = document.getElementById('playlistFilter');
@@ -1894,7 +1955,7 @@
               videos.push({
                 id: videos.length + 1,
                 title: title,
-                category: "غ-مصنف", 
+                category: "غ-مصنف", // التصنيف الافتراضي غ-مصنف
                 channel: channel,
                 duration: '00:00',
                 thumbnail: thumb,
@@ -2435,7 +2496,7 @@
 
     function handleAbortedImport() {
       saveLibraryAndBackup(allVideos);
-      globalImportStatus.textContent = '❌ تم إلغاء العملية وحفظ التقدم بنجاح!';
+      globalImportStatus.textContent = '❌ تم إلغاء العملية وحفظ التقدم الحالي...';
       logToCloudConsole('❌ تم إلغاء العملية وتأمين حفظ البيانات المكتملة.');
       cancelImportBtn.style.display = 'none';
       continueImportBtn.style.display = 'none';
@@ -2660,12 +2721,15 @@ ${titles.map((t, idx) => `${idx + 1}. ${t}`).join('\n')}`;
 
     function updateAuthUI() {
       const token = getValidAccessToken();
+      const cloudRestoreBtn = document.getElementById('cloudRestoreBtn');
       if (token) {
         googleSignInBtn.style.display = 'none';
         googleSignOutBtn.style.display = 'inline-flex';
+        if (cloudRestoreBtn) cloudRestoreBtn.style.display = 'inline-flex';
       } else {
         googleSignInBtn.style.display = 'inline-flex';
         googleSignOutBtn.style.display = 'none';
+        if (cloudRestoreBtn) cloudRestoreBtn.style.display = 'none';
       }
     }
 
@@ -2731,7 +2795,7 @@ ${titles.map((t, idx) => `${idx + 1}. ${t}`).join('\n')}`;
       }
     }
 
-    // سحب وقراءة النسخة الاحتياطية سحابياً من Google Drive مع حماية البيانات المحلية من الاستبدال غير المقصود [1209]
+    // سحب وقراءة النسخة الاحتياطية سحابياً من Google Drive بمقارنة ذكية تمنع التصفير التلقائي [1209, 1560]
     async function loadBackupFromGoogleDrive(token) {
       logToCloudConsole('🔍 جاري البحث في Google Drive عن نسخة احتياطية سابقة للمكتبة...');
       const url = `https://www.googleapis.com/drive/v3/files?q=name='yt_library_db.json'+and+trashed=false&fields=files(id,name)`;
@@ -2746,9 +2810,8 @@ ${titles.map((t, idx) => `${idx + 1}. ${t}`).join('\n')}`;
           if (data.files && data.files.length > 0) {
             const file = data.files[0];
             localStorage.setItem('user_google_drive_file_id', file.id);
-            logToCloudConsole(`📁 تم العثور على ملف احتياطي بالمعرف سحابياً: ${file.id}. جاري سحب البيانات...`);
+            logToCloudConsole(`📁 تم العثور على ملف احتياطي بالمعرف سحابياً: ${file.id}. جاري مقارنة البيانات...`);
             
-            // سحب محتويات ملف الـ JSON
             const contentUrl = `https://www.googleapis.com/drive/v3/files/${file.id}?alt=media`;
             const contentRes = await fetch(contentUrl, {
               headers: {
@@ -2757,23 +2820,24 @@ ${titles.map((t, idx) => `${idx + 1}. ${t}`).join('\n')}`;
             });
             if (contentRes.ok) {
               const backupVideos = await contentRes.json();
-              if (Array.isArray(backupVideos) && backupVideos.length > 0) {
-                // ميزة الحماية الذكية: نسأل المستخدم فقط إذا كانت مكتبته المحلية فارغة أو تحتوي فقط على البيانات التوضيحية الافتراضية
-                const isLocalEmpty = allVideos.length === 0 || 
-                                     (allVideos.length === 2 && allVideos[0].title.includes("مقدمة تعريفية"));
-                
-                if (isLocalEmpty) {
-                  if (confirm(`تم العثور على نسخة احتياطية سحابية في Google Drive تحتوي على ${backupVideos.length} فيديو.\nهل تود استرجاعها وعرضها الآن بالمتصفح؟`)) {
+              if (Array.isArray(backupVideos)) {
+                // دالة مقارنة ذكية: نقارن بين النسخة المحلية الحالية والنسخة السحابية المسترجعة
+                const localStr = JSON.stringify(allVideos);
+                const backupStr = JSON.stringify(backupVideos);
+
+                if (localStr !== backupStr) {
+                  // إذا وجدنا اختلافاً حقيقياً في البيانات، نسأل المستخدم عما إذا كان يريد المزامنة
+                  if (confirm(`🔄 تم رصد تغييرات أو تحديثات جديدة في نسختك السحابية (تضم ${backupVideos.length} فيديو).\nهل تود مزامنتها وتحديث جهازك الآن؟`)) {
                     allVideos = backupVideos;
                     localStorage.setItem('user_youtube_library', JSON.stringify(allVideos));
                     initApp();
-                    logToCloudConsole('✅ تم استرجاع ومزامنة النسخة الاحتياطية سحابياً من Google Drive بنجاح تام!');
-                    showToast('✅ تم استرجاع مكتبتك السحابية من Google Drive بنجاح!');
+                    logToCloudConsole('✅ تم مزامنة وتحديث المكتبة سحابياً بنجاح!');
+                    showToast('✅ تم تحديث ومزامنة مكتبتك السحابية بنجاح!');
                   } else {
-                    logToCloudConsole('🧹 تم اختيار: عدم استرجاع النسخة والبدء بمكتبة فارغة حالياً.');
+                    logToCloudConsole('🧹 تم اختيار: الإبقاء على النسخة المحلية الحالية وتخطي المزامنة السحابية.');
                   }
                 } else {
-                  logToCloudConsole('💡 توضيح: تم تخطي الاستيراد التلقائي للنسخة الاحتياطية لوجود مكتبة محلية نشطة في متصفحك حالياً.');
+                  logToCloudConsole('💡 توضيح: النسخة المحلية الحالية متطابقة تماماً مع السحابة، لا توجد حاجة للمزامنة.');
                 }
               }
             }
@@ -2784,6 +2848,66 @@ ${titles.map((t, idx) => `${idx + 1}. ${t}`).join('\n')}`;
       } catch (e) {
         console.error(e);
         logToCloudConsole(`❌ خطأ أثناء البحث وسحب نسخة Google Drive: ${e.message}`);
+      }
+    }
+
+    // دالة استرجاع يدوية قسرية من السحاب لجميع الأجهزة للتغلب على مشاكل تعارض المتصفحات [1209, 1560]
+    async function triggerManualCloudRestore() {
+      const token = getValidAccessToken();
+      if (!token) {
+        showToast('⚠️ يرجى تسجيل الدخول بقوقل أولاً لاستيراد نسختك السحابية.');
+        return;
+      }
+      if (confirm('هل أنت متأكد من رغبتك في تحميل واسترجاع آخر نسخة احتياطية من Google Drive واستبدال البيانات الحالية على هذا الجهاز بها؟')) {
+        globalImportStatusContainer.style.display = 'flex';
+        globalImportStatus.textContent = '⏳ جاري جلب النسخة الاحتياطية من السحاب...';
+        try {
+          await forceLoadBackupFromGoogleDrive(token);
+        } catch (e) {
+          console.error(e);
+          showToast(`❌ فشل الاستيراد السحابي: ${e.message}`);
+        } finally {
+          globalImportStatusContainer.style.display = 'none';
+        }
+      }
+    }
+    window.triggerManualCloudRestore = triggerManualCloudRestore;
+
+    async function forceLoadBackupFromGoogleDrive(token) {
+      logToCloudConsole('🔍 جاري البحث القسري في Google Drive عن النسخة الاحتياطية للمزامنة...');
+      const url = `https://www.googleapis.com/drive/v3/files?q=name='yt_library_db.json'+and+trashed=false&fields=files(id,name)`;
+      const res = await fetch(url, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      if (res.ok) {
+        const data = await res.json();
+        if (data.files && data.files.length > 0) {
+          const file = data.files[0];
+          localStorage.setItem('user_google_drive_file_id', file.id);
+          
+          const contentUrl = `https://www.googleapis.com/drive/v3/files/${file.id}?alt=media`;
+          const contentRes = await fetch(contentUrl, {
+            headers: {
+              'Authorization': `Bearer ${token}`
+            }
+          });
+          if (contentRes.ok) {
+            const backupVideos = await contentRes.json();
+            if (Array.isArray(backupVideos) && backupVideos.length > 0) {
+              allVideos = backupVideos;
+              localStorage.setItem('user_youtube_library', JSON.stringify(allVideos));
+              initApp();
+              logToCloudConsole('✅ تم تحميل واسترجاع النسخة الاحتياطية وتحديث التوقيتات بنجاح من السحابة!');
+              showToast('✅ تم استرجاع مكتبتك وتحديث التوقيتات بنجاح من السحابة!');
+            }
+          }
+        } else {
+          showToast('❌ لم يتم العثور على أي ملف احتياطي سحابي في حساب Google Drive الخاص بك.');
+        }
+      } else {
+        throw new Error('فشل الاتصال بخوادم قوقل درايف.');
       }
     }
 
@@ -3273,6 +3397,7 @@ ${titles.map((t, idx) => `${idx + 1}. ${t}`).join('\n')}`;
     window.updateDurationsFromApi = updateDurationsFromApi;
     window.triggerContinueImport = triggerContinueImport;
     window.triggerCancelImport = triggerCancelImport;
+    window.triggerManualCloudRestore = triggerManualCloudRestore;
   </script>
 </body>
 </html>
