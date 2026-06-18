@@ -39,7 +39,7 @@
       color: var(--text-primary);
       font-family: 'Cairo', sans-serif;
       line-height: 1.6;
-      padding-bottom: 80px; /* زيادة المساحة لشريط التعديل الجماعي */
+      padding-bottom: 80px;
     }
 
     /* شريط الملاحة الرئيسي */
@@ -284,8 +284,6 @@
       font-size: 0.8rem;
     }
 
-   
-
     /* أزرار اختيار التصنيفات - الحبات */
     .category-selection-area {
       max-width: 1400px;
@@ -444,6 +442,7 @@
     }
 
     .filter-group select {
+      width: 100%;
       padding: 10px;
       border-radius: 8px;
       border: 1px solid var(--bg-tertiary);
@@ -521,7 +520,7 @@
       top: 10px;
       right: 10px;
       z-index: 10;
-      display: none; /* تظهر فقط في وضع التحرير الجماعي */
+      display: none;
     }
 
     .card-checkbox-wrapper input[type="checkbox"] {
@@ -922,8 +921,6 @@
         </div>
       </div>
     </div>
-
-   
   </section>
 
   <!-- شريط الأزرار والحبات التفاعلي للتصنيفات -->
@@ -1001,6 +998,7 @@
           <div class="filter-group">
             <label for="sortSelect">ترتيب حسب</label>
             <select id="sortSelect">
+              <option value="playlist-pos">ترتيب يوتيوب الأصلي ⏱️</option>
               <option value="id-asc">الرقم الافتراضي</option>
               <option value="title-asc">العنوان أ - ي</option>
               <option value="title-desc">العنوان ي - أ</option>
@@ -1040,10 +1038,8 @@
   </div>
 
   <script>
-    
     // عينة افتراضية مبدئية فارغة
     const defaultData = [];
-   
 
     let allVideos = [];
     let filteredVideos = [];
@@ -1118,7 +1114,6 @@
     const bulkSelectedCount = document.getElementById('bulkSelectedCount');
     const bulkCategorySelect = document.getElementById('bulkCategorySelect');
 
-   
     let activeImportBatches = [];
     let currentImportBatchIdx = 0;
     let activeImportGeminiKey = '';
@@ -1283,10 +1278,6 @@
       statTotalChannels.textContent = channels.size;
       statTotalCategories.textContent = categories.size;
     }
-
-    
-
-      
 
     function populateDropdownFilters() {
       categoryFilter.innerHTML = '<option value="">الكل</option><option value="favorites">المفضلة ⭐️</option>';
@@ -1856,13 +1847,14 @@
               videos.push({
                 id: videos.length + 1,
                 title: title,
-                category: "غ-مصنف",
+                category: "غ-مصنف", 
                 channel: channel,
                 duration: '00:00',
                 thumbnail: thumb,
                 url: videoUrl,
                 playlistItemId: playlistItemId,
-                parentPlaylistId: playlistId
+                parentPlaylistId: playlistId,
+                position: snippet.position !== undefined ? snippet.position : videos.length
               });
             }
           });
@@ -2032,7 +2024,8 @@
                 url: videoUrl,
                 playlistItemId: playlistItemId,
                 parentPlaylistId: playlistId,
-                parentPlaylistName: playlistName 
+                parentPlaylistName: playlistName,
+                position: snippet.position !== undefined ? snippet.position : videos.length
               });
             }
           });
@@ -2059,58 +2052,65 @@
       }
 
       globalImportStatusContainer.style.display = 'flex';
-      globalImportStatus.textContent = '🔄 جاري الاتصال بيوتيوب للتحقق من التغييرات الجديدة...';
+      globalImportStatus.textContent = '🔄 جاري الاتصال بيوتيوب لمزامنة الترتيب والفيديوهات...';
       cancelImportBtn.style.display = 'none';
 
       try {
+        // 1. جلب الفيديوهات كاملة من السحاب بالترتيب الأصلي
         const cloudVideos = await fetchAllPlaylistItemsOAuth(playlistId, token);
-        const localFiltered = allVideos.filter(v => v.parentPlaylistId === playlistId);
         
-        const newCloudVideos = cloudVideos.filter(cv => {
+        // 2. عزل الفيديوهات التي لا تنتمي لهذه القائمة للاحتفاظ بها في التطبيق
+        const otherPlaylistsVideos = allVideos.filter(v => v.parentPlaylistId !== playlistId);
+        
+        // 3. دمج البيانات المحلية مع السحابية للفيديوهات الحالية (الاحتفاظ بالتصنيف والمفضلة)
+        const syncedPlaylistVideos = cloudVideos.map((cv, index) => {
           const cvId = extractVideoID(cv.url);
-          return !localFiltered.some(lv => extractVideoID(lv.url) === cvId);
+          // البحث عن النسخة المحلية السابقة لنفس الفيديو في هذه القائمة بالذات
+          const localMatch = allVideos.find(lv => lv.parentPlaylistId === playlistId && extractVideoID(lv.url) === cvId);
+          
+          if (localMatch) {
+            // احتفظ بالتصنيف والمفضلة والمدة المكتشفة سابقاً مع تحديث الترتيب (position)
+            return {
+              ...cv,
+              category: localMatch.category,
+              duration: localMatch.duration && localMatch.duration !== '00:00' ? localMatch.duration : cv.duration,
+              position: cv.position !== undefined ? cv.position : index
+            };
+          }
+          return {
+            ...cv,
+            position: cv.position !== undefined ? cv.position : index
+          };
         });
 
-        const deletedLocalVideos = localFiltered.filter(lv => {
-          return !cloudVideos.some(cv => cv.playlistItemId === lv.playlistItemId);
+        // 4. دمج القوائم الأخرى مع القائمة المحدثة وإعادة تعيين الـ IDs لتبدأ مرتبة بالكامل
+        const updatedVideosList = [...otherPlaylistsVideos, ...syncedPlaylistVideos];
+        updatedVideosList.forEach((v, idx) => {
+          v.id = idx + 1; // إعادة تعيين الرقم التعريفي المحلي ليطابق الترتيب الجديد
         });
 
-        if (deletedLocalVideos.length > 0) {
-          allVideos = allVideos.filter(v => {
-            return !deletedLocalVideos.some(dlv => dlv.playlistItemId === v.playlistItemId);
-          });
-        }
+        saveLibraryAndBackup(updatedVideosList);
+        
+        // التحقق من وجود فيديوهات جديدة بحاجة لجلب مددها الزمنية أو تصنيفها
+        const brandNewVideos = syncedPlaylistVideos.filter(sv => {
+          const svId = extractVideoID(sv.url);
+          return !allVideos.some(lv => lv.parentPlaylistId === playlistId && extractVideoID(lv.url) === svId);
+        });
 
-        if (newCloudVideos.length === 0 && deletedLocalVideos.length === 0) {
-          showToast('✅ قائمة التشغيل متطابقة تماماً مع حساب يوتيوب!');
-          globalImportStatusContainer.style.display = 'none';
-          initApp();
-          return;
-        }
-
-        if (newCloudVideos.length > 0) {
-          newCloudVideos.forEach(nv => {
-            nv.id = allVideos.length + 1;
-            allVideos.push(nv);
-          });
-
-          saveLibraryAndBackup(allVideos);
-          showToast(`🔄 تم رصد ${newCloudVideos.length} فيديو جديد وحذف ${deletedLocalVideos.length} فيديو. جاري تحديث المدد والتصنيف...`);
-
-          await fetchApiMetadataInBatches(newCloudVideos, key);
-
+        if (brandNewVideos.length > 0) {
+          showToast(`🔄 تم تحديث ترتيب القائمة وإضافة ${brandNewVideos.length} فيديو جديد!`);
+          await fetchApiMetadataInBatches(brandNewVideos, key);
           const geminiKey = geminiApiKey.value.trim() || localStorage.getItem('user_gemini_api_key') || '';
           if (geminiKey) {
-            await runGeminiClassification(newCloudVideos, geminiKey);
+            await runGeminiClassification(brandNewVideos, geminiKey);
           }
-        } else if (deletedLocalVideos.length > 0) {
-          saveLibraryAndBackup(allVideos);
-          showToast('✅ تم تحديث المكتبة بنجاح وحذف الفيديوهات المحذوفة للتطابق مع يوتيوب.');
+        } else {
+          showToast('✅ تم إعادة ترتيب القائمة وتحديثها لتطابق ترتيب يوتيوب تماماً!');
         }
 
       } catch (e) {
         console.error(e);
-        showToast(`❌ فشلت عملية المزامنة السحابية: ${e.message}`);
+        showToast(`❌ فشلت عملية المزامنة: ${e.message}`);
       } finally {
         globalImportStatusContainer.style.display = 'none';
       }
@@ -3086,6 +3086,9 @@ ${titles.map((t, idx) => `${idx + 1}. ${t}`).join('\n')}`;
       const sortVal = sortSelect.value;
       filteredVideos.sort((a, b) => {
         switch (sortVal) {
+          case 'playlist-pos':
+            // ترتيب تصاعدي حسب حقل الترتيب الأصلي في يوتيوب
+            return (a.position !== undefined ? a.position : 999999) - (b.position !== undefined ? b.position : 999999) || a.id - b.id;
           case 'title-asc':
             return a.title.localeCompare(b.title, 'ar');
           case 'title-desc':
@@ -3216,12 +3219,19 @@ ${titles.map((t, idx) => `${idx + 1}. ${t}`).join('\n')}`;
       window.open(url, '_blank');
     }
 
+    // نسخ الرابط للمتصفح
     function copyLink(url) {
-      navigator.clipboard.writeText(url).then(() => {
+      const tempInput = document.createElement('input');
+      tempInput.value = url;
+      document.body.appendChild(tempInput);
+      tempInput.select();
+      try {
+        document.execCommand('copy');
         showToast('تم نسخ الرابط بنجاح.');
-      }).catch(() => {
+      } catch (err) {
         showToast('فشل نسخ الرابط.');
-      });
+      }
+      document.body.removeChild(tempInput);
     }
 
     function renderPagination() {
