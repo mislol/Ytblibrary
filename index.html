@@ -765,7 +765,14 @@
       <div class="input-group">
         <label for="geminiApiKey">🤖 مفتاح ذكاء جيميناي (Gemini API Key)</label>
         <input type="text" id="geminiApiKey" placeholder="أدخل مفتاح Gemini الخاص بك...">
-        <div style="margin-top: 8px; display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+        
+        <!-- مربع تفعيل/تعطيل ذكاء جيميناي الجديد والمطلوب -->
+        <div class="import-options" style="display: flex; align-items: center; gap: 8px; margin-top: 10px; background: var(--bg-primary); padding: 8px 12px; border-radius: 8px; border: 1px solid var(--bg-tertiary);">
+          <input type="checkbox" id="enableAutoClassifyCheck" checked style="width:16px; height:16px; accent-color: var(--accent-color); cursor:pointer;">
+          <label for="enableAutoClassifyCheck" style="font-size:0.85rem; cursor:pointer; user-select:none;">🤖 تفعيل التصنيف التلقائي الذكي بواسطة Gemini عند المزامنة والاستيراد</label>
+        </div>
+
+        <div style="margin-top: 12px; display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
           <button id="testGeminiBtn" class="btn btn-secondary" style="font-size: 0.8rem; padding: 6px 12px;">⚡ فحص اتصال الذكاء الاصطناعي</button>
           <button id="classifyCurrentLibraryBtn" class="btn btn-gold" style="font-size: 0.8rem; padding: 6px 12px;" onclick="startManualClassification()">🏷️ تصنيف الفيديوهات غير المصنفة</button>
           <span id="geminiTestStatus" style="font-size: 0.85rem; font-weight: 600;"></span>
@@ -1022,6 +1029,9 @@
     const mergeCsvCategoriesBtn = document.getElementById('mergeCsvCategoriesBtn');
     const resetDefaultBtn = document.getElementById('resetDefaultBtn');
 
+    // صندوق تفعيل/تعطيل ذكاء جيميناي
+    const enableAutoClassifyCheck = document.getElementById('enableAutoClassifyCheck');
+
     // أزرار تسجيل الدخول وحساب قوقل
     const googleSignInBtn = document.getElementById('googleSignInBtn');
     const googleSignOutBtn = document.getElementById('googleSignOutBtn');
@@ -1082,6 +1092,11 @@
 
       testGeminiBtn.addEventListener('click', testGeminiConnection);
 
+      // حفظ تفضيلات المستخدم لصندوق الخيار جيميناي تلقائياً
+      enableAutoClassifyCheck.addEventListener('change', (e) => {
+        localStorage.setItem('user_enable_auto_classify', e.target.checked);
+      });
+
       pillAllBtn.addEventListener('click', () => {
         selectedCategory = '';
         currentPage = 1;
@@ -1139,6 +1154,11 @@
 
       const savedClientId = localStorage.getItem('user_google_client_id');
       if (savedClientId) googleClientId.value = savedClientId;
+
+      const savedAutoClassify = localStorage.getItem('user_enable_auto_classify');
+      if (savedAutoClassify !== null) {
+        enableAutoClassifyCheck.checked = (savedAutoClassify === 'true');
+      }
 
       const savedMap = localStorage.getItem('user_youtube_playlist_names_map');
       if (savedMap) {
@@ -1852,7 +1872,10 @@
           await fetchApiMetadataInBatches(targetsForMetadata, '');
         }
 
-        if (targetsForClassification.length > 0) {
+        // فحص ما إذا كان المستخدم يود تفعيل تصنيف جيميناي التلقائي مع المزامنة
+        const autoClassifyEnabled = enableAutoClassifyCheck.checked;
+
+        if (targetsForClassification.length > 0 && autoClassifyEnabled) {
           const geminiKey = geminiApiKey.value.trim() || localStorage.getItem('user_gemini_api_key') || '';
           if (geminiKey) {
             showToast(`🤖 جاري تصنيف ذكي لـ ${targetsForClassification.length} فيديو غير مصنف...`);
@@ -1872,8 +1895,10 @@
 
     async function triggerSmartMetadataFetch(importedList, geminiKey) {
       const targets = importedList.filter(v => v.needsMetadataFetch === true);
+      const autoClassifyEnabled = enableAutoClassifyCheck.checked;
+
       if (targets.length === 0) {
-        if (geminiKey) {
+        if (geminiKey && autoClassifyEnabled) {
           await runGeminiClassification(importedList, geminiKey);
         }
         return;
@@ -1881,7 +1906,7 @@
 
       await fetchApiMetadataInBatches(targets, '');
 
-      if (geminiKey) {
+      if (geminiKey && autoClassifyEnabled) {
         await runGeminiClassification(targets, geminiKey);
       }
     }
@@ -2071,7 +2096,7 @@
           // دالة الانتظار التدريجي المتزايد (Exponential Backoff) لتجنب أخطاء 429
           if (retryCount > 0) {
             const waitTime = Math.pow(2, retryCount) * 1000;
-            logToCloudConsole(`⏳ إعادة المحاولة بعد ${waitTime / 1000} ثانية...`);
+            logToCloudConsole("⏳ إعادة المحاولة بعد " + waitTime / 1000 + " ثانية...");
             await delay(waitTime);
           }
 
@@ -2639,6 +2664,7 @@ ${titles.map((t, idx) => `${idx + 1}. ${t}`).join('\n')}`;
       renderGrid();
     }
 
+    // إدارة خانات الاختيار للتعديل الجماعي
     function handleCardCheckboxChange(id, checked) {
       if (checked) {
         selectedVideosSet.add(id);
