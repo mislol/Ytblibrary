@@ -1720,7 +1720,7 @@
       }
     }
 
-    // دالة الجلب السحابية الأساسية المعتمدة على الرمز الأمني المشفر وموقع الفيديوهات
+    // دالة جلب البيانات الأصلية من قوقل باستخدام الـ OAuth Token المشفر
     async function fetchAllPlaylistItemsOAuth(playlistId, token) {
       let videos = [];
       let nextPageToken = '';
@@ -1888,7 +1888,8 @@
         batches.push(ids.slice(i, i + 50));
       }
 
-      importStatus.textContent = `جاري جلب التفاصيل الحقيقية من قوقل... (0/${ids.length})`;
+      globalImportStatusContainer.style.display = 'flex';
+      globalImportStatus.textContent = `جاري جلب التفاصيل الحقيقية من قوقل... (0/${ids.length})`;
       importPanel.style.display = 'block';
       let count = 0;
 
@@ -1932,12 +1933,14 @@
         }
 
         count += batches[b].length;
-        importStatus.textContent = `جاري جلب التفاصيل الحقيقية من قوقل... (${count}/${ids.length})`;
+        globalImportStatus.textContent = `جاري جلب التفاصيل الحقيقية من قوقل... (${count}/${ids.length})`;
         saveLibraryAndBackup(allVideos);
       }
 
-      importStatus.textContent = 'تم استيراد كافة التفاصيل والمدد الفعلية من قوقل!';
-      setTimeout(() => { importStatus.textContent = ''; }, 3000);
+      globalImportStatus.textContent = 'تم استيراد كافة التفاصيل والمدد الفعلية من قوقل!';
+      setTimeout(() => { 
+        globalImportStatusContainer.style.display = 'none';
+      }, 3000);
     }
 
     function parseISO8601Duration(isoDur) {
