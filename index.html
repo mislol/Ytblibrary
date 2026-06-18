@@ -11,19 +11,21 @@
   <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;600;700;800&display=swap" rel="stylesheet">
 
   <style>
-    /* الألوان والمتغيرات العامة للواجهة الداكنة */
+    /* الألوان والمتغيرات العامة للواجهة الداكنة المحدثة */
     :root {
-      --bg-primary: #0f0f0f;
-      --bg-secondary: #1f1f1f;
-      --bg-tertiary: #2d2d2d;
+      --bg-primary: #0a0a0a;
+      --bg-secondary: #141414;
+      --bg-tertiary: #1f1f1f;
+      --bg-quaternary: #2a2a2a;
       --text-primary: #ffffff;
-      --text-secondary: #aaaaaa;
+      --text-secondary: #b3b3b3;
       --accent-color: #ff0000;
       --accent-hover: #cc0000;
       --gold-color: #ffb700;
-      --card-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
-      --border-radius: 12px;
-      --transition-speed: 0.3s;
+      --green-color: #2ec4b6;
+      --card-shadow: 0 12px 32px rgba(0, 0, 0, 0.6);
+      --border-radius: 16px;
+      --transition-speed: 0.25s;
     }
 
     * {
@@ -37,14 +39,17 @@
       color: var(--text-primary);
       font-family: 'Cairo', sans-serif;
       line-height: 1.6;
-      padding-bottom: 40px;
+      padding-bottom: 80px; /* زيادة المساحة لشريط التعديل الجماعي */
     }
 
     /* شريط الملاحة الرئيسي */
     .main-header {
       background-color: var(--bg-secondary);
       border-bottom: 1px solid var(--bg-tertiary);
+      position: sticky;
+      top: 0;
       z-index: 100;
+      backdrop-filter: blur(8px);
     }
 
     .header-container {
@@ -55,7 +60,7 @@
       align-items: center;
       padding: 15px 20px;
       flex-wrap: wrap;
-      gap: 10px;
+      gap: 15px;
     }
 
     .logo-section {
@@ -65,33 +70,34 @@
     }
 
     .logo-icon {
-      font-size: 1.8rem;
+      font-size: 2rem;
     }
 
     .logo-section h1 {
-      font-size: 1.2rem;
-      font-weight: 700;
+      font-size: 1.3rem;
+      font-weight: 800;
+      letter-spacing: -0.5px;
     }
 
     .header-actions {
       display: flex;
-      gap: 10px;
+      gap: 8px;
       flex-wrap: wrap;
     }
 
     /* الأزرار الأساسية والفرعية */
     .btn {
       font-family: 'Cairo', sans-serif;
-      padding: 8px 16px;
-      border-radius: 20px;
+      padding: 8px 18px;
+      border-radius: 24px;
       border: none;
       cursor: pointer;
-      font-weight: 600;
+      font-weight: 700;
       display: inline-flex;
       align-items: center;
       justify-content: center;
-      gap: 6px;
-      transition: background-color var(--transition-speed);
+      gap: 8px;
+      transition: all var(--transition-speed);
       font-size: 0.85rem;
     }
 
@@ -102,18 +108,31 @@
 
     .btn-primary:hover {
       background-color: var(--accent-hover);
+      transform: translateY(-1px);
     }
 
     .btn-secondary {
       background-color: var(--bg-tertiary);
       color: var(--text-primary);
+      border: 1px solid rgba(255, 255, 255, 0.05);
     }
 
     .btn-secondary:hover {
-      background-color: #444444;
+      background-color: var(--bg-quaternary);
+      border-color: rgba(255, 255, 255, 0.1);
     }
 
-    /* لوحة استيراد البيانات وإدارة الملفات وقوائم تشغيل يوتيوب */
+    .btn-gold {
+      background-color: var(--gold-color);
+      color: #000;
+    }
+    
+    .btn-gold:hover {
+      background-color: #e0a100;
+      transform: translateY(-1px);
+    }
+
+    /* لوحة استيراد البيانات وإدارة الملفات */
     .import-panel {
       max-width: 1400px;
       margin: 20px auto 0;
@@ -125,7 +144,7 @@
       background-color: var(--bg-secondary);
       border-radius: var(--border-radius);
       border: 1px solid var(--bg-tertiary);
-      padding: 20px;
+      padding: 24px;
       box-shadow: var(--card-shadow);
     }
 
@@ -133,9 +152,9 @@
     .tab-headers {
       display: flex;
       gap: 10px;
-      margin-bottom: 15px;
+      margin-bottom: 20px;
       border-bottom: 1px solid var(--bg-tertiary);
-      padding-bottom: 10px;
+      padding-bottom: 12px;
     }
 
     .tab-btn {
@@ -144,9 +163,9 @@
       color: var(--text-secondary);
       font-family: 'Cairo', sans-serif;
       font-weight: 700;
-      font-size: 0.9rem;
+      font-size: 0.95rem;
       cursor: pointer;
-      padding: 6px 15px;
+      padding: 8px 20px;
       border-radius: 20px;
       transition: all var(--transition-speed);
     }
@@ -164,20 +183,6 @@
       display: block;
     }
 
-    .import-container h3 {
-      font-size: 1.1rem;
-      margin-bottom: 10px;
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
-
-    .import-container p {
-      font-size: 0.85rem;
-      color: var(--text-secondary);
-      margin-bottom: 15px;
-    }
-
     .import-textarea {
       width: 100%;
       height: 120px;
@@ -193,30 +198,6 @@
       margin-bottom: 15px;
     }
 
-    .import-options {
-      margin-bottom: 15px;
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      background: var(--bg-primary);
-      padding: 10px 15px;
-      border-radius: 8px;
-      border: 1px solid var(--bg-tertiary);
-    }
-
-    .import-options input[type="checkbox"] {
-      width: 18px;
-      height: 18px;
-      accent-color: var(--accent-color);
-      cursor: pointer;
-    }
-
-    .import-options label {
-      font-size: 0.9rem;
-      cursor: pointer;
-      user-select: none;
-    }
-
     /* حقول الإدخال */
     .input-group {
       display: flex;
@@ -228,9 +209,10 @@
     .input-group label {
       font-size: 0.85rem;
       color: var(--text-secondary);
+      font-weight: 600;
     }
 
-    .input-group input {
+    .input-group input, .input-group select {
       width: 100%;
       padding: 10px 15px;
       border-radius: 8px;
@@ -240,95 +222,29 @@
       font-family: 'Cairo', sans-serif;
       outline: none;
       font-size: 0.9rem;
+      transition: border-color var(--transition-speed);
     }
 
-    .input-group input:focus {
+    .input-group input:focus, .input-group select:focus {
       border-color: var(--accent-color);
     }
 
-    /* حاوية قوائم تشغيل حساب قوقل الشخصي */
-    .google-playlists-container {
-      display: none;
-      flex-direction: column;
-      gap: 8px;
-      margin-bottom: 15px;
-      background-color: var(--bg-primary);
-      padding: 12px;
-      border-radius: 8px;
-      border: 1px dashed var(--bg-tertiary);
-    }
-
-    .google-playlists-container label {
-      font-size: 0.85rem;
-      color: var(--text-secondary);
-    }
-
-    .google-playlists-select-row {
-      display: flex;
-      gap: 10px;
-      width: 100%;
-      flex-wrap: wrap;
-    }
-
-    .google-playlists-select-row select {
-      flex-grow: 1;
-      min-width: 200px;
-      padding: 10px;
-      border-radius: 8px;
-      background-color: var(--bg-secondary);
-      color: var(--text-primary);
-      border: 1px solid var(--bg-tertiary);
-      font-family: 'Cairo', sans-serif;
-      outline: none;
-      font-size: 0.9rem;
-    }
-
-    .import-footer {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      flex-wrap: wrap;
-      gap: 10px;
-    }
-
-    .file-input-wrapper {
-      position: relative;
-      overflow: hidden;
-      display: inline-block;
-    }
-
-    .file-input-wrapper input[type=file] {
-      font-size: 100px;
-      position: absolute;
-      left: 0;
-      top: 0;
-      opacity: 0;
-      cursor: pointer;
-    }
-
-    /* شريط الحالة الموحد التفاعلي */
+    /* شريط الحالة الموحد */
     .global-status-container {
       display: flex;
       align-items: center;
       justify-content: space-between;
       margin-top: 15px;
-      background-color: var(--bg-primary);
-      padding: 12px 18px;
-      border-radius: 8px;
-      border: 1px dashed var(--bg-tertiary);
+      background-color: rgba(255, 183, 0, 0.05);
+      padding: 14px 20px;
+      border-radius: 10px;
+      border: 1px dashed var(--gold-color);
       display: none;
       flex-wrap: wrap;
       gap: 10px;
     }
 
-    .global-status-text {
-      font-size: 0.85rem;
-      color: var(--gold-color);
-      font-weight: 600;
-      flex: 1;
-    }
-
-    /* مساحة عرض الإحصاءات الفوقية */
+    /* مساحة عرض الإحصاءات */
     .stats-section {
       max-width: 1400px;
       margin: 20px auto;
@@ -339,12 +255,13 @@
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
       gap: 15px;
+      margin-bottom: 20px;
     }
 
     .stat-card {
       background-color: var(--bg-secondary);
       border-radius: var(--border-radius);
-      padding: 15px;
+      padding: 20px;
       display: flex;
       align-items: center;
       gap: 15px;
@@ -357,7 +274,7 @@
     }
 
     .stat-info h3 {
-      font-size: 1.5rem;
+      font-size: 1.6rem;
       font-weight: 800;
       line-height: 1.2;
     }
@@ -365,6 +282,70 @@
     .stat-info p {
       color: var(--text-secondary);
       font-size: 0.8rem;
+    }
+
+    /* لوحة الإحصاءات المرئية المضافة */
+    .visual-stats-panel {
+      background-color: var(--bg-secondary);
+      border-radius: var(--border-radius);
+      padding: 20px;
+      border: 1px solid var(--bg-tertiary);
+      margin-bottom: 20px;
+      box-shadow: var(--card-shadow);
+    }
+
+    .visual-stats-panel h4 {
+      font-size: 1rem;
+      font-weight: 700;
+      margin-bottom: 15px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .chart-container-flex {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .chart-bar-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-size: 0.85rem;
+    }
+
+    .chart-bar-label {
+      width: 140px;
+      text-overflow: ellipsis;
+      overflow: hidden;
+      white-space: nowrap;
+      font-weight: 600;
+    }
+
+    .chart-bar-track {
+      flex-grow: 1;
+      height: 12px;
+      background-color: var(--bg-primary);
+      border-radius: 6px;
+      overflow: hidden;
+      position: relative;
+    }
+
+    .chart-bar-fill {
+      height: 100%;
+      background-color: var(--accent-color);
+      border-radius: 6px;
+      width: 0%;
+      transition: width 0.6s ease;
+    }
+
+    .chart-bar-val {
+      width: 45px;
+      text-align: left;
+      font-weight: 700;
+      color: var(--text-secondary);
     }
 
     /* أزرار اختيار التصنيفات - الحبات */
@@ -392,7 +373,6 @@
       align-items: center;
       gap: 8px;
       transition: all var(--transition-speed);
-      user-select: none;
     }
 
     .category-pill-btn:hover {
@@ -411,34 +391,27 @@
     }
 
     .category-pill-btn .badge {
-      background-color: rgba(0, 0, 0, 0.2);
+      background-color: rgba(0, 0, 0, 0.25);
       color: #fff;
       padding: 2px 8px;
       border-radius: 12px;
       font-size: 0.8rem;
-      font-weight: 700;
     }
 
-    .category-pill-btn.active-gold .badge {
-      background-color: rgba(0, 0, 0, 0.4);
-      color: #000;
-    }
-
-    /* القائمة المنسدلة للتصنيفات */
     .categories-dropdown-menu {
       position: absolute;
       top: calc(100% + 6px);
-      right: 0;
+      right: 20px;
       background-color: var(--bg-secondary);
       border: 1px solid var(--bg-tertiary);
       border-radius: var(--border-radius);
       list-style: none;
       padding: 8px 0;
-      min-width: 240px;
+      min-width: 260px;
       box-shadow: var(--card-shadow);
       z-index: 150;
       display: none;
-      max-height: 350px;
+      max-height: 380px;
       overflow-y: auto;
     }
 
@@ -465,21 +438,6 @@
     .dropdown-item-cat.active {
       background-color: var(--bg-tertiary);
       border-right: 4px solid var(--accent-color);
-    }
-
-    .dropdown-item-cat.fav-style {
-      color: var(--gold-color);
-    }
-    
-    .dropdown-item-cat.fav-style.active {
-      border-right: 4px solid var(--gold-color);
-    }
-
-    .app-layout {
-      max-width: 1400px;
-      margin: 0 auto;
-      padding: 0 20px;
-      display: block; 
     }
 
     /* لوحة التصفية والبحث */
@@ -531,7 +489,7 @@
 
     .filters-row {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
       gap: 15px;
     }
 
@@ -544,6 +502,7 @@
     .filter-group label {
       font-size: 0.8rem;
       color: var(--text-secondary);
+      font-weight: 600;
     }
 
     .filter-group select {
@@ -557,7 +516,7 @@
       font-size: 0.9rem;
     }
 
-    /* شبكة عرض مقاطع الفيديو */
+    /* شبكة مقاطع الفيديو والبطاقات */
     .videos-grid {
       display: grid;
       grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
@@ -573,12 +532,65 @@
       box-shadow: var(--card-shadow);
       display: flex;
       flex-direction: column;
+      position: relative;
       transition: transform var(--transition-speed), box-shadow var(--transition-speed);
     }
 
     .video-card:hover {
       transform: translateY(-5px);
       box-shadow: 0 12px 30px rgba(0, 0, 0, 0.7);
+    }
+
+    /* بطاقة التحميل الهيكلية (Skeleton) */
+    .video-card-skeleton {
+      background-color: var(--bg-secondary);
+      border-radius: var(--border-radius);
+      border: 1px solid var(--bg-tertiary);
+      height: 380px;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    .skeleton-thumb {
+      aspect-ratio: 16/9;
+      background: linear-gradient(90deg, #1f1f1f 25%, #2d2d2d 50%, #1f1f1f 75%);
+      background-size: 200% 100%;
+      animation: skeleton-pulse 1.5s infinite;
+    }
+
+    .skeleton-text {
+      height: 16px;
+      background: linear-gradient(90deg, #1f1f1f 25%, #2d2d2d 50%, #1f1f1f 75%);
+      background-size: 200% 100%;
+      animation: skeleton-pulse 1.5s infinite;
+      border-radius: 4px;
+      margin: 15px 15px 5px;
+    }
+
+    .skeleton-text.short {
+      width: 60%;
+    }
+
+    @keyframes skeleton-pulse {
+      0% { background-position: 200% 0; }
+      100% { background-position: -200% 0; }
+    }
+
+    /* خانة الاختيار للتعديل الجماعي */
+    .card-checkbox-wrapper {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      z-index: 10;
+      display: none; /* تظهر فقط في وضع التحرير الجماعي */
+    }
+
+    .card-checkbox-wrapper input[type="checkbox"] {
+      width: 22px;
+      height: 22px;
+      accent-color: var(--accent-color);
+      cursor: pointer;
     }
 
     .thumbnail-area {
@@ -605,11 +617,11 @@
       position: absolute;
       bottom: 8px;
       left: 8px;
-      background-color: rgba(0, 0, 0, 0.8);
-      padding: 2px 6px;
+      background-color: rgba(0, 0, 0, 0.85);
+      padding: 2px 8px;
       border-radius: 4px;
       font-size: 0.8rem;
-      font-weight: 600;
+      font-weight: 700;
     }
 
     .card-body {
@@ -634,10 +646,9 @@
       font-size: 0.75rem;
       padding: 2px 10px;
       border-radius: 12px;
-      border: 1px solid rgba(255, 255, 255, 0.1);
+      border: 1px solid rgba(255, 255, 255, 0.08);
     }
 
-    /* معدل التصنيف السريع */
     .quick-cat-select {
       background-color: transparent;
       border: 1px dashed var(--text-secondary);
@@ -648,29 +659,15 @@
       border-radius: 10px;
       outline: none;
       cursor: pointer;
-      max-width: 110px;
-      transition: border-color 0.3s;
-    }
-
-    .quick-cat-select:hover {
-      border-color: var(--accent-color);
-      color: var(--text-primary);
     }
 
     .video-title {
       font-size: 15px;
-      font-weight: 600;
-      line-height: 1.35;
+      font-weight: 700;
+      line-height: 1.4;
       margin-bottom: 8px;
       cursor: pointer;
-      height: auto;
       transition: color var(--transition-speed);
-    }
-
-    @media (min-width: 901px) {
-      .video-title {
-        font-size: 16px;
-      }
     }
 
     .video-title:hover {
@@ -678,7 +675,7 @@
     }
 
     .channel-name {
-      font-size: 0.85rem;
+      font-size: 0.8rem;
       color: var(--text-secondary);
       margin-bottom: 15px;
     }
@@ -691,12 +688,47 @@
 
     .card-footer .btn {
       flex-grow: 1;
-      justify-content: center;
-      font-size: 0.8rem;
       padding: 8px 10px;
     }
 
-    /* تخصيص مظهر وضع القائمة */
+    /* شريط التعديل الجماعي العائم المضاف */
+    .bulk-action-bar {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      background-color: var(--bg-secondary);
+      border-top: 2px solid var(--accent-color);
+      box-shadow: 0 -8px 24px rgba(0,0,0,0.8);
+      padding: 15px 20px;
+      z-index: 200;
+      display: none;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 15px;
+      animation: slide-up 0.3s ease-out;
+    }
+
+    @keyframes slide-up {
+      from { transform: translateY(100%); }
+      to { transform: translateY(0); }
+    }
+
+    .bulk-info-side {
+      display: flex;
+      align-items: center;
+      gap: 15px;
+    }
+
+    .bulk-actions-side {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    /* وضع القائمة لبطاقات الفيديوهات */
     .videos-grid.list-layout {
       grid-template-columns: 1fr !important;
       gap: 12px;
@@ -705,14 +737,13 @@
     .videos-grid.list-layout .video-card {
       flex-direction: row;
       align-items: center;
-      height: auto;
       padding: 10px;
     }
 
     .videos-grid.list-layout .thumbnail-area {
-      width: 120px;
-      min-width: 120px;
-      height: 75px;
+      width: 140px;
+      min-width: 140px;
+      height: 85px;
       border-radius: 8px;
     }
 
@@ -721,52 +752,20 @@
       flex-direction: row;
       align-items: center;
       justify-content: space-between;
-      flex-wrap: wrap;
-      gap: 10px;
       width: 100%;
+      gap: 15px;
     }
 
     .videos-grid.list-layout .card-info-block {
       flex: 1;
-      min-width: 250px;
-    }
-
-    .videos-grid.list-layout .video-title {
-      height: auto;
-      margin-bottom: 4px;
-    }
-
-    .videos-grid.list-layout .channel-name {
-      margin-bottom: 0;
     }
 
     .videos-grid.list-layout .card-footer {
       margin-top: 0;
       min-width: 180px;
-      justify-content: flex-end;
     }
 
-    @media (max-width: 600px) {
-      .videos-grid.list-layout .video-card {
-        flex-direction: column;
-        align-items: stretch;
-      }
-      .videos-grid.list-layout .thumbnail-area {
-        width: 100%;
-        height: auto;
-        aspect-ratio: 16/9;
-      }
-      .videos-grid.list-layout .card-body {
-        padding: 10px 0 0 0;
-        flex-direction: column;
-        align-items: stretch;
-      }
-      .videos-grid.list-layout .card-footer {
-        width: 100%;
-      }
-    }
-
-    /* عناصر الترقيم */
+    /* واجهة الترقيم */
     .pagination-container {
       display: flex;
       justify-content: center;
@@ -787,8 +786,8 @@
       display: flex;
       align-items: center;
       justify-content: center;
-      font-weight: 600;
-      transition: background-color var(--transition-speed);
+      font-weight: 700;
+      transition: all var(--transition-speed);
     }
 
     .page-btn:hover, .page-btn.active {
@@ -801,19 +800,20 @@
       cursor: not-allowed;
     }
 
-    /* رسالة التنبيه المنسدلة */
+    /* رسالة التنبيه */
     .toast-msg {
       position: fixed;
-      bottom: 20px;
-      right: 20px;
-      background-color: #333333;
+      bottom: 30px;
+      right: 30px;
+      background-color: #1a1a1a;
       color: #ffffff;
-      padding: 12px 24px;
+      padding: 14px 28px;
       border-radius: 8px;
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+      box-shadow: var(--card-shadow);
       border-right: 4px solid var(--accent-color);
       z-index: 1000;
-      animation: slideIn 0.3s ease-out;
+      font-weight: 700;
+      animation: slideIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
     }
 
     @keyframes slideIn {
@@ -832,28 +832,28 @@
         <h1>مكتبة مرئيات يوتيوب</h1>
       </div>
       <div class="header-actions">
-        <button id="googleSignInBtn" class="btn btn-secondary" style="background-color: var(--bg-tertiary);" onclick="handleGoogleSignIn()"><span class="icon">🔐</span> دخول قوقل</button>
-        <button id="googleSignOutBtn" class="btn btn-secondary" style="background-color: var(--bg-tertiary); display: none;" onclick="handleGoogleSignOut()"><span class="icon">🔓</span> خروج</button>
-        <!-- زر تحديث التوقيتات سحابياً الذكي للمستخدمين المسجلين -->
-        <button id="updateDurationsFromApiBtn" class="btn btn-secondary" style="background-color: var(--bg-tertiary);" onclick="updateDurationsFromApi()"><span class="icon">🔄</span> تحديث التوقيتات</button>
+        <button id="googleSignInBtn" class="btn btn-secondary" onclick="handleGoogleSignIn()"><span class="icon">🔐</span> دخول قوقل</button>
+        <button id="googleSignOutBtn" class="btn btn-secondary" style="display: none;" onclick="handleGoogleSignOut()"><span class="icon">🔓</span> خروج</button>
+        <button id="updateDurationsFromApiBtn" class="btn btn-secondary" onclick="updateDurationsFromApi()"><span class="icon">🔄</span> تحديث التوقيتات</button>
         <button id="toggleImportBtn" class="btn btn-secondary">📥 استيراد</button>
         <button id="exportCsvBtn" class="btn btn-secondary">📤 تصدير لـ CSV</button>
+        <button id="bulkEditModeBtn" class="btn btn-secondary" style="color: var(--gold-color);"><span class="icon">⚙️</span> تعديل جماعي</button>
         <button id="clearListBtn" class="btn btn-secondary" style="color: #ff3333;"><span class="icon">🗑️</span> مسح</button>
       </div>
     </div>
   </header>
 
-  <!-- لوحة استيراد البيانات وإدارة الملفات وقوائم تشغيل يوتيوب -->
+  <!-- لوحة استيراد البيانات وإدارة الملفات -->
   <section class="import-panel" id="importPanel">
     <div class="import-container">
       
       <!-- إدخال مفتاح ذكاء جيميناي (Gemini API Key) -->
-      <div class="input-group" style="margin-bottom: 20px;">
+      <div class="input-group">
         <label for="geminiApiKey">🤖 مفتاح ذكاء جيميناي (Gemini API Key)</label>
-        <input type="text" id="geminiApiKey" placeholder="أدخل مفتاح Gemini الخاص بك (اختياري)...">
+        <input type="text" id="geminiApiKey" placeholder="أدخل مفتاح Gemini الخاص بك...">
         <div style="margin-top: 8px; display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
           <button id="testGeminiBtn" class="btn btn-secondary" style="font-size: 0.8rem; padding: 6px 12px;">⚡ فحص اتصال الذكاء الاصطناعي</button>
-          <button id="classifyCurrentLibraryBtn" class="btn btn-primary" style="font-size: 0.8rem; padding: 6px 12px; background-color: var(--gold-color); color: #000;" onclick="startManualClassification()">🏷️ تصنيف</button>
+          <button id="classifyCurrentLibraryBtn" class="btn btn-gold" style="font-size: 0.8rem; padding: 6px 12px;" onclick="startManualClassification()">🏷️ تصنيف الفيديوهات غير المصنفة</button>
           <span id="geminiTestStatus" style="font-size: 0.85rem; font-weight: 600;"></span>
         </div>
       </div>
@@ -866,40 +866,39 @@
 
       <!-- محتوى التبويب الأول: CSV -->
       <div id="tabCsvContent" class="tab-content active">
-        <p>قم بلصق محتوى ملف CSV الخاص بك أو اختر ملفاً من جهازك بالأسفل. يمكنك الحفظ كقائمة جديدة بالكامل، أو تحديث تصنيفات الفيديوهات الحالية فقط من الملف.</p>
+        <p style="margin-bottom:15px; font-size:0.9rem; color:var(--text-secondary);">قم بلصق محتوى ملف CSV الخاص بك أو اختر ملفاً من جهازك بالأسفل. يمكنك تحديث تصنيفات الفيديوهات الحالية فقط من الملف.</p>
         
         <div class="input-group">
-          <label for="csvPlaylistName">اسم قائمة التشغيل (يدوي) - سيتم تذييله تلقائياً بـ (م)</label>
+          <label for="csvPlaylistName">اسم قائمة التشغيل (يدوي)</label>
           <input type="text" id="csvPlaylistName" placeholder="مثال: كورس تصميم">
         </div>
 
         <textarea id="importTextarea" class="import-textarea" placeholder="الصق أسطر الـ CSV هنا...&#10;مثال: 1,أفضل طريقة للمذاكرة,,تعليم,دروس أونلاين,12:29,,https://www.youtube.com/..."></textarea>
         
-        <!-- صندوق خيار تحديد استبدال التصنيفات القديمة أو الفيديوهات غير المصنفة فقط -->
-        <div class="import-options" style="display: flex; align-items: center; gap: 8px; margin-bottom: 15px; background: var(--bg-primary); padding: 8px 12px; border-radius: 8px; border: 1px solid var(--bg-tertiary);">
+        <div class="import-options" style="display: flex; align-items: center; gap: 8px; margin-bottom: 15px; background: var(--bg-primary); padding: 12px; border-radius: 8px; border: 1px solid var(--bg-tertiary);">
           <input type="checkbox" id="overwriteCategoriesCheck" checked style="width:16px; height:16px; accent-color: var(--accent-color); cursor:pointer;">
           <label for="overwriteCategoriesCheck" style="font-size:0.85rem; cursor:pointer; user-select:none;">🔄 استبدال التصنيفات الحالية بالتصنيفات المستوردة (حتى لو كانت مصنفة مسبقاً)</label>
         </div>
 
         <div class="import-footer">
-          <div class="file-input-wrapper">
+          <div class="file-input-wrapper" style="position: relative; overflow: hidden; display: inline-block;">
             <button class="btn btn-secondary">📂 اختر ملف CSV</button>
-            <input type="file" id="csvFileInput" accept=".csv, .txt">
+            <input type="file" id="csvFileInput" accept=".csv, .txt" style="position: absolute; left: 0; top: 0; opacity: 0; cursor: pointer; height:100%; width:100%;">
           </div>
           <div style="display: flex; gap: 8px; flex-wrap: wrap;">
             <button id="saveImportBtn" class="btn btn-primary">💾 معالجة وحفظ كقائمة جديدة</button>
-            <button id="mergeCsvCategoriesBtn" class="btn btn-secondary" style="background-color: var(--gold-color); color: #000;">🏷️ دمج وتحديث التصنيفات فقط</button>
-            <button id="resetDefaultBtn" class="btn btn-secondary" style="color: #ff3333; display: none;">❌ إعادة ضبط المصنع</button>
+            <button id="mergeCsvCategoriesBtn" class="btn btn-gold">🏷️ دمج وتحديث التصنيفات فقط</button>
+            <button id="resetDefaultBtn" class="btn btn-secondary" style="color: #ff3333; display: none;">❌ إعادة ضبط الافتراضي</button>
           </div>
         </div>
       </div>
 
       <!-- محتوى التبويب الثاني: استيراد يوتيوب -->
       <div id="tabYoutubeContent" class="tab-content">
-        <p>أدخل مفتاح Google API ورابط قائمة تشغيل يوتيوب لجلب جميع مقاطع الفيديو تلقائياً وتصنيفها برمجياً في لحظات.</p>
+        <p style="margin-bottom:15px; font-size:0.9rem; color:var(--text-secondary);">أدخل معرف قوقل والـ API Key لاسترداد قوائم التشغيل الخاصة بك ومزامنتها سحابياً وتصنيفها مباشرة.</p>
         
         <div class="input-group">
-          <label for="googleClientId">🔐 معرف عميل قوقل (Google OAuth Client ID) - مطلوب للمزامنة والحذف السحابي</label>
+          <label for="googleClientId">🔐 معرف عميل قوقل (Google OAuth Client ID)</label>
           <input type="text" id="googleClientId" placeholder="أدخل معرف OAuth Client ID الخاص بك...">
           <div style="margin-top: 8px; display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
             <button id="testGoogleClientBtn" class="btn btn-secondary" style="font-size: 0.8rem; padding: 6px 12px;" onclick="testGoogleClientId()">⚡ فحص معرف عميل قوقل</button>
@@ -907,15 +906,14 @@
           </div>
         </div>
 
-        <!-- لوحة قوائم تشغيل حسابك الشخصي -->
-        <div class="google-playlists-container" id="googlePlaylistsContainer">
-          <label for="googlePlaylistsSelect">📁 اختر قائمة تشغيل من حسابك الشخصي للاستيراد أو المزامنة:</label>
-          <div class="google-playlists-select-row">
-            <select id="googlePlaylistsSelect">
+        <div class="google-playlists-container" id="googlePlaylistsContainer" style="display: none; flex-direction: column; gap: 10px; background-color: var(--bg-primary); padding: 15px; border-radius: 8px; border: 1px dashed var(--bg-tertiary); margin-bottom: 15px;">
+          <label for="googlePlaylistsSelect" style="font-size:0.85rem; font-weight:600;">📁 اختر قائمة تشغيل سحابية من حسابك:</label>
+          <div style="display: flex; gap: 10px; width: 100%; flex-wrap: wrap;">
+            <select id="googlePlaylistsSelect" style="flex:1; padding: 10px; border-radius: 8px; background-color: var(--bg-secondary); color: #fff; border: 1px solid var(--bg-tertiary); outline: none;">
               <option value="">-- جاري التحميل... --</option>
             </select>
-            <button id="importSelectedPlaylistBtn" class="btn btn-primary" style="font-size: 0.8rem;" onclick="triggerSelectedPlaylistImport()">📥 استيراد</button>
-            <button id="syncSelectedPlaylistBtn" class="btn btn-secondary" style="font-size: 0.8rem; background-color: var(--gold-color); color: #000;" onclick="triggerSelectedPlaylistSync()">🔄 مزامنة وتحديث</button>
+            <button id="importSelectedPlaylistBtn" class="btn btn-primary" onclick="triggerSelectedPlaylistImport()">📥 استيراد</button>
+            <button id="syncSelectedPlaylistBtn" class="btn btn-gold" onclick="triggerSelectedPlaylistSync()">🔄 مزامنة وتحديث</button>
           </div>
         </div>
 
@@ -925,7 +923,7 @@
         </div>
 
         <div class="input-group">
-          <label for="youtubePlaylistUrl">رابط قائمة تشغيل يوتيوب (YouTube Playlist URL) أو الـ ID الخاص بها</label>
+          <label for="youtubePlaylistUrl">رابط قائمة تشغيل يوتيوب (YouTube Playlist URL) أو الـ ID</label>
           <input type="text" id="youtubePlaylistUrl" placeholder="مثال: https://www.youtube.com/playlist?list=PLAYLIST_ID">
         </div>
 
@@ -939,7 +937,7 @@
       <div class="global-status-container" id="globalImportStatusContainer">
         <span class="global-status-text" id="globalImportStatus">⏳ جاري الاتصال بالذكاء الاصطناعي...</span>
         <div style="display: flex; gap: 8px;">
-          <button id="continueImportBtn" class="btn btn-primary" style="background-color: var(--gold-color); color: #000; font-size: 0.8rem; padding: 5px 12px; display: none;" onclick="triggerContinueImport()">متابعة التصنيف ➡️</button>
+          <button id="continueImportBtn" class="btn btn-gold" style="font-size: 0.8rem; padding: 5px 12px; display: none;" onclick="triggerContinueImport()">متابعة التصنيف ➡️</button>
           <button id="cancelImportBtn" class="btn btn-secondary" style="color: #ff3333; font-size: 0.8rem; padding: 5px 12px;" onclick="triggerCancelImport()">إلغاء العملية 🛑</button>
         </div>
       </div>
@@ -986,6 +984,14 @@
         </div>
       </div>
     </div>
+
+    <!-- لوحة الإحصاءات المرئية الجديدة المضافة -->
+    <div class="visual-stats-panel" id="visualStatsPanel">
+      <h4>📊 توزيع نسب الفيديوهات حسب التصنيفات</h4>
+      <div class="chart-container-flex" id="visualChartContainer">
+        <!-- يتم ملء البيانات ديناميكياً بواسطة جافا سكريبت -->
+      </div>
+    </div>
   </section>
 
   <!-- شريط الأزرار والحبات التفاعلي للتصنيفات -->
@@ -1027,7 +1033,29 @@
             </select>
           </div>
 
-          <!-- فلتر قائمة التشغيل مدعوماً بزر حذف التصنيفات الخاص بالقائمة المحددة -->
+          <!-- فلتر المدة الزمنية المتقدم المضاف -->
+          <div class="filter-group">
+            <label for="durationFilter">المدة الزمنية</label>
+            <select id="durationFilter" onchange="applyFiltersAndSort()">
+              <option value="">الكل</option>
+              <option value="short">قصير (أقل من 5 دقائق)</option>
+              <option value="medium">متوسط (5 - 20 دقيقة)</option>
+              <option value="long">طويل (20 دقيقة - ساعة)</option>
+              <option value="very-long">بودكاست وشروحات (أكثر من ساعة)</option>
+            </select>
+          </div>
+
+          <!-- فلتر حالة التصنيف المتقدم المضاف -->
+          <div class="filter-group">
+            <label for="classificationFilter">حالة التصنيف</label>
+            <select id="classificationFilter" onchange="applyFiltersAndSort()">
+              <option value="">الكل</option>
+              <option value="unclassified">فيديوهات غير مصنفة (غ-مصنف)</option>
+              <option value="classified">فيديوهات مصنفة</option>
+            </select>
+          </div>
+
+          <!-- فلتر قائمة التشغيل -->
           <div class="filter-group">
             <label for="playlistFilter">قائمة التشغيل</label>
             <div style="display: flex; gap: 6px;">
@@ -1061,6 +1089,24 @@
     </main>
   </div>
 
+  <!-- شريط التحكم بالتعديل الجماعي العائم المضاف -->
+  <div class="bulk-action-bar" id="bulkMenuBar">
+    <div class="bulk-info-side">
+      <span style="font-size: 1.1rem;">⚙️ <strong id="bulkSelectedCount">0</strong> فيديوهات محددة</span>
+      <button class="btn btn-secondary" style="font-size:0.8rem; padding: 4px 10px;" onclick="selectAllOnCurrentPage()">تحديد الكل بالصفحة</button>
+      <button class="btn btn-secondary" style="font-size:0.8rem; padding: 4px 10px;" onclick="deselectAll()">إلغاء التحديد</button>
+    </div>
+    <div class="bulk-actions-side">
+      <label for="bulkCategorySelect" style="font-size: 0.85rem; font-weight: 700;">نقل الفئة إلى:</label>
+      <select id="bulkCategorySelect" style="padding:6px 12px; border-radius:8px; background-color: var(--bg-primary); color:#fff; border: 1px solid var(--bg-tertiary); font-family:'Cairo'; font-size: 0.85rem;">
+        <!-- يتم تغذيته ديناميكياً -->
+      </select>
+      <button class="btn btn-gold" style="font-size: 0.85rem;" onclick="applyBulkCategoryChange()">تغيير فئة المحدد</button>
+      <button class="btn btn-secondary" style="color: #ff3333; font-size: 0.85rem;" onclick="applyBulkDelete()">حذف المحدد 🗑️</button>
+      <button class="btn btn-secondary" style="font-size: 0.85rem;" onclick="toggleBulkEditMode()">إغلاق التعديل</button>
+    </div>
+  </div>
+
   <script>
     // عينة افتراضية مبدئية مصنفة بـ "غ-مصنف" و"تقنية"
     const defaultData = [
@@ -1092,6 +1138,10 @@
     let selectedCategory = '';
     let currentLayout = 'grid'; 
     let playlistNamesMap = {};
+
+    // متغيرات مخصصة لوضع التعديل الجماعي
+    let bulkEditActive = false;
+    let selectedVideosSet = new Set();
 
     // ربط العناصر البرمجية بالواجهة
     const videosGrid = document.getElementById('videosGrid');
@@ -1147,6 +1197,15 @@
     const continueImportBtn = document.getElementById('continueImportBtn');
     const cloudConsoleLogs = document.getElementById('cloudConsoleLogs');
 
+    // عناصر شريط التعديل الجماعي المضافة
+    const bulkEditModeBtn = document.getElementById('bulkEditModeBtn');
+    const bulkMenuBar = document.getElementById('bulkMenuBar');
+    const bulkSelectedCount = document.getElementById('bulkSelectedCount');
+    const bulkCategorySelect = document.getElementById('bulkCategorySelect');
+
+    // الرسم البياني
+    const visualChartContainer = document.getElementById('visualChartContainer');
+
     let activeImportBatches = [];
     let currentImportBatchIdx = 0;
     let activeImportGeminiKey = '';
@@ -1176,6 +1235,7 @@
       clearListBtn.addEventListener('click', clearCurrentLibrary);
 
       layoutToggleBtn.addEventListener('click', toggleLayout);
+      bulkEditModeBtn.addEventListener('click', toggleBulkEditMode);
 
       toggleImportBtn.addEventListener('click', () => {
         importPanel.style.display = (importPanel.style.display === 'block') ? 'none' : 'block';
@@ -1290,6 +1350,7 @@
       populateDropdownFilters();
       renderCategoryMenu();
       updateMenuSelection();
+      renderVisualStats();
       applyFiltersAndSort();
     }
 
@@ -1311,9 +1372,44 @@
       statTotalCategories.textContent = categories.size;
     }
 
+    // عرض رسم بياني مصغر لنسب وتوزيع التصنيفات ديناميكياً
+    function renderVisualStats() {
+      if (!visualChartContainer) return;
+      visualChartContainer.innerHTML = '';
+
+      if (allVideos.length === 0) {
+        visualChartContainer.innerHTML = '<p style="font-size:0.85rem; color:var(--text-secondary);">لا توجد فيديوهات كافية لعرض الإحصاءات حالياً.</p>';
+        return;
+      }
+
+      const distribution = {};
+      allVideos.forEach(v => {
+        const primaryCat = (v.category || 'غ-مصنف').split('/')[0].trim();
+        distribution[primaryCat] = (distribution[primaryCat] || 0) + 1;
+      });
+
+      const sortedData = Object.entries(distribution).sort((a, b) => b[1] - a[1]).slice(0, 5); // أفضل 5 تصنيفات
+
+      sortedData.forEach(([catName, count]) => {
+        const percentage = Math.round((count / allVideos.length) * 100);
+        
+        const row = document.createElement('div');
+        row.className = 'chart-bar-row';
+        row.innerHTML = `
+          <div class="chart-bar-label" title="${catName}">${catName}</div>
+          <div class="chart-bar-track">
+            <div class="chart-bar-fill" style="width: ${percentage}%;"></div>
+          </div>
+          <div class="chart-bar-val">${percentage}% (${count})</div>
+        `;
+        visualChartContainer.appendChild(row);
+      });
+    }
+
     function populateDropdownFilters() {
       categoryFilter.innerHTML = '<option value="">الكل</option><option value="favorites">المفضلة ⭐️</option>';
       channelFilter.innerHTML = '<option value="">الكل</option>';
+      bulkCategorySelect.innerHTML = '';
 
       const allCats = [];
       allVideos.forEach(v => {
@@ -1332,7 +1428,21 @@
         opt.value = cat;
         opt.textContent = cat;
         categoryFilter.appendChild(opt);
+
+        // إضافة للتعديل الجماعي أيضاً
+        const optBulk = document.createElement('option');
+        optBulk.value = cat;
+        optBulk.textContent = cat;
+        bulkCategorySelect.appendChild(optBulk);
       });
+
+      // إضافة غ-مصنف لقائمة خيارات التعديل الجماعي في حال لم يتواجد
+      if (!categories.includes('غ-مصنف')) {
+        const optUncat = document.createElement('option');
+        optUncat.value = 'غ-مصنف';
+        optUncat.textContent = 'غ-مصنف';
+        bulkCategorySelect.appendChild(optUncat);
+      }
 
       channels.forEach(chan => {
         const opt = document.createElement('option');
@@ -1379,7 +1489,8 @@
       pillAllBadge.textContent = allVideos.length;
 
       const favItem = document.createElement('li');
-      favItem.className = 'dropdown-item-cat fav-style';
+      favItem.className = 'dropdown-item-cat';
+      favItem.style.color = 'var(--gold-color)';
       favItem.dataset.category = 'favorites';
       if (selectedCategory === 'favorites') favItem.classList.add('active');
       favItem.innerHTML = `<span>المفضلة ⭐️</span> <span class="category-badge">${favoriteIds.size}</span>`;
@@ -1387,7 +1498,7 @@
       categoriesDropdownMenu.appendChild(favItem);
 
       const dupItem = document.createElement('li');
-      dupItem.className = 'dropdown-item-cat fav-style';
+      dupItem.className = 'dropdown-item-cat';
       dupItem.style.color = '#ff3333';
       dupItem.dataset.category = 'duplicates_only';
       if (selectedCategory === 'duplicates_only') dupItem.classList.add('active');
@@ -1400,7 +1511,7 @@
         item.className = 'dropdown-item-cat';
         item.dataset.category = cat;
         if (selectedCategory === cat) item.classList.add('active');
-        item.innerHTML = `<span>${cat}</span> <span class="category-badge">${counts[cat]}</span>`;
+        item.innerHTML = `<span>${cat}</span> <span class="category-badge" style="background-color:var(--bg-primary); padding:2px 8px; border-radius:10px; font-size:0.75rem;">${counts[cat]}</span>`;
         item.addEventListener('click', () => selectCategoryFromMenu(cat));
         categoriesDropdownMenu.appendChild(item);
       });
@@ -1510,7 +1621,7 @@
         let titleVal = '';
         let durationVal = '00:00';
 
-        // 1. البحث عن الرابط في أي مكان بالسطر (لأنه المعرّف الأهم)
+        // 1. البحث عن الرابط في أي مكان بالسطر
         const foundUrl = fields.find(f => f.startsWith('http://') || f.startsWith('https://'));
         if (foundUrl) {
           urlVal = foundUrl;
@@ -1522,7 +1633,7 @@
           }
         }
 
-        // 2. البحث المرن عن التوقيت (المدة) حتى لو كانت ملتصقة بكلمات أخرى في السطر
+        // 2. البحث المرن عن التوقيت (المدة)
         let foundDuration = '';
         for (let f of fields) {
           const match = f.match(/\b\d{1,2}:\d{2}(:\d{2})?\b/);
@@ -1566,41 +1677,6 @@
         }
       }
 
-      // البحث العام العشوائي كخيار أخير في حال فشل القراءة بالجدول
-      if (results.length === 0) {
-        for (let j = 0; j < lines.length; j++) {
-          const currentLine = lines[j].trim();
-          if (!currentLine) continue;
-
-          const ytReg = /(https?:\/\/(?:www\.)?(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([a-zA-Z0-9_-]{11}))/;
-          const match = currentLine.match(ytReg);
-          
-          if (match) {
-            const urlVal = match[1];
-            const videoId = match[2];
-            let titleVal = '';
-            if (j > 0 && !lines[j-1].trim().startsWith('http')) {
-              titleVal = lines[j-1].trim();
-            } else {
-              titleVal = currentLine.replace(urlVal, '').trim();
-            }
-            titleVal = titleVal.replace(/[:\-ـ\s\[\]()]+/g, ' ').trim();
-
-            results.push({
-              id: results.length + 1,
-              title: titleVal || `فيديو يوتيوب رقم ${results.length + 1}`,
-              category: "غ-مصنف",
-              channel: "استخراج تلقائي",
-              duration: "00:00",
-              thumbnail: `https://img.youtube.com/vi/${videoId}/hqdefault.jpg`,
-              url: urlVal,
-              parentPlaylistId: playlistId,
-              parentPlaylistName: playlistName
-            });
-          }
-        }
-      }
-
       return results;
     }
 
@@ -1636,6 +1712,11 @@
       }
       const manualPlaylistId = 'manual_' + Date.now();
 
+      // تفعيل السكيليتون أثناء المعالجة
+      renderSkeletons();
+
+      await delay(500); // إظهار التفاعل للمستخدم
+
       const parsed = parseCSVData(text, manualPlaylistId, playlistName);
       if (parsed.length > 0) {
         allVideos = parsed;
@@ -1654,6 +1735,7 @@
 
         await triggerSmartMetadataFetch(parsed, geminiKey);
       } else {
+        initApp();
         showToast('لم نتمكن من قراءة البيانات. تأكد من مطابقتها لصيغة CSV السليمة.');
       }
     }
@@ -1675,7 +1757,6 @@
       // قراءة حالة خيار صندوق الاستبدال
       const overwriteActive = document.getElementById('overwriteCategoriesCheck').checked;
 
-      // بناء خريطة بالتصنيفات والتوقيتات القادمة من الـ CSV
       const csvCategoryMap = {};
       const csvDurationMap = {};
       parsed.forEach(item => {
@@ -1692,7 +1773,6 @@
         if (vId) {
           let isUpdated = false;
           
-          // 1. تحديث التصنيف
           if (csvCategoryMap[vId]) {
             const currentCat = video.category || 'غ-مصنف';
             if (overwriteActive || currentCat === 'غ-مصنف') {
@@ -1701,7 +1781,6 @@
             }
           }
           
-          // 2. تحديث التوقيت إذا كان التوقيت الحالي 00:00 وتوفر توقيت جديد بالملف
           if (csvDurationMap[vId] && (video.duration === '00:00' || !video.duration)) {
             video.duration = csvDurationMap[vId];
             isUpdated = true;
@@ -1748,7 +1827,6 @@
         continueImportBtn.style.display = 'none';
 
         try {
-          // جلب التوقيتات والبيانات الحقيقية في دفعات (بحد أقصى 50 فيديو في الطلب الواحد لتجنب حظر الطلبات)
           await fetchApiMetadataInBatches(targets, apiKey);
           showToast(`✅ تم جلب وتحديث التوقيتات لـ ${targets.length} فيديو بنجاح من يوتيوب!`);
         } catch (e) {
@@ -1822,6 +1900,7 @@
 
       importStatus.textContent = 'جاري الاتصال بخوادم قوقل...';
       startYoutubeImportBtn.disabled = true;
+      renderSkeletons();
 
       try {
         const fetchedVideos = await fetchAllPlaylistItems(playlistId, key);
@@ -1849,10 +1928,12 @@
             await runGeminiClassification(fetchedVideos, geminiKey);
           }
         } else {
+          initApp();
           showToast('لم نتمكن من جلب أي مقاطع. تأكد من أن القائمة علنية.');
         }
       } catch (error) {
         console.error(error);
+        initApp();
         showToast(`فشل الاستيراد: ${error.message}`);
       } finally {
         importStatus.textContent = '';
@@ -1893,7 +1974,7 @@
               videos.push({
                 id: videos.length + 1,
                 title: title,
-                category: "غ-مصنف", // التصنيف الافتراضي غ-مصنف
+                category: "غ-مصنف",
                 channel: channel,
                 duration: '00:00',
                 thumbnail: thumb,
@@ -1916,7 +1997,7 @@
       return videos;
     }
 
-    // جلب قوائم التشغيل الخاصة بحساب قوقل الشخصي [1560]
+    // جلب قوائم التشغيل الخاصة بحساب قوقل الشخصي
     async function fetchPersonalPlaylists(token) {
       logToCloudConsole('🌐 جاري الاتصال بقوقل لجلب قوائم التشغيل المتواجدة بحسابك...');
       const url = `https://www.googleapis.com/youtube/v3/playlists?part=snippet&mine=true&maxResults=50`;
@@ -1930,7 +2011,7 @@
           const data = await res.json();
           googlePlaylistsSelect.innerHTML = '<option value="">-- اختر قائمة تشغيل --</option>';
           if (data.items && data.items.length > 0) {
-            logToCloudConsole(`📁 تم جلب ${data.items.length} قائمة تشغيل بنجاحوعرضها بالمنسدلة.`);
+            logToCloudConsole(`📁 تم جلب ${data.items.length} قائمة تشغيل بنجاح وعرضها بالمنسدلة.`);
             
             playlistNamesMap = {};
             data.items.forEach(item => {
@@ -1982,6 +2063,7 @@
       globalImportStatusContainer.style.display = 'flex';
       globalImportStatus.textContent = 'جاري الاتصال بخوادم قوقل وسحب فيديوهات القائمة...';
       cancelImportBtn.style.display = 'none';
+      renderSkeletons();
 
       try {
         const fetchedVideos = await fetchAllPlaylistItemsOAuth(playlistId, token);
@@ -2010,10 +2092,12 @@
             await runGeminiClassification(fetchedVideos, geminiKey);
           }
         } else {
+          initApp();
           showToast('لم نتمكن من العثور على أي مقاطع في هذه القائمة.');
         }
       } catch (e) {
         console.error(e);
+        initApp();
         showToast(`❌ فشل استيراد القائمة السحابية: ${e.message}`);
       } finally {
         globalImportStatusContainer.style.display = 'none';
@@ -2093,7 +2177,7 @@
       }
 
       globalImportStatusContainer.style.display = 'flex';
-      globalImportStatus.textContent = '🔄 جاري الاتصال بيوتيوب للتحقق من التغييرات الجديدة وسحب الحالة الحالية...';
+      globalImportStatus.textContent = '🔄 جاري الاتصال بيوتيوب للتحقق من التغييرات الجديدة...';
       cancelImportBtn.style.display = 'none';
 
       try {
@@ -2165,41 +2249,6 @@
       if (geminiKey) {
         await runGeminiClassification(targets, geminiKey);
       }
-    }
-
-    async function fetchoEmbedMetadataInBatches(targets) {
-      let count = 0;
-      importStatus.textContent = `جاري جلب العناوين الحقيقية من يوتيوب... (0/${targets.length})`;
-      importPanel.style.display = 'block'; 
-
-      for (let i = 0; i < targets.length; i++) {
-        const video = targets[i];
-        const vId = extractVideoID(video.url);
-        
-        try {
-          const res = await fetch(`https://noembed.com/embed?url=https://www.youtube.com/watch?v=${vId}`);
-          if (res.ok) {
-            const data = await res.json();
-            if (data.title) {
-              video.title = data.title;
-              video.channel = data.author_name || 'قناة يوتيوب';
-            }
-          }
-        } catch (err) {
-          console.error('oEmbed fetch error for', vId, err);
-        }
-
-        delete video.needsMetadataFetch; 
-        count++;
-        importStatus.textContent = `جاري جلب العناوين الحقيقية من يوتيوب... (${count}/${targets.length})`;
-
-        if (count % 10 === 0 || count === targets.length) {
-          saveLibraryAndBackup(allVideos);
-        }
-      }
-
-      importStatus.textContent = 'اكتمل جلب العناوين بنجاح!';
-      setTimeout(() => { importStatus.textContent = ''; }, 3000);
     }
 
     async function fetchApiMetadataInBatches(targets, apiKey) {
@@ -2372,7 +2421,7 @@
 
       let success = false;
       let retryCount = 0;
-      const maxRetries = 2;
+      const maxRetries = 3;
 
       while (!success && retryCount < maxRetries) {
         if (isImportAborted) {
@@ -2381,6 +2430,13 @@
         }
 
         try {
+          // دالة الانتظار التدريجي المتزايد (Exponential Backoff) لتجنب أخطاء 429
+          if (retryCount > 0) {
+            const waitTime = Math.pow(2, retryCount) * 1000;
+            logToCloudConsole(`⏳ إعادة المحاولة بعد ${waitTime / 1000} ثانية...`);
+            await delay(waitTime);
+          }
+
           const categories = await classifyTitlesWithGemini(titles, activeImportGeminiKey);
 
           if (categories && categories.length === batchVideos.length) {
@@ -2394,19 +2450,10 @@
         } catch (err) {
           console.error(err);
           if (err.status === 429) {
-            logToCloudConsole('⏳ تجاوزنا حدود الكوتا المؤقتة (429). جاري الانتظار 30 ثانية لتجاوز الحظر...');
-            for (let s = 0; s < 60; s++) {
-              if (isImportAborted) {
-                handleAbortedImport();
-                return;
-              }
-              globalImportStatus.textContent = `⏳ تجاوزنا كوتا قوقل (429). جاري الانتظار... (المتبقي: ${30 - Math.floor(s/2)} ثانية)`;
-              await delay(500);
-            }
+            logToCloudConsole('⏳ تم تخطي حدود الكوتا المؤقتة (429). جاري إيقاف الدفعة مؤقتاً لتفادي الإغلاق.');
             retryCount++;
           } else {
             retryCount++;
-            await delay(3000);
           }
         }
       }
@@ -2415,7 +2462,7 @@
         batchVideos.forEach(video => {
           video.category = video.category || "غ-مصنف";
         });
-        logToCloudConsole(`❌ فشل تصنيف الدفعة ${currentImportBatchIdx + 1}. تم تصنيف عناصرها كـ "غ-مصنف".`);
+        logToCloudConsole(`❌ فشل تصنيف الدفعة ${currentImportBatchIdx + 1}. تم إبقاء عناصرها كـ "غ-مصنف".`);
       }
 
       currentImportBatchIdx++;
@@ -2424,7 +2471,7 @@
       if (currentImportBatchIdx < activeImportBatches.length) {
         const alreadyDone = allVideos.length - activeImportBatches.length * 50 + currentImportBatchIdx * 50;
         globalImportStatus.textContent = `✅ تم تصنيف الدفعة ${currentImportBatchIdx}. المكتمل: ${alreadyDone}/${allVideos.length}. اضغط "متابعة" للدفعة التالية.`;
-        logToCloudConsole(`⏸️ تم الوقوف مؤقتاً بعد الدفعة ${currentImportBatchIdx}. يرجى الضغط على زر "متابعة التصنيف" على الشاشة للمواصلة.`);
+        logToCloudConsole(`⏸️ تم الوقوف مؤقتاً بعد الدفعة ${currentImportBatchIdx} للتأكد من عدم حظر الاتصال. يرجى الضغط على زر "متابعة التصنيف" على الشاشة للمواصلة.`);
         continueImportBtn.style.display = 'inline-flex';
         continueImportBtn.textContent = `متابعة التصنيف ➡️ (${currentImportBatchIdx + 1}/${activeImportBatches.length})`;
       } else {
@@ -2445,15 +2492,24 @@
       showToast('تم إلغاء عملية التصنيف وحفظ التقدم.');
     }
 
+    // محلل نصوص مطور ومرن لتجاوز نصوص Markdown Code Blocks وغيرها
     function extractJSONArray(text) {
-      const start = text.indexOf('[');
-      const end = text.lastIndexOf(']');
+      if (!text) return null;
+      let cleanText = text.trim();
+      
+      // إزالة علامات الماركداون JSON المحتملة
+      if (cleanText.startsWith('```')) {
+        cleanText = cleanText.replace(/^```(?:json)?/i, '').replace(/```$/, '').trim();
+      }
+
+      const start = cleanText.indexOf('[');
+      const end = cleanText.lastIndexOf(']');
       if (start !== -1 && end !== -1 && end > start) {
-        const jsonContent = text.substring(start, end + 1);
+        const jsonContent = cleanText.substring(start, end + 1);
         try {
           return JSON.parse(jsonContent);
         } catch (e) {
-          console.error("JSON parsing failed:", e);
+          console.error("JSON parsing failed in cleaned block:", e);
         }
       }
       return null;
@@ -2472,6 +2528,7 @@ If a video is about how things work, or explanation of mechanisms/science/physic
 Titles:
 ${titles.map((t, idx) => `${idx + 1}. ${t}`).join('\n')}`;
 
+      // استخدام محرك الفلاش المحسن لتسريع الأداء وتقليص النفقات
       const url = `https://generativelanguage.googleapis.com/v1/models/gemini-3.5-flash:generateContent?key=${geminiKey}`;
       
       try {
@@ -2582,9 +2639,7 @@ ${titles.map((t, idx) => `${idx + 1}. ${t}`).join('\n')}`;
       
       if (endsWithCorrectSuffix && hasHyphen) {
         testStatus.innerHTML = `✅ صيغة المعرف سليمة ومطابقة لقوقل!<br>
-        <span style="color: #888888; font-size: 0.75rem; font-weight: normal; line-height: 1.4; display: block; margin-top: 6px;">تأكد من إدخال هذه الإعدادات بدقة في كونسول قوقل السحابي لتفادي حظر الدخول:<br>
-        • JavaScript origins: <b style="color: var(--text-primary);">https://mislol.github.io</b><br>
-        • Redirect URIs: <b style="color: var(--text-primary);">https://mislol.github.io/Ytblibrary/</b></span>`;
+        <span style="color: #888888; font-size: 0.75rem; font-weight: normal; line-height: 1.4; display: block; margin-top: 6px;">تأكد من مطابقة الروابط المسجلة في الـ Console السحابي لتفادي حظر الدخول.</span>`;
         testStatus.style.color = '#33cc33';
         localStorage.setItem('user_google_client_id', clientId);
       } else {
@@ -2907,6 +2962,90 @@ ${titles.map((t, idx) => `${idx + 1}. ${t}`).join('\n')}`;
       }
     }
 
+    // تفعيل وإلغاء وضع التعديل الجماعي المضاف
+    function toggleBulkEditMode() {
+      bulkEditActive = !bulkEditActive;
+      selectedVideosSet.clear();
+
+      if (bulkEditActive) {
+        bulkEditModeBtn.classList.add('active-gold');
+        bulkMenuBar.style.display = 'flex';
+        showToast('ℹ️ تم تفعيل وضع التعديل الجماعي. حدد الفيديوهات عبر الخانات في زاوية كل فيديو.');
+      } else {
+        bulkEditModeBtn.classList.remove('active-gold');
+        bulkMenuBar.style.display = 'none';
+      }
+
+      renderGrid();
+    }
+
+    function selectAllOnCurrentPage() {
+      const startIndex = (currentPage - 1) * itemsPerPage;
+      const endIndex = startIndex + itemsPerPage;
+      const currentPageItems = filteredVideos.slice(startIndex, endIndex);
+
+      currentPageItems.forEach(video => {
+        selectedVideosSet.add(video.id);
+      });
+
+      updateBulkCountUI();
+      renderGrid();
+    }
+
+    function deselectAll() {
+      selectedVideosSet.clear();
+      updateBulkCountUI();
+      renderGrid();
+    }
+
+    function handleCardCheckboxChange(id, checked) {
+      if (checked) {
+        selectedVideosSet.add(id);
+      } else {
+        selectedVideosSet.delete(id);
+      }
+      updateBulkCountUI();
+    }
+
+    function updateBulkCountUI() {
+      bulkSelectedCount.textContent = selectedVideosSet.size;
+    }
+
+    function applyBulkCategoryChange() {
+      if (selectedVideosSet.size === 0) {
+        showToast('⚠️ يرجى تحديد فيديو واحد على الأقل أولاً.');
+        return;
+      }
+      const newCat = bulkCategorySelect.value;
+      if (!newCat) return;
+
+      allVideos.forEach(v => {
+        if (selectedVideosSet.has(v.id)) {
+          v.category = newCat;
+        }
+      });
+
+      saveLibraryAndBackup(allVideos);
+      toggleBulkEditMode();
+      showToast(`✅ تم بنجاح تغيير فئة ${selectedVideosSet.size} فيديو إلى "${newCat}".`);
+    }
+
+    function applyBulkDelete() {
+      if (selectedVideosSet.size === 0) {
+        showToast('⚠️ يرجى تحديد فيديو واحد على الأقل للعملية.');
+        return;
+      }
+      if (confirm(`هل أنت متأكد من رغبتك في حذف الـ ${selectedVideosSet.size} فيديو المحددة نهائياً من المكتبة؟`)) {
+        allVideos = allVideos.filter(v => !selectedVideosSet.has(v.id));
+        selectedVideosSet.forEach(id => favoriteIds.delete(id));
+        
+        localStorage.setItem('user_youtube_favorites', JSON.stringify([...favoriteIds]));
+        saveLibraryAndBackup(allVideos);
+        toggleBulkEditMode();
+        showToast('✅ تم حذف الفيديوهات المحددة بنجاح.');
+      }
+    }
+
     function changeVideoCategory(id, newCategory) {
       const targetVideo = allVideos.find(v => v.id === id);
       if (targetVideo) {
@@ -2982,20 +3121,45 @@ ${titles.map((t, idx) => `${idx + 1}. ${t}`).join('\n')}`;
       }
     }
 
+    // عرض كروت فارغة ومتحركة للتحميل لتقديم انطباع تفاعلي أفضل
+    function renderSkeletons() {
+      videosGrid.innerHTML = '';
+      for (let i = 0; i < 8; i++) {
+        const skeletonCard = document.createElement('div');
+        skeletonCard.className = 'video-card-skeleton';
+        skeletonCard.innerHTML = `
+          <div class="skeleton-thumb"></div>
+          <div class="skeleton-text"></div>
+          <div class="skeleton-text short"></div>
+        `;
+        videosGrid.appendChild(skeletonCard);
+      }
+      paginationContainer.innerHTML = '';
+    }
+
     function applyFiltersAndSort() {
       const query = searchInput.value.trim().toLowerCase();
       const chanVal = channelFilter.value;
+      const durationVal = document.getElementById('durationFilter').value;
+      const classVal = document.getElementById('classificationFilter').value;
 
       const playlistFilter = document.getElementById('playlistFilter');
       const playlistVal = playlistFilter ? playlistFilter.value : '';
 
       const dupCountsForFilter = getDuplicateCounts();
 
+      // البحث المرن المحدث
       filteredVideos = allVideos.filter(v => {
-        const matchesSearch = !query || 
-          (v.title && v.title.toLowerCase().includes(query)) ||
-          (v.channel && v.channel.toLowerCase().includes(query)) ||
-          (v.category && v.category.toLowerCase().includes(query));
+        let matchesSearch = true;
+        if (query) {
+          // تقسيم استعلام البحث ليدعم البحث بمرونة أكبر (فصل الكلمات ومطابقتها بشكل غير مترابط)
+          const queryTokens = query.split(/\s+/).filter(Boolean);
+          matchesSearch = queryTokens.every(token => 
+            (v.title && v.title.toLowerCase().includes(token)) ||
+            (v.channel && v.channel.toLowerCase().includes(token)) ||
+            (v.category && v.category.toLowerCase().includes(token))
+          );
+        }
 
         let matchesCategory = false;
         if (selectedCategory === 'favorites') {
@@ -3013,7 +3177,28 @@ ${titles.map((t, idx) => `${idx + 1}. ${t}`).join('\n')}`;
         const matchesChannel = !chanVal || v.channel === chanVal;
         const matchesPlaylist = !playlistVal || v.parentPlaylistName === playlistVal;
 
-        return matchesSearch && matchesCategory && matchesChannel && matchesPlaylist;
+        // فلترة المدد الزمنية المضافة
+        let matchesDuration = true;
+        const seconds = parseDuration(v.duration);
+        if (durationVal === 'short') {
+          matchesDuration = seconds < 300; // أقل من 5د
+        } else if (durationVal === 'medium') {
+          matchesDuration = seconds >= 300 && seconds <= 1200; // 5-20د
+        } else if (durationVal === 'long') {
+          matchesDuration = seconds > 1200 && seconds <= 3600; // 20د-ساعة
+        } else if (durationVal === 'very-long') {
+          matchesDuration = seconds > 3600; // أكثر من ساعة
+        }
+
+        // فلترة حالة التصنيف المضافة
+        let matchesClass = true;
+        if (classVal === 'unclassified') {
+          matchesClass = !v.category || v.category === 'غ-مصنف' || v.category.includes('غ-مصنف');
+        } else if (classVal === 'classified') {
+          matchesClass = v.category && v.category !== 'غ-مصنف' && !v.category.includes('غ-مصنف');
+        }
+
+        return matchesSearch && matchesCategory && matchesChannel && matchesPlaylist && matchesDuration && matchesClass;
       });
 
       const sortVal = sortSelect.value;
@@ -3029,19 +3214,13 @@ ${titles.map((t, idx) => `${idx + 1}. ${t}`).join('\n')}`;
             return (a.category || '').localeCompare(b.category || '', 'ar');
           case 'duration-desc':
             return parseDuration(b.duration) - parseDuration(a.duration);
+          case 'duration-asc':
+            return parseDuration(a.duration) - parseDuration(b.duration);
           case 'id-asc':
           default:
             return a.id - b.id;
         }
       });
-
-      if (selectedCategory === 'duplicates_only') {
-        filteredVideos.sort((a, b) => {
-          const aId = extractVideoID(a.url);
-          const bId = extractVideoID(b.url);
-          return aId.localeCompare(bId);
-        });
-      }
 
       renderGrid();
     }
@@ -3062,7 +3241,7 @@ ${titles.map((t, idx) => `${idx + 1}. ${t}`).join('\n')}`;
       videosGrid.innerHTML = '';
       
       if (filteredVideos.length === 0) {
-        videosGrid.innerHTML = '<div style="grid-column: 1/-1; text-align: center; padding: 40px; color: var(--text-secondary);">لا توجد نتائج تطابق خيارات التصفية الحالية.</div>';
+        videosGrid.innerHTML = '<div style="grid-column: 1/-1; text-align: center; padding: 60px; color: var(--text-secondary); font-weight:700;">لا توجد نتائج تطابق خيارات التصفية الحالية.</div>';
         paginationContainer.innerHTML = '';
         return;
       }
@@ -3088,7 +3267,6 @@ ${titles.map((t, idx) => `${idx + 1}. ${t}`).join('\n')}`;
         
         let catOptions = `<option value="${video.category}" selected>${video.category}</option>`;
         
-        // التأكد من توفر خيار "غ-مصنف" للتغيير اليدوي السريع دائماً
         if (video.category !== 'غ-مصنف' && !activeCategories.includes('غ-مصنف')) {
           activeCategories.push('غ-مصنف');
         }
@@ -3111,7 +3289,15 @@ ${titles.map((t, idx) => `${idx + 1}. ${t}`).join('\n')}`;
 
         const card = document.createElement('div');
         card.className = 'video-card';
+        
+        const isChecked = selectedVideosSet.has(video.id);
+        const checkboxStyleDisplay = bulkEditActive ? 'block' : 'none';
+
         card.innerHTML = `
+          <!-- خانة اختيار التعديل الجماعي المضافة -->
+          <div class="card-checkbox-wrapper" style="display: ${checkboxStyleDisplay};">
+            <input type="checkbox" ${isChecked ? 'checked' : ''} onchange="handleCardCheckboxChange(${video.id}, this.checked)">
+          </div>
           <div class="thumbnail-area" id="thumb-${video.id}" onclick="playVideoInApp(${video.id}, '${vId}')">
             <img src="${video.thumbnail}" alt="${video.title}" loading="lazy">
             <span class="duration-badge">${video.duration}</span>
@@ -3258,6 +3444,12 @@ ${titles.map((t, idx) => `${idx + 1}. ${t}`).join('\n')}`;
     window.updateDurationsFromApi = updateDurationsFromApi;
     window.triggerContinueImport = triggerContinueImport;
     window.triggerCancelImport = triggerCancelImport;
+    window.toggleBulkEditMode = toggleBulkEditMode;
+    window.selectAllOnCurrentPage = selectAllOnCurrentPage;
+    window.deselectAll = deselectAll;
+    window.handleCardCheckboxChange = handleCardCheckboxChange;
+    window.applyBulkCategoryChange = applyBulkCategoryChange;
+    window.applyBulkDelete = applyBulkDelete;
   </script>
 </body>
 </html>
