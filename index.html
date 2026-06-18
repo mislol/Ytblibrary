@@ -217,7 +217,7 @@
       user-select: none;
     }
 
-    /* حقول الإدخال لمستورد يوتيوب وGemini */
+    /* حقول الإدخال */
     .input-group {
       display: flex;
       flex-direction: column;
@@ -328,7 +328,7 @@
       flex: 1;
     }
 
-    /* مساحة عرض الإحصاءات الفوقية */
+    /* مساحة عرض الإحصاءات */
     .stats-section {
       max-width: 1400px;
       margin: 20px auto;
@@ -637,7 +637,7 @@
       border: 1px solid rgba(255, 255, 255, 0.1);
     }
 
-    /* معدل التصنيف السريع */
+    /* معدل التصنيف السريع الفوري */
     .quick-cat-select {
       background-color: transparent;
       border: 1px dashed var(--text-secondary);
@@ -1040,12 +1040,13 @@
             <label for="sortSelect">ترتيب حسب</label>
             <select id="sortSelect">
               <option value="id-asc">الرقم الافتراضي</option>
-              <option value="title-asc">العنوان أ - ي</option>
-              <option value="title-desc">العنوان ي - أ</option>
+              <option value="playlist-order">ترتيب حسب قائمة يوتيوب 📁</option> <!-- الخيار الجديد المضاف -->
+              <option value="title-asc">العنوان أ - ي</option> <!-- مسميات الترتيب الأبجدي لم تتغير -->
+              <option value="title-desc">العنوان ي - أ</option> <!-- مسميات الترتيب الأبجدي لم تتغير -->
               <option value="channel-asc">اسم القناة</option>
               <option value="category-asc">التصنيف</option>
               <option value="duration-desc">المدة (الأطول)</option>
-              <option value="duration-asc">المدة (الأقصر)</option>
+              <option value="duration-asc">المدة (الأقصر)</option> <!-- تم إصلاحها برمجياً -->
             </select>
           </div>
         </div>
@@ -1526,7 +1527,7 @@
         if (fields.length === 0) continue;
 
         let urlVal = '';
-        let categoryVal = 'غ-مصنف'; // تغيير الفئة الافتراضية إلى غ-مصنف
+        let categoryVal = 'غ-مصنف'; // الفئة الافتراضية غ-مصنف
         let titleVal = '';
         let durationVal = '00:00';
 
@@ -1683,10 +1684,8 @@
         return;
       }
 
-      // قراءة حالة خيار صندوق الاستبدال
       const overwriteActive = document.getElementById('overwriteCategoriesCheck').checked;
 
-      // بناء خريطة بالتصنيفات القادمة من الـ CSV
       const csvCategoryMap = {};
       parsed.forEach(item => {
         const vId = extractVideoID(item.url);
@@ -1700,7 +1699,6 @@
         const vId = extractVideoID(video.url);
         if (vId && csvCategoryMap[vId]) {
           const currentCat = video.category || 'غ-مصنف';
-          // التحديث إذا كان خيار الاستبدال مفعل، أو كان المقطع الحالي غير مصنف
           if (overwriteActive || currentCat === 'غ-مصنف') {
             video.category = csvCategoryMap[vId];
             updatedCount++;
@@ -1743,7 +1741,6 @@
       }
     }
 
-    // عرض محتوى الملف بداخل مربع النص لتأكيد القرار للمستخدم
     function handleFileImport(e) {
       const file = e.target.files[0];
       if (!file) return;
@@ -1756,7 +1753,6 @@
       reader.readAsText(file, 'UTF-8');
     }
 
-    // استيراد ذكي لقائمة تشغيل يوتيوب
     async function handleYoutubePlaylistImport() {
       const key = youtubeApiKey.value.trim() || localStorage.getItem('user_youtube_api_key') || '';
       const rawUrl = youtubePlaylistUrl.value.trim();
@@ -1851,7 +1847,7 @@
               videos.push({
                 id: videos.length + 1,
                 title: title,
-                category: "غ-مصنف", // التصنيف الافتراضي غ-مصنف
+                category: "غ-مصنف", 
                 channel: channel,
                 duration: '00:00',
                 thumbnail: thumb,
@@ -1874,7 +1870,6 @@
       return videos;
     }
 
-    // جلب قوائم التشغيل لحساب قوقل الشخصي [1560]
     async function fetchPersonalPlaylists(token) {
       logToCloudConsole('🌐 جاري الاتصال بقوقل لجلب قوائم التشغيل المتواجدة بحسابك...');
       const url = `https://www.googleapis.com/youtube/v3/playlists?part=snippet&mine=true&maxResults=50`;
@@ -2241,7 +2236,6 @@
       return result;
     }
 
-    // تصنيف يدوي تفاعلي
     function startManualClassification() {
       logToCloudConsole('🔘 تم البدء في طلب تصنيف يدوي للمكتبة.');
       const geminiKey = geminiApiKey.value.trim() || localStorage.getItem('user_gemini_api_key') || '';
@@ -2962,6 +2956,13 @@ ${titles.map((t, idx) => `${idx + 1}. ${t}`).join('\n')}`;
       const sortVal = sortSelect.value;
       filteredVideos.sort((a, b) => {
         switch (sortVal) {
+          case 'playlist-order':
+            const playlistA = a.parentPlaylistName || '';
+            const playlistB = b.parentPlaylistName || '';
+            if (playlistA !== playlistB) {
+              return playlistA.localeCompare(playlistB, 'ar');
+            }
+            return a.id - b.id;
           case 'title-asc':
             return a.title.localeCompare(b.title, 'ar');
           case 'title-desc':
@@ -2972,6 +2973,8 @@ ${titles.map((t, idx) => `${idx + 1}. ${t}`).join('\n')}`;
             return (a.category || '').localeCompare(b.category || '', 'ar');
           case 'duration-desc':
             return parseDuration(b.duration) - parseDuration(a.duration);
+          case 'duration-asc':
+            return parseDuration(a.duration) - parseDuration(b.duration);
           case 'id-asc':
           default:
             return a.id - b.id;
@@ -3031,7 +3034,6 @@ ${titles.map((t, idx) => `${idx + 1}. ${t}`).join('\n')}`;
         
         let catOptions = `<option value="${video.category}" selected>${video.category}</option>`;
         
-        // التأكد من توفر خيار "غ-مصنف" للتغيير اليدوي السريع دائماً
         if (video.category !== 'غ-مصنف' && !activeCategories.includes('غ-مصنف')) {
           activeCategories.push('غ-مصنف');
         }
