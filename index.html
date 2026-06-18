@@ -246,7 +246,7 @@
       border-color: var(--accent-color);
     }
 
-    /* حاوية وجدول قوائم تشغيل حساب قوقل الشخصي */
+    /* حاوية قوائم تشغيل حساب قوقل الشخصي */
     .google-playlists-container {
       display: none;
       flex-direction: column;
@@ -1160,8 +1160,9 @@
 
     // تشغيل وإعداد واجهة التحكم عند تحميل المستند
     window.addEventListener('DOMContentLoaded', () => {
-      checkOAuthHash();
+      // تعديل هام جداً: تحميل البيانات المحلية أولاً ليعلم البرنامج ما بداخل جهازك قبل الاتصال بالسحاب ومزامنة الـ Hash
       loadLibraryData();
+      checkOAuthHash();
 
       searchInput.addEventListener('input', () => { currentPage = 1; applyFiltersAndSort(); });
       categoryFilter.addEventListener('change', (e) => { 
@@ -1893,7 +1894,7 @@
               videos.push({
                 id: videos.length + 1,
                 title: title,
-                category: "غ-مصنف", // التصنيف الافتراضي غ-مصنف
+                category: "غ-مصنف", 
                 channel: channel,
                 duration: '00:00',
                 thumbnail: thumb,
@@ -2489,7 +2490,7 @@ ${titles.map((t, idx) => `${idx + 1}. ${t}`).join('\n')}`;
 
         if (res.status === 429) {
           const err = await res.json();
-          throw { status: 429, message: err.error?.message || 'تجاوز حدود الكوتا.' };
+          throw { status: 429, message: err.error?.message || 'تجاوز حدود الاستهلاك المؤقتة لقوقل.' };
         }
 
         if (!res.ok) {
