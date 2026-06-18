@@ -133,7 +133,7 @@
       transform: translateY(-1px);
     }
 
-    /* شريط التقدم السحابي الفاخر والمثبت الجديد تحت الهيدر مباشرة */
+    /* شريط التقدم السحابي الفاخر الموحد والمثبت الجديد (تحت الهيدر مباشرة) */
     .global-status-bar {
       background-color: rgba(20, 20, 20, 0.95);
       border-bottom: 2px solid var(--accent-color);
@@ -827,8 +827,6 @@
         <button id="cancelImportBtn" class="btn btn-secondary btn-mini" style="color: #ff3333;" onclick="triggerCancelImport()">إلغاء العملية 🛑</button>
       </div>
     </div>
-    <!-- سجل عمليات السحاب التفاعلي مدمج بالشريط بشكل مريح -->
-    <div id="cloudConsoleLogs" style="background-color: #000; color: #33cc33; font-family: monospace; font-size: 0.8rem; padding: 10px; border-radius: 8px; border: 1px solid var(--bg-tertiary); max-height: 100px; overflow-y: auto; margin-top: 10px; display: none; line-height: 1.4; text-align: left; direction: ltr;"></div>
   </div>
 
   <!-- لوحة استيراد البيانات وإدارة الملفات المبسطة والموحدة -->
@@ -876,7 +874,7 @@
         <div class="import-footer" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
           <div class="file-input-wrapper" style="position: relative; overflow: hidden; display: inline-block;">
             <button class="btn btn-secondary">📂 اختر ملف CSV</button>
-            <input type="file" id="csvFileInput" accept=".csv, .txt" style="position: absolute; left: 0; top: 0; opacity: 0; cursor: pointer; height:100%; width:100%;">
+            <input type="file" id="csvFileInput" accept=".csv, .txt">
           </div>
           <div style="display: flex; gap: 8px; flex-wrap: wrap;">
             <button id="saveImportBtn" class="btn btn-primary">💾 معالجة وحفظ كقائمة جديدة</button>
@@ -1095,7 +1093,6 @@
     const globalProgressBarFill = document.getElementById('globalProgressBarFill');
     const cancelImportBtn = document.getElementById('cancelImportBtn');
     const continueImportBtn = document.getElementById('continueImportBtn');
-    const cloudConsoleLogs = document.getElementById('cloudConsoleLogs');
 
     // عناصر شريط التعديل الجماعي المضافة
     const bulkEditModeBtn = document.getElementById('bulkEditModeBtn');
@@ -1186,12 +1183,7 @@
 
     // دالة كتابة السجلات البرمجية
     function logToCloudConsole(msg) {
-      if (cloudConsoleLogs) {
-        cloudConsoleLogs.style.display = 'block';
-        const time = new Date().toLocaleTimeString();
-        cloudConsoleLogs.innerHTML += `[${time}] ${msg}<br>`;
-        cloudConsoleLogs.scrollTop = cloudConsoleLogs.scrollHeight;
-      }
+      console.log(msg); // تسجيل الرسائل صامتاً لعدم مضايقة المستخدم
     }
     window.logToCloudConsole = logToCloudConsole;
 
@@ -1248,7 +1240,6 @@
       applyFiltersAndSort();
     }
 
-    // حساب الإحصائيات العامة
     function calculateStats() {
       const channels = new Set(allVideos.map(v => v.channel));
       
@@ -1541,126 +1532,17 @@
       return results;
     }
 
-    function extractVideoID(url) {
-      if (!url) return 'default';
-      const trimmed = url.trim();
-      if (trimmed.length === 11 && /^[a-zA-Z0-9_-]{11}$/.test(trimmed)) {
-        return trimmed;
-      }
-      const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/;
-      const match = trimmed.match(regExp);
-      return (match && match[2].length === 11) ? match[2] : 'default';
-    }
+    // دالة استيراد وتجهيز الفولدر الخاص بملفات الـ CSV
+    function handleFileImport(e) {
+      const file = e.target.files[0];
+      if (!file) return;
 
-    function extractPlaylistId(url) {
-      const regExp = /[&?]list=([^&]+)/;
-      const match = url.match(regExp);
-      return match ? match[1] : url.trim();
-    }
-
-    // استيراد النص كقائمة جديدة بالكامل
-    async function handleTextImport() {
-      const text = importTextarea.value.trim();
-      if (!text) {
-        showToast('برجاء لصق بعض البيانات أو اختيار ملف أولاً للبدء.');
-        return;
-      }
-
-      const csvPlaylistName = document.getElementById('csvPlaylistName');
-      let playlistName = (csvPlaylistName ? csvPlaylistName.value.trim() : '') || 'استيراد يدوي';
-      if (!playlistName.endsWith('(م)')) {
-        playlistName += ' (م)';
-      }
-      const manualPlaylistId = 'manual_' + Date.now();
-
-      // تفعيل السكيليتون أثناء المعالجة
-      renderSkeletons();
-
-      await delay(500); // إظهار التفاعل للمستخدم
-
-      const parsed = parseCSVData(text, manualPlaylistId, playlistName);
-      if (parsed.length > 0) {
-        allVideos = parsed;
-        localStorage.setItem('user_youtube_library', JSON.stringify(allVideos));
-        importTextarea.value = '';
-        if (csvPlaylistName) csvPlaylistName.value = '';
-        importPanel.style.display = 'none';
-        
-        const geminiKey = geminiApiKey.value.trim() || localStorage.getItem('user_gemini_api_key') || '';
-        if (geminiKey) {
-          localStorage.setItem('user_gemini_api_key', geminiKey);
-        }
-
-        initApp();
-        showToast(`تم استيراد ${parsed.length} فيديو بنجاح تحت قائمة "${playlistName}"!`);
-
-        await triggerSmartMetadataFetch(parsed, geminiKey);
-      } else {
-        initApp();
-        showToast('لم نتمكن من قراءة البيانات. تأكد من مطابقتها لصيغة CSV السليمة.');
-      }
-    }
-
-    // دالة دمج وتحديث تصنيفات وتوقيتات الفيديوهات الحالية بمطابقة كود الـ ID
-    async function handleMergeCategories() {
-      const text = importTextarea.value.trim();
-      if (!text) {
-        showToast('برجاء لصق بيانات الـ CSV أو اختيار ملف أولاً.');
-        return;
-      }
-
-      const parsed = parseCSVData(text);
-      if (parsed.length === 0) {
-        showToast('لم نتمكن من استخراج أي فيديوهات من المدخلات.');
-        return;
-      }
-
-      // قراءة حالة خيار صندوق الاستبدال
-      const overwriteActive = document.getElementById('overwriteCategoriesCheck').checked;
-
-      const csvCategoryMap = {};
-      const csvDurationMap = {};
-      parsed.forEach(item => {
-        const vId = extractVideoID(item.url);
-        if (vId && vId !== 'default') {
-          if (item.category) csvCategoryMap[vId] = item.category;
-          if (item.duration && item.duration !== '00:00') csvDurationMap[vId] = item.duration;
-        }
-      });
-
-      let updatedCount = 0;
-      allVideos.forEach(video => {
-        const vId = extractVideoID(video.url);
-        if (vId) {
-          let isUpdated = false;
-          
-          if (csvCategoryMap[vId]) {
-            const currentCat = video.category || 'غ-مصنف';
-            if (overwriteActive || currentCat === 'غ-مصنف') {
-              video.category = csvCategoryMap[vId];
-              isUpdated = true;
-            }
-          }
-          
-          if (csvDurationMap[vId] && (video.duration === '00:00' || !video.duration)) {
-            video.duration = csvDurationMap[vId];
-            isUpdated = true;
-          }
-
-          if (isUpdated) {
-            updatedCount++;
-          }
-        }
-      });
-
-      if (updatedCount > 0) {
-        saveLibraryAndBackup(allVideos);
-        importTextarea.value = '';
-        importPanel.style.display = 'none';
-        showToast('✅ تم بنجاح دمج وتحديث بيانات ' + updatedCount + ' فيديو من ملف الـ CSV!');
-      } else {
-        showToast('⚠️ لم يتم العثور على فيديوهات مطابقة بحاجة لتحديث التصنيف أو التوقيت.');
-      }
+      const reader = new FileReader();
+      reader.onload = function(evt) {
+        importTextarea.value = evt.target.result;
+        showToast('📂 تم تحميل محتوى الملف بنجاح. يمكنك الآن حفظه كقائمة جديدة أو الضغط على دمج وتحديث التصنيفات.');
+      };
+      reader.readAsText(file, 'UTF-8');
     }
 
     // جلب قوائم التشغيل الخاصة بحساب قوقل الشخصي
@@ -1832,7 +1714,7 @@
           return !localMatch || !localMatch.duration || localMatch.duration === '00:00';
         });
 
-        // التحديد الذكي للفيديوهات التي تحتاج تصنيفاً ذكياً (الجديدة تماماً + الفيديوهات غير المصنفة في هذه القائمة)
+        // تحديد الفيديوهات التي تحتاج تصنيفاً ذكياً (الجديدة تماماً + الفيديوهات غير المصنفة في هذه القائمة)
         const targetsForClassification = syncedPlaylistVideos.filter(sv => {
           const svId = extractVideoID(sv.url);
           const localMatch = allVideos.find(lv => lv.parentPlaylistId === playlistId && extractVideoID(lv.url) === svId);
@@ -1947,7 +1829,7 @@
       }
 
       globalProgressBarFill.style.width = '100%';
-      globalImportStatus.textContent = 'تم استيراد كافة التفاصيل والمدد الزمنية من قوقل بنجاح!';
+      globalImportStatus.textContent = 'تم استيراد كافة التفاصيل والمدد الفعلية من قوقل بنجاح!';
       setTimeout(() => { 
         globalImportStatusContainer.style.display = 'none';
       }, 3000);
@@ -1970,6 +1852,31 @@
       }
       result += (seconds < 10 ? '0' : '') + seconds;
       return result;
+    }
+
+    // مسح تصنيفات قائمة كاملة وإرجاعها لـ "غ-مصنف"
+    function clearPlaylistCategories() {
+      const playlistFilter = document.getElementById('playlistFilter');
+      const selectedPlaylist = playlistFilter ? playlistFilter.value : '';
+      if (!selectedPlaylist) {
+        showToast('⚠️ يرجى اختيار قائمة تشغيل محددة أولاً لمسح تصنيفاتها.');
+        return;
+      }
+      if (confirm(`هل أنت متأكد من رغبتك في حذف كافة تصنيفات الفيديوهات التابعة لقائمة "${selectedPlaylist}" وإرجاعها إلى "غ-مصنف"؟`)) {
+        let updatedCount = 0;
+        allVideos.forEach(v => {
+          if (v.parentPlaylistName === selectedPlaylist) {
+            v.category = 'غ-مصنف';
+            updatedCount++;
+          }
+        });
+        if (updatedCount > 0) {
+          saveLibraryAndBackup(allVideos);
+          showToast(`✅ تم مسح تصنيفات ${updatedCount} فيديو وإرجاعها إلى "غ-مصنف" بنجاح.`);
+        } else {
+          showToast('لا توجد فيديوهات بحاجة للمسح في هذه القائمة.');
+        }
+      }
     }
 
     // تصنيف يدوي تفاعلي
@@ -2054,8 +1961,8 @@
       
       const pct = Math.round((currentImportBatchIdx / activeImportBatches.length) * 100);
       globalProgressBarFill.style.width = pct + '%';
-      globalImportStatus.textContent = `جاري تصنيف العناوين ذكياً بـ Gemini... الدفعة (${currentImportBatchIdx + 1}/${activeImportBatches.length}) [${pct}%]`;
-      logToCloudConsole('⏳ جاري إرسال طلب تصنيف الدفعة رقم ' + (currentImportBatchIdx + 1) + '/' + activeImportBatches.length + ' إلى Gemini...');
+      globalImportStatus.textContent = `جاري معالجة الدفعة ${currentImportBatchIdx + 1} من أصل ${activeImportBatches.length}...`;
+      logToCloudConsole(`⏳ جاري إرسال طلب تصنيف الدفعة رقم ${currentImportBatchIdx + 1}/${activeImportBatches.length} إلى Gemini...`);
       continueImportBtn.style.display = 'none';
 
       let success = false;
@@ -2072,7 +1979,7 @@
           // دالة الانتظار التدريجي المتزايد (Exponential Backoff) لتجنب أخطاء 429
           if (retryCount > 0) {
             const waitTime = Math.pow(2, retryCount) * 1000;
-            logToCloudConsole('⏳ إعادة المحاولة بعد ' + (waitTime / 1000) + ' ثانية...');
+            logToCloudConsole(`⏳ إعادة المحاولة بعد ${waitTime / 1000} ثانية...`);
             await delay(waitTime);
           }
 
@@ -3101,6 +3008,7 @@ ${titles.map((t, idx) => `${idx + 1}. ${t}`).join('\n')}`;
     window.triggerContinueImport = triggerContinueImport;
     window.triggerCancelImport = triggerCancelImport;
     window.toggleSyncDropdown = toggleSyncDropdown;
+    window.handleFileImport = handleFileImport;
   </script>
 </body>
 </html>
