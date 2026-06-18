@@ -284,69 +284,7 @@
       font-size: 0.8rem;
     }
 
-    /* لوحة الإحصاءات المرئية المضافة */
-    .visual-stats-panel {
-      background-color: var(--bg-secondary);
-      border-radius: var(--border-radius);
-      padding: 20px;
-      border: 1px solid var(--bg-tertiary);
-      margin-bottom: 20px;
-      box-shadow: var(--card-shadow);
-    }
-
-    .visual-stats-panel h4 {
-      font-size: 1rem;
-      font-weight: 700;
-      margin-bottom: 15px;
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
-
-    .chart-container-flex {
-      display: flex;
-      flex-direction: column;
-      gap: 10px;
-    }
-
-    .chart-bar-row {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      font-size: 0.85rem;
-    }
-
-    .chart-bar-label {
-      width: 140px;
-      text-overflow: ellipsis;
-      overflow: hidden;
-      white-space: nowrap;
-      font-weight: 600;
-    }
-
-    .chart-bar-track {
-      flex-grow: 1;
-      height: 12px;
-      background-color: var(--bg-primary);
-      border-radius: 6px;
-      overflow: hidden;
-      position: relative;
-    }
-
-    .chart-bar-fill {
-      height: 100%;
-      background-color: var(--accent-color);
-      border-radius: 6px;
-      width: 0%;
-      transition: width 0.6s ease;
-    }
-
-    .chart-bar-val {
-      width: 45px;
-      text-align: left;
-      font-weight: 700;
-      color: var(--text-secondary);
-    }
+   
 
     /* أزرار اختيار التصنيفات - الحبات */
     .category-selection-area {
@@ -985,13 +923,7 @@
       </div>
     </div>
 
-    <!-- لوحة الإحصاءات المرئية الجديدة المضافة -->
-    <div class="visual-stats-panel" id="visualStatsPanel">
-      <h4>📊 توزيع نسب الفيديوهات حسب التصنيفات</h4>
-      <div class="chart-container-flex" id="visualChartContainer">
-        <!-- يتم ملء البيانات ديناميكياً بواسطة جافا سكريبت -->
-      </div>
-    </div>
+   
   </section>
 
   <!-- شريط الأزرار والحبات التفاعلي للتصنيفات -->
@@ -1203,9 +1135,7 @@
     const bulkSelectedCount = document.getElementById('bulkSelectedCount');
     const bulkCategorySelect = document.getElementById('bulkCategorySelect');
 
-    // الرسم البياني
-    const visualChartContainer = document.getElementById('visualChartContainer');
-
+   
     let activeImportBatches = [];
     let currentImportBatchIdx = 0;
     let activeImportGeminiKey = '';
@@ -1350,7 +1280,6 @@
       populateDropdownFilters();
       renderCategoryMenu();
       updateMenuSelection();
-      renderVisualStats();
       applyFiltersAndSort();
     }
 
@@ -1372,39 +1301,9 @@
       statTotalCategories.textContent = categories.size;
     }
 
-    // عرض رسم بياني مصغر لنسب وتوزيع التصنيفات ديناميكياً
-    function renderVisualStats() {
-      if (!visualChartContainer) return;
-      visualChartContainer.innerHTML = '';
+    
 
-      if (allVideos.length === 0) {
-        visualChartContainer.innerHTML = '<p style="font-size:0.85rem; color:var(--text-secondary);">لا توجد فيديوهات كافية لعرض الإحصاءات حالياً.</p>';
-        return;
-      }
-
-      const distribution = {};
-      allVideos.forEach(v => {
-        const primaryCat = (v.category || 'غ-مصنف').split('/')[0].trim();
-        distribution[primaryCat] = (distribution[primaryCat] || 0) + 1;
-      });
-
-      const sortedData = Object.entries(distribution).sort((a, b) => b[1] - a[1]).slice(0, 5); // أفضل 5 تصنيفات
-
-      sortedData.forEach(([catName, count]) => {
-        const percentage = Math.round((count / allVideos.length) * 100);
-        
-        const row = document.createElement('div');
-        row.className = 'chart-bar-row';
-        row.innerHTML = `
-          <div class="chart-bar-label" title="${catName}">${catName}</div>
-          <div class="chart-bar-track">
-            <div class="chart-bar-fill" style="width: ${percentage}%;"></div>
-          </div>
-          <div class="chart-bar-val">${percentage}% (${count})</div>
-        `;
-        visualChartContainer.appendChild(row);
-      });
-    }
+      
 
     function populateDropdownFilters() {
       categoryFilter.innerHTML = '<option value="">الكل</option><option value="favorites">المفضلة ⭐️</option>';
