@@ -1833,21 +1833,33 @@
 
         saveLibraryAndBackup(updatedVideosList);
         
-        // التحقق من وجود فيديوهات جديدة بحاجة لجلب مددها الزمنية أو تصنيفها
-        const brandNewVideos = syncedPlaylistVideos.filter(sv => {
+        // تحديد الفيديوهات التي تحتاج جلب بياناتها التوقيتية (الجديدة تماماً + الفيديوهات التي توقيتها لا يزال 00:00 في هذه القائمة)
+        const targetsForMetadata = syncedPlaylistVideos.filter(sv => {
           const svId = extractVideoID(sv.url);
-          return !allVideos.some(lv => lv.parentPlaylistId === playlistId && extractVideoID(lv.url) === svId);
+          const localMatch = allVideos.find(lv => lv.parentPlaylistId === playlistId && extractVideoID(lv.url) === svId);
+          return !localMatch || !localMatch.duration || localMatch.duration === '00:00';
         });
 
-        if (brandNewVideos.length > 0) {
-          showToast(`🔄 تم تحديث ترتيب القائمة وإضافة ${brandNewVideos.length} فيديو جديد!`);
-          await fetchApiMetadataInBatches(brandNewVideos, '');
+        // تحديد الفيديوهات التي تحتاج تصنيفاً ذكياً (الجديدة تماماً + الفيديوهات غير المصنفة في هذه القائمة)
+        const targetsForClassification = syncedPlaylistVideos.filter(sv => {
+          const svId = extractVideoID(sv.url);
+          const localMatch = allVideos.find(lv => lv.parentPlaylistId === playlistId && extractVideoID(lv.url) === svId);
+          return !localMatch || !localMatch.category || localMatch.category === 'غ-مصنف';
+        });
+
+        if (targetsForMetadata.length > 0) {
+          showToast(`🔄 جاري جلب التوقيتات لـ ${targetsForMetadata.length} فيديو في هذه القائمة...`);
+          await fetchApiMetadataInBatches(targetsForMetadata, '');
+        }
+
+        if (targetsForClassification.length > 0) {
           const geminiKey = geminiApiKey.value.trim() || localStorage.getItem('user_gemini_api_key') || '';
           if (geminiKey) {
-            await runGeminiClassification(brandNewVideos, geminiKey);
+            showToast(`🤖 جاري تصنيف ذكي لـ ${targetsForClassification.length} فيديو غير مصنف...`);
+            await runGeminiClassification(targetsForClassification, geminiKey);
           }
         } else {
-          showToast('✅ تم إعادة ترتيب القائمة وتحديثها لتطابق ترتيب يوتيوب تماماً!');
+          showToast('✅ تم إعادة ترتيب وتحديث القائمة بنجاح!');
         }
 
       } catch (e) {
@@ -1939,7 +1951,7 @@
 
       globalImportStatus.textContent = 'تم استيراد كافة التفاصيل والمدد الفعلية من قوقل!';
       setTimeout(() => { 
-        globalImportStatusContainer.style.display = 'none';
+        globalImportStatusContainer.style.display = 'none'; 
       }, 3000);
     }
 
