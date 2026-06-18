@@ -246,7 +246,7 @@
       border-color: var(--accent-color);
     }
 
-    /* حاوية قوائم تشغيل حساب قوقل الشخصي */
+    /* حاوية وجدول قوائم تشغيل حساب قوقل الشخصي */
     .google-playlists-container {
       display: none;
       flex-direction: column;
@@ -328,7 +328,7 @@
       flex: 1;
     }
 
-    /* مساحة عرض الإحصاءات */
+    /* مساحة عرض الإحصاءات الفوقية */
     .stats-section {
       max-width: 1400px;
       margin: 20px auto;
@@ -637,7 +637,7 @@
       border: 1px solid rgba(255, 255, 255, 0.1);
     }
 
-    /* معدل التصنيف السريع الفوري */
+    /* معدل التصنيف السريع */
     .quick-cat-select {
       background-color: transparent;
       border: 1px dashed var(--text-secondary);
@@ -929,7 +929,11 @@
 
         <div class="import-footer">
           <span id="importStatus" style="font-size: 0.85rem; color: var(--gold-color); font-weight: 600;"></span>
-          <button id="startYoutubeImportBtn" class="btn btn-primary">⚡ بدء الاستيراد والاتصال بقوقل</button>
+          <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+            <!-- زر جلب التوقيتات المفقودة الجديد المضاف -->
+            <button id="fetchMissingDurationsBtn" class="btn btn-secondary" onclick="fetchMissingDurations()" style="background-color: var(--bg-tertiary); color: var(--text-primary);">⚡ جلب التوقيتات المفقودة (00:00)</button>
+            <button id="startYoutubeImportBtn" class="btn btn-primary">⚡ بدء الاستيراد والاتصال بقوقل</button>
+          </div>
         </div>
       </div>
 
@@ -1040,13 +1044,14 @@
             <label for="sortSelect">ترتيب حسب</label>
             <select id="sortSelect">
               <option value="id-asc">الرقم الافتراضي</option>
-              <option value="playlist-order">ترتيب حسب قائمة يوتيوب 📁</option> <!-- الخيار الجديد المضاف -->
-              <option value="title-asc">العنوان أ - ي</option> <!-- مسميات الترتيب الأبجدي لم تتغير -->
-              <option value="title-desc">العنوان ي - أ</option> <!-- مسميات الترتيب الأبجدي لم تتغير -->
+              <option value="id-desc">المضاف حديثاً (الأحدث أولاً)</option> <!-- الخيار الجديد المضاف هنا -->
+              <option value="playlist-order">ترتيب حسب قائمة يوتيوب 📁</option> 
+              <option value="title-asc">العنوان أ - ي</option> 
+              <option value="title-desc">العنوان ي - أ</option> 
               <option value="channel-asc">اسم القناة</option>
               <option value="category-asc">التصنيف</option>
               <option value="duration-desc">المدة (الأطول)</option>
-              <option value="duration-asc">المدة (الأقصر)</option> <!-- تم إصلاحها برمجياً -->
+              <option value="duration-asc">المدة (الأقصر)</option> 
             </select>
           </div>
         </div>
@@ -1232,7 +1237,7 @@
         tabYoutubeBtn.classList.add('active');
         tabCsvBtn.classList.remove('active');
         tabYoutubeContent.classList.add('active');
-        tabCsvContent.classList.remove('active');
+        tabYoutubeContent.classList.remove('active');
       }
     }
 
@@ -1391,7 +1396,7 @@
       dupItem.dataset.category = 'duplicates_only';
       if (selectedCategory === 'duplicates_only') dupItem.classList.add('active');
       dupItem.innerHTML = `<span>المكرر ⚠️</span> <span class="category-badge" style="background-color: #ff3333; color: #fff;">${totalDupsCount}</span>`;
-      dupItem.addEventListener('click', () => selectCategoryFromMenu('duplicates_only'));
+      dupItem.addEventListener('click', () => selectCategoryFromMenu(dupItem.dataset.category));
       categoriesDropdownMenu.appendChild(dupItem);
 
       Object.keys(counts).sort().forEach(cat => {
@@ -1527,7 +1532,7 @@
         if (fields.length === 0) continue;
 
         let urlVal = '';
-        let categoryVal = 'غ-مصنف'; // الفئة الافتراضية غ-مصنف
+        let categoryVal = 'غ-مصنف'; 
         let titleVal = '';
         let durationVal = '00:00';
 
@@ -1741,6 +1746,7 @@
       }
     }
 
+    // عرض محتوى الملف بداخل مربع النص لتأكيد القرار للمستخدم
     function handleFileImport(e) {
       const file = e.target.files[0];
       if (!file) return;
@@ -1753,6 +1759,7 @@
       reader.readAsText(file, 'UTF-8');
     }
 
+    // استيراد ذكي لقائمة تشغيل يوتيوب
     async function handleYoutubePlaylistImport() {
       const key = youtubeApiKey.value.trim() || localStorage.getItem('user_youtube_api_key') || '';
       const rawUrl = youtubePlaylistUrl.value.trim();
@@ -1870,6 +1877,7 @@
       return videos;
     }
 
+    // جلب قوائم التشغيل لحساب قوقل الشخصي [1560]
     async function fetchPersonalPlaylists(token) {
       logToCloudConsole('🌐 جاري الاتصال بقوقل لجلب قوائم التشغيل المتواجدة بحسابك...');
       const url = `https://www.googleapis.com/youtube/v3/playlists?part=snippet&mine=true&maxResults=50`;
@@ -2217,6 +2225,36 @@
       setTimeout(() => { importStatus.textContent = ''; }, 3000);
     }
 
+    // دالة جديدة تقوم بمسح المكتبة بالكامل وتحديث أي فيديو توقيته مفقود (00:00)
+    async function fetchMissingDurations() {
+      const key = youtubeApiKey.value.trim() || localStorage.getItem('user_youtube_api_key') || '';
+      const token = getValidAccessToken();
+
+      if (!key && !token) {
+        showToast('❌ يرجى إدخال مفتاح واجهة قوقل يوتيوب أو تسجيل الدخول بقوقل أولاً.');
+        return;
+      }
+
+      // تصفية الفيديوهات التي توقيتها "00:00" أو فارغ حالياً
+      const targets = allVideos.filter(v => v.duration === '00:00' || !v.duration);
+      if (targets.length === 0) {
+        showToast('✅ لا توجد فيديوهات بتوقيت مفقود (00:00) في مكتبتك حالياً!');
+        return;
+      }
+
+      logToCloudConsole(`⏳ تم رصد ${targets.length} فيديو بتوقيت مفقود. جاري بدء جلب التوقيتات الفعالة من قوقل...`);
+      showToast(`⏳ جاري جلب توقيتات ${targets.length} فيديو مفقود...`);
+
+      try {
+        await fetchApiMetadataInBatches(targets, key);
+        saveLibraryAndBackup(allVideos);
+        showToast(`✅ تم تحديث كافة التوقيتات المفقودة بنجاح!`);
+      } catch (e) {
+        console.error(e);
+        showToast(`❌ حدث خطأ أثناء جلب التوقيتات المفقودة: ${e.message}`);
+      }
+    }
+
     function parseISO8601Duration(isoDur) {
       if (!isoDur) return '00:00';
       const matches = isoDur.match(/PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?/);
@@ -2375,7 +2413,7 @@
 
     function handleAbortedImport() {
       saveLibraryAndBackup(allVideos);
-      globalImportStatus.textContent = '❌ تم إلغاء العملية وحفظ التقدم بنجاح!';
+      globalImportStatus.textContent = '❌ تم إلغاء العملية وحفظ التقدم الحالي...';
       cancelImportBtn.style.display = 'none';
       continueImportBtn.style.display = 'none';
       setTimeout(() => {
@@ -2975,6 +3013,8 @@ ${titles.map((t, idx) => `${idx + 1}. ${t}`).join('\n')}`;
             return parseDuration(b.duration) - parseDuration(a.duration);
           case 'duration-asc':
             return parseDuration(a.duration) - parseDuration(b.duration);
+          case 'id-desc':
+            return b.id - a.id; // الترتيب التنازلي لعرض المضاف حديثاً أولاً
           case 'id-asc':
           default:
             return a.id - b.id;
@@ -3200,6 +3240,7 @@ ${titles.map((t, idx) => `${idx + 1}. ${t}`).join('\n')}`;
     window.copyLink = copyLink;
     window.playVideoInApp = playVideoInApp;
     window.clearPlaylistCategories = clearPlaylistCategories;
+    window.fetchMissingDurations = fetchMissingDurations;
   </script>
 </body>
 </html>
