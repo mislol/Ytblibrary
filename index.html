@@ -782,17 +782,6 @@
         </div>
       </div>
 
-      <!-- لوحة قوائم تشغيل حسابك الشخصي (OAuth) -->
-      <div class="google-playlists-container" id="googlePlaylistsContainer" style="display: none; flex-direction: column; gap: 10px; background-color: var(--bg-primary); padding: 15px; border-radius: 8px; border: 1px dashed var(--bg-tertiary); margin-bottom: 20px; margin-top: 15px;">
-        <label for="googlePlaylistsSelect" style="font-size:0.85rem; font-weight:600;">📁 اختر قائمة تشغيل سحابية من حسابك للاستيراد كجديدة:</label>
-        <div style="display: flex; gap: 10px; width: 100%; flex-wrap: wrap;">
-          <select id="googlePlaylistsSelect" style="flex:1; padding: 10px; border-radius: 8px; background-color: var(--bg-secondary); color: #fff; border: 1px solid var(--bg-tertiary); outline: none;">
-            <option value="">-- جاري التحميل... --</option>
-          </select>
-          <button id="importSelectedPlaylistBtn" class="btn btn-primary" onclick="triggerSelectedPlaylistImport()">📥 استيراد القائمة كجديدة</button>
-        </div>
-      </div>
-
       <!-- استيراد ملف CSV / نص يدوي -->
       <div style="margin-top: 25px; border-top: 1px solid var(--bg-tertiary); padding-top: 20px;">
         <h3 style="font-size: 1rem; margin-bottom: 10px; display: flex; align-items: center; gap: 8px;">📄 استيراد ملف CSV / نص يدوي</h3>
@@ -818,6 +807,7 @@
           <div style="display: flex; gap: 8px; flex-wrap: wrap;">
             <button id="saveImportBtn" class="btn btn-primary">💾 معالجة وحفظ كقائمة جديدة</button>
             <button id="mergeCsvCategoriesBtn" class="btn btn-gold">🏷️ دمج وتحديث التصنيفات فقط</button>
+            <button id="resetDefaultBtn" class="btn btn-secondary" style="color: #ff3333;" onclick="resetToDefault()">❌ إعادة ضبط الافتراضي</button>
           </div>
         </div>
       </div>
@@ -1619,13 +1609,11 @@
         return;
       }
 
-      const apiKey = youtubeApiKey.value.trim() || localStorage.getItem('user_youtube_api_key') || '';
       const token = getValidAccessToken();
 
-      if (!apiKey && !token) {
-        showToast('⚠️ يرجى تسجيل الدخول بقوقل أو إدخال مفتاح API أولاً لتحديث التوقيتات سحابياً.');
+      if (!token) {
+        showToast('⚠️ يرجى تسجيل الدخول بقوقل أولاً لتحديث التوقيتات سحابياً.');
         importPanel.style.display = 'block';
-        switchTab('youtube');
         return;
       }
 
@@ -1636,7 +1624,7 @@
         continueImportBtn.style.display = 'none';
 
         try {
-          await fetchApiMetadataInBatches(targets, apiKey);
+          await fetchApiMetadataInBatches(targets, '');
           showToast(`✅ تم جلب وتحديث التوقيتات لـ ${targets.length} فيديو بنجاح من يوتيوب!`);
         } catch (e) {
           console.error(e);
@@ -1757,7 +1745,6 @@
     }
 
     async function importPlaylistById(playlistId) {
-      const key = youtubeApiKey.value.trim() || localStorage.getItem('user_youtube_api_key') || '';
       const token = getValidAccessToken();
       
       if (!playlistId) {
@@ -1789,7 +1776,7 @@
           showToast(`تم تحميل الفيديوهات بنجاح! جاري جلب المدد الزمنية والتصنيف التلقائي...`);
 
           logToCloudConsole('⏳ جاري البدء في سحب المدد الزمنية الفعلية (Duration) للفيديوهات من قوقل...');
-          await fetchApiMetadataInBatches(fetchedVideos, key);
+          await fetchApiMetadataInBatches(fetchedVideos, '');
 
           const geminiKey = geminiApiKey.value.trim() || localStorage.getItem('user_gemini_api_key') || '';
           if (geminiKey) {
@@ -1875,7 +1862,6 @@
 
     async function syncPlaylistById(playlistId) {
       const token = getValidAccessToken();
-      const key = youtubeApiKey.value.trim() || localStorage.getItem('user_youtube_api_key') || '';
       
       if (!playlistId) {
         showToast('❌ يرجى اختيار قائمة تشغيل أولاً للمزامنة.');
@@ -1930,7 +1916,7 @@
 
         if (brandNewVideos.length > 0) {
           showToast(`🔄 تم تحديث ترتيب القائمة وإضافة ${brandNewVideos.length} فيديو جديد!`);
-          await fetchApiMetadataInBatches(brandNewVideos, key);
+          await fetchApiMetadataInBatches(brandNewVideos, '');
           const geminiKey = geminiApiKey.value.trim() || localStorage.getItem('user_gemini_api_key') || '';
           if (geminiKey) {
             await runGeminiClassification(brandNewVideos, geminiKey);
@@ -1956,8 +1942,7 @@
         return;
       }
 
-      const apiKey = youtubeApiKey.value.trim() || localStorage.getItem('user_youtube_api_key') || '';
-      await fetchApiMetadataInBatches(targets, apiKey);
+      await fetchApiMetadataInBatches(targets, '');
 
       if (geminiKey) {
         await runGeminiClassification(targets, geminiKey);
