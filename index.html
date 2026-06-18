@@ -246,7 +246,7 @@
       border-color: var(--accent-color);
     }
 
-    /* حاوية قوائم تشغيل حساب قوقل الشخصي */
+    /* حاوية وجدول قوائم تشغيل حساب قوقل الشخصي */
     .google-playlists-container {
       display: none;
       flex-direction: column;
@@ -845,7 +845,7 @@
   <section class="import-panel" id="importPanel">
     <div class="import-container">
       
-      <!-- إدخال مفتاح ذكاء جيميناي -->
+      <!-- إدخال مفتاح ذكاء جيميناي (Gemini API Key) -->
       <div class="input-group" style="margin-bottom: 20px;">
         <label for="geminiApiKey">🤖 مفتاح ذكاء جيميناي (Gemini API Key)</label>
         <input type="text" id="geminiApiKey" placeholder="أدخل مفتاح Gemini الخاص بك (اختياري)...">
@@ -1465,15 +1465,6 @@
       
       if (lines.length === 0) return results;
 
-      // رصد أسماء الأعمدة ديناميكياً من السطر الأول
-      let linkColIdx = -1;
-      let categoryColIdx = -1;
-      let titleColIdx = -1;
-      let durationColIdx = -1;
-
-      const firstLine = lines[0].trim();
-      let headerFields = [];
-      
       // دالة تقسيم تدعم الفواصل والاقتباسات داخل الخانات
       function splitCsvLine(line) {
         let fields = [];
@@ -1499,24 +1490,11 @@
         });
       }
 
-      if (firstLine) {
-        headerFields = splitCsvLine(firstLine);
-        headerFields.forEach((field, idx) => {
-          const f = field.toLowerCase();
-          if (f.includes('رابط') || f.includes('link') || f.includes('url') || f.includes('الرابط')) {
-            linkColIdx = idx;
-          } else if (f.includes('تصنيف') || f.includes('category') || f.includes('topic') || f.includes('التصنيف')) {
-            categoryColIdx = idx;
-          } else if (f.includes('عنوان') || f.includes('title') || f.includes('العنوان')) {
-            titleColIdx = idx;
-          } else if (f.includes('مدة') || f.includes('duration') || f.includes('time') || f.includes('المدة')) {
-            durationColIdx = idx;
-          }
-        });
+      // نتجاهل السطر الأول فقط إذا كان يحتوي على ترويسة واضحة
+      let startIdx = 0;
+      if (lines[0] && (lines[0].includes('الرقم') || lines[0].includes('الرابط') || lines[0].includes('العنوان') || lines[0].includes('التصنيف'))) {
+        startIdx = 1;
       }
-
-      const hasHeader = (linkColIdx !== -1 || categoryColIdx !== -1);
-      let startIdx = hasHeader ? 1 : 0;
 
       for (let i = startIdx; i < lines.length; i++) {
         const line = lines[i].trim();
@@ -1526,39 +1504,41 @@
         if (fields.length === 0) continue;
 
         let urlVal = '';
-        let categoryVal = 'غ-مصنف'; // تغيير الفئة الافتراضية إلى غ-مصنف
+        let categoryVal = 'غ-مصنف'; // الفئة الافتراضية
         let titleVal = '';
         let durationVal = '00:00';
 
-        if (hasHeader) {
-          if (linkColIdx !== -1 && fields[linkColIdx]) urlVal = fields[linkColIdx];
-          if (categoryColIdx !== -1 && fields[categoryColIdx]) categoryVal = fields[categoryColIdx];
-          if (titleColIdx !== -1 && fields[titleColIdx]) titleVal = fields[titleColIdx];
-          if (durationColIdx !== -1 && fields[durationColIdx]) durationVal = fields[durationColIdx];
+        // 1. البحث عن الرابط في أي مكان بالسطر (لأنه المعرّف الأهم)
+        const foundUrl = fields.find(f => f.startsWith('http://') || f.startsWith('https://'));
+        if (foundUrl) {
+          urlVal = foundUrl;
         } else {
-          // تخمين ذكي إذا لم تتوفر أسماء الترويسة بوضوح
-          const foundUrl = fields.find(f => f.startsWith('http://') || f.startsWith('https://'));
-          if (foundUrl) {
-            urlVal = foundUrl;
-            const foundDuration = fields.find(f => /^\d+:\d+(:?\d+)?$/.test(f));
-            if (foundDuration) durationVal = foundDuration;
-
-            const nonUrlOrDurFields = fields.filter(f => f !== urlVal && f !== foundDuration && isNaN(parseInt(f)));
-            if (nonUrlOrDurFields.length >= 2) {
-              titleVal = nonUrlOrDurFields[0];
-              categoryVal = nonUrlOrDurFields[1];
-            } else if (nonUrlOrDurFields.length === 1) {
-              categoryVal = nonUrlOrDurFields[0];
-            }
+          // إذا لم يجد رابطاً كاملاً، نبحث عن معرف 11 حرفاً
+          const foundId = fields.find(f => /^[a-zA-Z0-9_-]{11}$/.test(f));
+          if (foundId) {
+            urlVal = `https://www.youtube.com/watch?v=${foundId}`;
           }
         }
 
-        // دعم إدخال معرفات 11 حرفاً مباشرة في الحقل الأول
-        if (!urlVal && fields[0] && /^[a-zA-Z0-9_-]{11}$/.test(fields[0])) {
-          const vId = fields[0];
-          urlVal = `https://www.youtube.com/watch?v=${vId}`;
-          if (fields[1] && isNaN(parseInt(fields[1]))) {
-            categoryVal = fields[1];
+        // 2. البحث عن التوقيت (المدة) في أي مكان بالسطر (يدعم صيغ مثل 14:39 أو 29:49:00)
+        const foundDuration = fields.find(f => /^\d+:\d+(:\d+)?$/.test(f));
+        if (foundDuration) {
+          durationVal = foundDuration;
+        }
+
+        // 3. تحديد الحقول المتبقية التي ليست رابطاً وليست توقيت وليست رقم الـ ID في أول العمود
+        const remaining = fields.filter(f => f !== foundUrl && f !== foundDuration && f !== extractVideoID(urlVal) && f !== fields[0]);
+
+        if (remaining.length >= 2) {
+          // الحقل الأطول هو العنوان، والأقصر هو التصنيف
+          const sortedByLength = [...remaining].sort((a, b) => b.length - a.length);
+          titleVal = sortedByLength[0]; // الأطول
+          categoryVal = sortedByLength[1]; // الأقصر
+        } else if (remaining.length === 1) {
+          if (remaining[0].length < 15) {
+            categoryVal = remaining[0];
+          } else {
+            titleVal = remaining[0];
           }
         }
 
@@ -1874,7 +1854,7 @@
       return videos;
     }
 
-    // جلب قوائم التشغيل لحساب قوقل الشخصي [1560]
+    // جلب قوائم التشغيل الخاصة بحساب قوقل الشخصي [1560]
     async function fetchPersonalPlaylists(token) {
       logToCloudConsole('🌐 جاري الاتصال بقوقل لجلب قوائم التشغيل المتواجدة بحسابك...');
       const url = `https://www.googleapis.com/youtube/v3/playlists?part=snippet&mine=true&maxResults=50`;
@@ -1888,7 +1868,7 @@
           const data = await res.json();
           googlePlaylistsSelect.innerHTML = '<option value="">-- اختر قائمة تشغيل --</option>';
           if (data.items && data.items.length > 0) {
-            logToCloudConsole(`📁 تم جلب ${data.items.length} قائمة تشغيل بنجاح.`);
+            logToCloudConsole(`📁 تم جلب ${data.items.length} قائمة تشغيل بنجاح وعرضها بالمنسدلة.`);
             
             playlistNamesMap = {};
             data.items.forEach(item => {
@@ -1901,12 +1881,12 @@
             localStorage.setItem('user_youtube_playlist_names_map', JSON.stringify(playlistNamesMap));
             googlePlaylistsContainer.style.display = 'flex'; 
           } else {
-            logToCloudConsole('⚠️ لم يتم العثور على أي قوائم تشغيل عامة أو خاصة.');
+            logToCloudConsole('⚠️ لم يتم العثور على أي قوائم تشغيل عامة أو خاصة في حساب يوتيوب هذا.');
             googlePlaylistsSelect.innerHTML = '<option value="">-- لا توجد قوائم تشغيل بحسابك --</option>';
           }
         } else {
           const errData = await res.json();
-          logToCloudConsole(`❌ فشل جلب القوائم: ${errData.error?.message || 'غير معروف'}`);
+          logToCloudConsole(`❌ فشل جلب القوائم. السبب: ${errData.error?.message || 'غير متوفرة'}`);
         }
       } catch (e) {
         console.error('Error fetching personal playlists', e);
@@ -1933,7 +1913,7 @@
       const token = getValidAccessToken();
       
       if (!playlistId) {
-        showToast('❌ يرجى اختيار قائمة تشغيل أولاً.');
+        showToast('❌ يرجى اختيار قائمة تشغيل من المنسدلة أولاً.');
         return;
       }
 
@@ -1944,23 +1924,27 @@
       try {
         const fetchedVideos = await fetchAllPlaylistItemsOAuth(playlistId, token);
         if (fetchedVideos.length > 0) {
-          if (confirm(`تم العثور على ${fetchedVideos.length} مقطع. هل تريد استبدال مكتبتك الحالية بها؟\n(اضغط إلغاء للدمج)`)) {
+          if (confirm(`تم العثور على ${fetchedVideos.length} مقطع في القائمة الشخصية. هل تريد استبدال مكتبتك بها؟\n(اضغط إلغاء لدمجهم معاً دون حذف القديم)`)) {
             allVideos = fetchedVideos;
+            logToCloudConsole('🧹 تم اختيار: استبدال المكتبة.');
           } else {
             fetchedVideos.forEach(v => {
               v.id = allVideos.length + 1;
               allVideos.push(v);
             });
+            logToCloudConsole('➕ تم اختيار: دمج القائمة.');
           }
 
           saveLibraryAndBackup(allVideos);
           importPanel.style.display = 'none';
-          showToast(`تم تحميل الفيديوهات بنجاح! جاري جلب التوقيتات...`);
+          showToast(`تم تحميل الفيديوهات بنجاح! جاري جلب المدد الزمنية والتصنيف التلقائي...`);
 
+          logToCloudConsole('⏳ جاري البدء في سحب المدد الزمنية الفعلية (Duration) للفيديوهات من قوقل...');
           await fetchApiMetadataInBatches(fetchedVideos, key);
 
           const geminiKey = geminiApiKey.value.trim() || localStorage.getItem('user_gemini_api_key') || '';
           if (geminiKey) {
+            logToCloudConsole('🤖 جاري الاستعداد لتصنيف الفيديوهات ذكياً بـ جيميناي...');
             await runGeminiClassification(fetchedVideos, geminiKey);
           }
         } else {
@@ -1968,7 +1952,7 @@
         }
       } catch (e) {
         console.error(e);
-        showToast(`❌ فشل استيراد القائمة: ${e.message}`);
+        showToast(`❌ فشل استيراد القائمة السحابية: ${e.message}`);
       } finally {
         globalImportStatusContainer.style.display = 'none';
       }
@@ -1995,7 +1979,7 @@
         });
         if (!res.ok) {
           const errData = await res.json();
-          throw new Error(errData.error.message || 'خطأ في جلب بيانات القائمة.');
+          throw new Error(errData.error.message || 'خطأ في جلب بيانات القائمة السحابية.');
         }
 
         const data = await res.json();
@@ -2047,7 +2031,7 @@
       }
 
       globalImportStatusContainer.style.display = 'flex';
-      globalImportStatus.textContent = '🔄 جاري التحقق من التغييرات على يوتيوب...';
+      globalImportStatus.textContent = '🔄 جاري الاتصال بيوتيوب للتحقق من التغييرات الجديدة وسحب الحالة الحالية...';
       cancelImportBtn.style.display = 'none';
 
       try {
@@ -2083,7 +2067,7 @@
           });
 
           saveLibraryAndBackup(allVideos);
-          showToast(`🔄 تم رصد ${newCloudVideos.length} فيديو جديد وحذف ${deletedLocalVideos.length} فيديو.`);
+          showToast(`🔄 تم رصد ${newCloudVideos.length} فيديو جديد وحذف ${deletedLocalVideos.length} فيديو. جاري تحديث المدد والتصنيف...`);
 
           await fetchApiMetadataInBatches(newCloudVideos, key);
 
@@ -2093,7 +2077,7 @@
           }
         } else if (deletedLocalVideos.length > 0) {
           saveLibraryAndBackup(allVideos);
-          showToast(`✅ تم تحديث المكتبة وحذف ${deletedLocalVideos.length} فيديو بنجاح.`);
+          showToast(`✅ تم تحديث المكتبة وحذف ${deletedLocalVideos.length} فيديو للتطابق الكامل مع يوتيوب.`);
         }
 
       } catch (e) {
@@ -2343,7 +2327,7 @@
         } catch (err) {
           console.error(err);
           if (err.status === 429) {
-            logToCloudConsole('⏳ تجاوزنا حدود الكوتا المؤقتة (429). جاري الانتظار 30 ثانية...');
+            logToCloudConsole('⏳ تجاوزنا حدود الكوتا المؤقتة (429). جاري الانتظان 30 ثانية لتجاوز الحظر...');
             for (let s = 0; s < 60; s++) {
               if (isImportAborted) {
                 handleAbortedImport();
@@ -2698,7 +2682,7 @@ ${titles.map((t, idx) => `${idx + 1}. ${t}`).join('\n')}`;
             if (contentRes.ok) {
               const backupVideos = await contentRes.json();
               if (Array.isArray(backupVideos) && backupVideos.length > 0) {
-                if (confirm(`تم العثور على نسخة احتياطية سحابية في Google Drive تحتوي على ${backupVideos.length} فيديو. هل تود استرجاعها الآن؟`)) {
+                if (confirm(`تم العثور على نسخة احتياطية سحابية في Google Drive تحتوي على ${backupVideos.length} video. هل تود استرجاعها الآن؟`)) {
                   allVideos = backupVideos;
                   localStorage.setItem('user_youtube_library', JSON.stringify(allVideos));
                   initApp();
@@ -3182,7 +3166,7 @@ ${titles.map((t, idx) => `${idx + 1}. ${t}`).join('\n')}`;
       }, 3500);
     }
 
-    // تصدير الدوال للوصول الآمن من الـ HTML
+    // تصدير الدوال عالمياً للوصول الآمن من الـ HTML
     window.startManualClassification = startManualClassification;
     window.triggerSelectedPlaylistImport = triggerSelectedPlaylistImport;
     window.triggerSelectedPlaylistSync = triggerSelectedPlaylistSync;
