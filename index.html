@@ -246,7 +246,7 @@
       border-color: var(--accent-color);
     }
 
-    /* حاوية وجدول قوائم تشغيل حساب قوقل الشخصي */
+    /* حاوية قوائم تشغيل حساب قوقل الشخصي */
     .google-playlists-container {
       display: none;
       flex-direction: column;
@@ -1930,7 +1930,7 @@
           const data = await res.json();
           googlePlaylistsSelect.innerHTML = '<option value="">-- اختر قائمة تشغيل --</option>';
           if (data.items && data.items.length > 0) {
-            logToCloudConsole(`📁 تم جلب ${data.items.length} قائمة تشغيل بنجاح وعرضها بالمنسدلة.`);
+            logToCloudConsole(`📁 تم جلب ${data.items.length} قائمة تشغيل بنجاحوعرضها بالمنسدلة.`);
             
             playlistNamesMap = {};
             data.items.forEach(item => {
@@ -2285,6 +2285,609 @@
       }
       result += (seconds < 10 ? '0' : '') + seconds;
       return result;
+    }
+
+    // تصنيف يدوي تفاعلي
+    function startManualClassification() {
+      logToCloudConsole('🔘 تم البدء في طلب تصنيف يدوي للمكتبة.');
+      const geminiKey = geminiApiKey.value.trim() || localStorage.getItem('user_gemini_api_key') || '';
+      if (!geminiKey) {
+        showToast('❌ يرجى إدخال مفتاح Gemini أولاً لبدء التصنيف الذكي.');
+        return;
+      }
+      
+      localStorage.setItem('user_gemini_api_key', geminiKey);
+
+      const targets = allVideos.filter(v => {
+        const videoCats = (v.category || '').split('/').map(c => c.trim());
+        return videoCats.includes('غ-مصنف') || !v.category || v.category === 'غ-مصنف';
+      });
+
+      if (targets.length === 0) {
+        showToast('✅ جميع مقاطع الفيديو مصنفة مسبقاً!');
+        return;
+      }
+
+      const alreadyClassifiedCount = allVideos.length - targets.length;
+      logToCloudConsole(`🔍 تم تخطي ${alreadyClassifiedCount} فيديو مصنف مسبقاً لتوفير الحصة المسموحة.`);
+      runGeminiClassification(targets, geminiKey);
+    }
+
+    // دوال فرعية هامة للتحكم واستمرارية عمليات التصنيف والإيقاف التفاعلي بـ Gemini
+    function triggerContinueImport() {
+      logToCloudConsole('➡️ تم الضغط على متابعة التصنيف.');
+      processNextImportBatch();
+    }
+
+    function triggerCancelImport() {
+      logToCloudConsole('🛑 تم الضغط على إلغاء العملية يدوياً.');
+      isImportAborted = true;
+      globalImportStatus.textContent = '❌ جاري إلغاء العملية وحفظ التقدم الحالي...';
+      cancelImportBtn.style.display = 'none';
+      continueImportBtn.style.display = 'none';
+    }
+
+    async function runGeminiClassification(videosToClassify, geminiKey) {
+      isImportAborted = false;
+      globalImportStatusContainer.style.display = 'flex';
+      cancelImportBtn.style.display = 'inline-flex';
+      continueImportBtn.style.display = 'none';
+
+      activeImportBatches = [];
+      const batchSize = 50;
+      for (let i = 0; i < videosToClassify.length; i += batchSize) {
+        activeImportBatches.push(videosToClassify.slice(i, i + batchSize));
+      }
+
+      currentImportBatchIdx = 0;
+      activeImportGeminiKey = geminiKey;
+
+      processNextImportBatch();
+    }
+
+    async function processNextImportBatch() {
+      if (isImportAborted) {
+        handleAbortedImport();
+        return;
+      }
+
+      if (currentImportBatchIdx >= activeImportBatches.length) {
+        globalImportStatus.textContent = '✅ تم تصنيف كافة المقاطع بالذكاء الاصطناعي بنجاح!';
+        logToCloudConsole('✅ مبروك! تم الانتهاء بنجاح من تصنيف كامل الفيديوهات.');
+        cancelImportBtn.style.display = 'none';
+        continueImportBtn.style.display = 'none';
+        setTimeout(() => {
+          globalImportStatusContainer.style.display = 'none';
+          importPanel.style.display = 'none';
+        }, 3000);
+        return;
+      }
+
+      const batchVideos = activeImportBatches[currentImportBatchIdx];
+      const titles = batchVideos.map(v => v.title);
+      
+      globalImportStatus.textContent = `جاري معالجة الدفعة ${currentImportBatchIdx + 1} من أصل ${activeImportBatches.length}...`;
+      logToCloudConsole(`⏳ جاري إرسال طلب تصنيف الدفعة رقم ${currentImportBatchIdx + 1}/${activeImportBatches.length} إلى Gemini...`);
+      continueImportBtn.style.display = 'none';
+
+      let success = false;
+      let retryCount = 0;
+      const maxRetries = 2;
+
+      while (!success && retryCount < maxRetries) {
+        if (isImportAborted) {
+          handleAbortedImport();
+          return;
+        }
+
+        try {
+          const categories = await classifyTitlesWithGemini(titles, activeImportGeminiKey);
+
+          if (categories && categories.length === batchVideos.length) {
+            batchVideos.forEach((video, idx) => {
+              video.category = categories[idx];
+            });
+            success = true;
+          } else {
+            throw { status: 'FAIL', message: 'رد غير متوقع من الذكاء الاصطناعي.' };
+          }
+        } catch (err) {
+          console.error(err);
+          if (err.status === 429) {
+            logToCloudConsole('⏳ تجاوزنا حدود الكوتا المؤقتة (429). جاري الانتظار 30 ثانية لتجاوز الحظر...');
+            for (let s = 0; s < 60; s++) {
+              if (isImportAborted) {
+                handleAbortedImport();
+                return;
+              }
+              globalImportStatus.textContent = `⏳ تجاوزنا كوتا قوقل (429). جاري الانتظار... (المتبقي: ${30 - Math.floor(s/2)} ثانية)`;
+              await delay(500);
+            }
+            retryCount++;
+          } else {
+            retryCount++;
+            await delay(3000);
+          }
+        }
+      }
+
+      if (!success) {
+        batchVideos.forEach(video => {
+          video.category = video.category || "غ-مصنف";
+        });
+        logToCloudConsole(`❌ فشل تصنيف الدفعة ${currentImportBatchIdx + 1}. تم تصنيف عناصرها كـ "غ-مصنف".`);
+      }
+
+      currentImportBatchIdx++;
+      saveLibraryAndBackup(allVideos);
+
+      if (currentImportBatchIdx < activeImportBatches.length) {
+        const alreadyDone = allVideos.length - activeImportBatches.length * 50 + currentImportBatchIdx * 50;
+        globalImportStatus.textContent = `✅ تم تصنيف الدفعة ${currentImportBatchIdx}. المكتمل: ${alreadyDone}/${allVideos.length}. اضغط "متابعة" للدفعة التالية.`;
+        logToCloudConsole(`⏸️ تم الوقوف مؤقتاً بعد الدفعة ${currentImportBatchIdx}. يرجى الضغط على زر "متابعة التصنيف" على الشاشة للمواصلة.`);
+        continueImportBtn.style.display = 'inline-flex';
+        continueImportBtn.textContent = `متابعة التصنيف ➡️ (${currentImportBatchIdx + 1}/${activeImportBatches.length})`;
+      } else {
+        processNextImportBatch();
+      }
+    }
+
+    function handleAbortedImport() {
+      saveLibraryAndBackup(allVideos);
+      globalImportStatus.textContent = '❌ تم إلغاء العملية وحفظ التقدم بنجاح!';
+      logToCloudConsole('❌ تم إلغاء العملية وتأمين حفظ البيانات المكتملة.');
+      cancelImportBtn.style.display = 'none';
+      continueImportBtn.style.display = 'none';
+      setTimeout(() => {
+        globalImportStatusContainer.style.display = 'none';
+        importPanel.style.display = 'none';
+      }, 3000);
+      showToast('تم إلغاء عملية التصنيف وحفظ التقدم.');
+    }
+
+    function extractJSONArray(text) {
+      const start = text.indexOf('[');
+      const end = text.lastIndexOf(']');
+      if (start !== -1 && end !== -1 && end > start) {
+        const jsonContent = text.substring(start, end + 1);
+        try {
+          return JSON.parse(jsonContent);
+        } catch (e) {
+          console.error("JSON parsing failed:", e);
+        }
+      }
+      return null;
+    }
+
+    async function classifyTitlesWithGemini(titles, geminiKey) {
+      const categoriesList = ["دين", "تقنية", "برمجة", "ذكاء اصطناعي", "تسويق الكتروني", "اقتصاد ومال", "وثائقيات", "تاريخ وسياسة", "ألعاب وجيمنج", "صناعة محتوى وتصميم", "فلسفة وعلم نفس", "كيف تعمل الاشياء", "أعمال", "صحة", "علوم", "رياضة", "سفر", "ترفيه", "تعليم", "لياقة بدنية", "بودكاست", "طبخ", "افلام", "غ-مصنف"];
+      
+      const prompt = `You are a professional video classifier. Categorize each of the following Arabic video titles into EXACTLY one of these Arabic categories: [${categoriesList.join(', ')}].
+Return the result ONLY as a raw JSON array of strings, in the exact same order as the inputs.
+
+CRITICAL: Do not write any markdown code blocks, do not include "json" formatting, and DO NOT write any introductory, conversational, or concluding text. No explanations are allowed. Your response must start with "[" and end with "]".
+If a video is a podcast that belongs to a specific topic, categorize it with multiple tags using slash, for example: "بودكاست / صحة" or "بودكاست / رياضة" or "بودكاست / اقتصاد ومال". 
+If a video is about how things work, or explanation of mechanisms/science/physics behind things, categorize it as "كيف تعمل الاشياء".
+
+Titles:
+${titles.map((t, idx) => `${idx + 1}. ${t}`).join('\n')}`;
+
+      const url = `https://generativelanguage.googleapis.com/v1/models/gemini-3.5-flash:generateContent?key=${geminiKey}`;
+      
+      try {
+        const res = await fetch(url, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            contents: [{
+              parts: [{ text: prompt }]
+            }]
+          })
+        });
+
+        if (res.status === 429) {
+          const err = await res.json();
+          throw { status: 429, message: err.error?.message || 'تجاوز حدود الاستهلاك المؤقتة لقوقل.' };
+        }
+
+        if (!res.ok) {
+          const err = await res.json();
+          throw { status: 'FAIL', message: err.error?.message || 'خطأ في الاتصال بالذكاء الاصطناعي.' };
+        }
+
+        const data = await res.json();
+        const responseText = data.candidates[0].content.parts[0].text.trim();
+        const categories = extractJSONArray(responseText);
+        
+        if (Array.isArray(categories)) {
+          return categories.map(c => {
+            const parts = c.trim().split('/').map(sub => sub.trim());
+            const validatedParts = parts.map(p => categoriesList.includes(p) ? p : "غ-مصنف");
+            return validatedParts.join(' / ');
+          });
+        }
+      } catch (e) {
+        console.error('Gemini Classification Error:', e);
+        throw e;
+      }
+      return null;
+    }
+
+    async function testGeminiConnection() {
+      const key = geminiApiKey.value.trim();
+      if (!key) {
+        geminiTestStatus.textContent = '❌ يرجى إدخال مفتاح الـ API أولاً قبل الفحص.';
+        geminiTestStatus.style.color = '#ff3333';
+        return;
+      }
+
+      geminiTestStatus.textContent = '⏳ جاري الاتصال بخوادم قوقل واختبار المفتاح...';
+      geminiTestStatus.style.color = 'var(--gold-color)';
+      testGeminiBtn.disabled = true;
+
+      const url = `https://generativelanguage.googleapis.com/v1/models/gemini-3.5-flash:generateContent?key=${key}`;
+      
+      try {
+        const res = await fetch(url, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            contents: [{
+              parts: [{ text: "Hello" }]
+            }]
+          })
+        });
+
+        if (res.ok) {
+          const data = await res.json();
+          if (data.candidates && data.candidates[0].content.parts[0].text) {
+            geminiTestStatus.textContent = '✅ تم الاتصال بنجاح! طراز Gemini 3.5 Flash المطور يعمل بالكامل.';
+            geminiTestStatus.style.color = '#33cc33';
+            localStorage.setItem('user_gemini_api_key', key);
+          } else {
+            geminiTestStatus.textContent = '⚠️ تم الاتصال ولكن قوقل أرجع استجابة غير متوقعة.';
+            geminiTestStatus.style.color = 'var(--gold-color)';
+          }
+        } else {
+          const errData = await res.json();
+          const errMsg = errData.error?.message || 'خطأ غير معروف.';
+          geminiTestStatus.textContent = `❌ فشل الاتصال: ${errMsg}`;
+          geminiTestStatus.style.color = '#ff3333';
+        }
+      } catch (e) {
+        geminiTestStatus.textContent = '❌ فشل الاتصال. خطأ في الشبكة (تأكد من اتصال الـ VPN).';
+        geminiTestStatus.style.color = '#ff3333';
+      } finally {
+        testGeminiBtn.disabled = false;
+      }
+    }
+
+    function testGoogleClientId() {
+      const idInput = document.getElementById('googleClientId');
+      const testStatus = document.getElementById('googleClientIdTestStatus');
+      const clientId = idInput.value.trim();
+      
+      if (!clientId) {
+        testStatus.textContent = '❌ يرجى إدخال معرف عميل قوقل أولاً.';
+        testStatus.style.color = '#ff3333';
+        return;
+      }
+      
+      const endsWithCorrectSuffix = clientId.endsWith('.apps.googleusercontent.com');
+      const hasHyphen = clientId.includes('-');
+      
+      if (endsWithCorrectSuffix && hasHyphen) {
+        testStatus.innerHTML = `✅ صيغة المعرف سليمة ومطابقة لقوقل!<br>
+        <span style="color: #888888; font-size: 0.75rem; font-weight: normal; line-height: 1.4; display: block; margin-top: 6px;">تأكد من إدخال هذه الإعدادات بدقة في كونسول قوقل السحابي لتفادي حظر الدخول:<br>
+        • JavaScript origins: <b style="color: var(--text-primary);">https://mislol.github.io</b><br>
+        • Redirect URIs: <b style="color: var(--text-primary);">https://mislol.github.io/Ytblibrary/</b></span>`;
+        testStatus.style.color = '#33cc33';
+        localStorage.setItem('user_google_client_id', clientId);
+      } else {
+        testStatus.textContent = '❌ المعرف غير مكتمل أو منقوص. يجب أن ينتهي بـ .apps.googleusercontent.com';
+        testStatus.style.color = '#ff3333';
+      }
+    }
+
+    function handleGoogleSignIn() {
+      logToCloudConsole('🔘 تم الضغط على زر تسجيل دخول قوقل.');
+      const clientId = googleClientId.value.trim() || localStorage.getItem('user_google_client_id') || '';
+      if (!clientId) {
+        showToast('❌ يرجى إدخال معرف عميل Google Client ID أولاً في تبويب يوتيوب.');
+        importPanel.style.display = 'block';
+        switchTab('youtube');
+        return;
+      }
+
+      localStorage.setItem('user_google_client_id', clientId);
+
+      const redirectUri = window.location.origin + window.location.pathname;
+      const scope = 'https://www.googleapis.com/auth/youtube https://www.googleapis.com/auth/drive.file';
+      const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&response_type=token&scope=${encodeURIComponent(scope)}`;
+      
+      logToCloudConsole('🔐 جاري التوجيه إلى صفحة تسجيل الدخول الرسمية لقوقل...');
+      window.location.href = authUrl;
+    }
+
+    function handleGoogleSignOut() {
+      localStorage.removeItem('user_youtube_access_token');
+      localStorage.removeItem('user_youtube_token_expires');
+      localStorage.removeItem('user_google_drive_file_id');
+      logToCloudConsole('🔐 تم تسجيل الخروج بنجاح وتم مسح التراخيص المؤقتة.');
+      showToast('🔐 تم تسجيل الخروج بنجاح.');
+      googlePlaylistsContainer.style.display = 'none';
+      updateAuthUI();
+    }
+
+    function checkOAuthHash() {
+      if (window.location.hash) {
+        const hash = window.location.hash.substring(1);
+        const params = new URLSearchParams(hash);
+        const token = params.get('access_token');
+        const expiresIn = params.get('expires_in');
+        
+        if (token) {
+          const expireTime = Date.now() + (parseInt(expiresIn) * 1000);
+          localStorage.setItem('user_youtube_access_token', token);
+          localStorage.setItem('user_youtube_token_expires', expireTime);
+          
+          history.replaceState(null, "", window.location.pathname + window.location.search);
+          showToast('✅ تم تسجيل الدخول بحساب قوقل وتفعيل المزامنة السحابية!');
+        }
+      }
+      
+      const token = getValidAccessToken();
+      if (token) {
+        fetchPersonalPlaylists(token);
+        loadBackupFromGoogleDrive(token);
+      }
+      updateAuthUI();
+    }
+
+    function getValidAccessToken() {
+      const token = localStorage.getItem('user_youtube_access_token');
+      const expires = localStorage.getItem('user_youtube_token_expires');
+      if (token && expires && Date.now() < parseInt(expires)) {
+        return token;
+      }
+      return null;
+    }
+
+    function updateAuthUI() {
+      const token = getValidAccessToken();
+      if (token) {
+        googleSignInBtn.style.display = 'none';
+        googleSignOutBtn.style.display = 'inline-flex';
+      } else {
+        googleSignInBtn.style.display = 'inline-flex';
+        googleSignOutBtn.style.display = 'none';
+      }
+    }
+
+    async function saveBackupToGoogleDrive() {
+      const token = getValidAccessToken();
+      if (!token) return;
+
+      logToCloudConsole('💾 جاري محاولة رفع نسخة احتياطية من مكتبتك سحابياً إلى Google Drive...');
+      
+      const fileId = localStorage.getItem('user_google_drive_file_id');
+      const boundary = 'xxxxxxxxxx';
+      const metadata = {
+        name: 'yt_library_db.json',
+        mimeType: 'application/json'
+      };
+      
+      if (fileId) {
+        const url = `https://www.googleapis.com/upload/drive/v3/files/${fileId}?uploadType=media`;
+        try {
+          const res = await fetch(url, {
+            method: 'PATCH',
+            headers: {
+              'Authorization': `Bearer ${token}`,
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(allVideos)
+          });
+          if (res.ok) {
+            logToCloudConsole('✅ تم تحديث نسخة Google Drive بنجاح!');
+          } else {
+            const err = await res.json();
+            logToCloudConsole(`❌ فشل التحديث السحابي: ${err.error?.message || 'غير معروف'}`);
+          }
+        } catch (e) {
+          console.error(e);
+          logToCloudConsole(`❌ خطأ شبكة أثناء التحديث: ${e.message}`);
+        }
+      } else {
+        const url = `https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart`;
+        const body = `--${boundary}\r\nContent-Type: application/json; charset=UTF-8\r\n\r\n${JSON.stringify(metadata)}\r\n--${boundary}\r\nContent-Type: application/json\r\n\r\n${JSON.stringify(allVideos)}\r\n--${boundary}--`;
+        
+        try {
+          const res = await fetch(url, {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${token}`,
+              'Content-Type': `multipart/related; boundary=${boundary}`
+            },
+            body: body
+          });
+          if (res.ok) {
+            const data = await res.json();
+            localStorage.setItem('user_google_drive_file_id', data.id);
+            logToCloudConsole('✅ تم إنشاء وحفظ نسخة سحابية جديدة بنجاح!');
+          } else {
+            const err = await res.json();
+            logToCloudConsole(`❌ فشل إنشاء ملف النسخة الاحتياطية: ${err.error?.message || 'غير معروف'}`);
+          }
+        } catch (e) {
+          console.error(e);
+          logToCloudConsole(`❌ خطأ شبكة: ${e.message}`);
+        }
+      }
+    }
+
+    async function loadBackupFromGoogleDrive(token) {
+      logToCloudConsole('🔍 جاري البحث في Google Drive عن نسخة احتياطية سابقة...');
+      const url = `https://www.googleapis.com/drive/v3/files?q=name='yt_library_db.json'+and+trashed=false&fields=files(id,name)`;
+      try {
+        const res = await fetch(url, {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        });
+        if (res.ok) {
+          const data = await res.json();
+          if (data.files && data.files.length > 0) {
+            const file = data.files[0];
+            localStorage.setItem('user_google_drive_file_id', file.id);
+            logToCloudConsole(`📁 تم العثور على نسخة سحابية للمكتبة. جاري جلب الملف...`);
+            
+            const contentUrl = `https://www.googleapis.com/drive/v3/files/${file.id}?alt=media`;
+            const contentRes = await fetch(contentUrl, {
+              headers: {
+                'Authorization': `Bearer ${token}`
+              }
+            });
+            if (contentRes.ok) {
+              const backupVideos = await contentRes.json();
+              if (Array.isArray(backupVideos) && backupVideos.length > 0) {
+                if (confirm(`تم العثور على نسخة احتياطية سحابية في Google Drive تحتوي على ${backupVideos.length} video. هل تود استرجاعها الآن؟`)) {
+                  allVideos = backupVideos;
+                  localStorage.setItem('user_youtube_library', JSON.stringify(allVideos));
+                  initApp();
+                  logToCloudConsole('✅ تم استرجاع النسخة الاحتياطية بنجاح!');
+                  showToast('✅ تم استرجاع مكتبتك بنجاح!');
+                }
+              }
+            }
+          }
+        }
+      } catch (e) {
+        console.error(e);
+        logToCloudConsole(`❌ خطأ أثناء استيراد النسخة السحابية: ${e.message}`);
+      }
+    }
+
+    function saveLibraryAndBackup(videosArray) {
+      allVideos = videosArray;
+      localStorage.setItem('user_youtube_library', JSON.stringify(allVideos));
+      initApp();
+      
+      const token = getValidAccessToken();
+      if (token) {
+        saveBackupToGoogleDrive();
+      }
+    }
+
+    function openDuplicateModal(videoId) {
+      const modal = document.getElementById('duplicateModal');
+      const body = document.getElementById('dupModalBody');
+      if (!modal || !body) return;
+
+      const copies = allVideos.filter(v => extractVideoID(v.url) === videoId);
+      if (copies.length === 0) {
+        closeDuplicateModal();
+        return;
+      }
+
+      const sample = copies[0];
+      let listHtml = '';
+      
+      copies.forEach(v => {
+        const playlistName = v.parentPlaylistName || 'عام / غير مسمّاة';
+        listHtml += `
+          <div style="display: flex; justify-content: space-between; align-items: center; background-color: var(--bg-primary); padding: 12px 18px; border-radius: 8px; border: 1px solid var(--bg-tertiary);">
+            <span style="font-size: 0.9rem; font-weight: 700; color: var(--text-primary);">📁 القائمة: ${playlistName}</span>
+            <button class="btn btn-secondary" style="color: #ff3333; font-size: 0.75rem; padding: 4px 10px;" onclick="deleteSpecificVideoCopy(${v.id}, '${videoId}')">حذف من هذه القائمة 🗑️</button>
+          </div>
+        `;
+      });
+
+      body.innerHTML = `
+        <div style="display: flex; gap: 14px; align-items: center;">
+          <img src="${sample.thumbnail}" style="width: 110px; aspect-ratio: 16/9; object-fit: cover; border-radius: 6px; border: 1px solid var(--bg-tertiary);">
+          <div style="flex: 1;">
+            <h4 style="font-size: 0.95rem; font-weight: 700; line-height: 1.4; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; color: var(--text-primary);">${sample.title}</h4>
+            <p style="color: var(--text-secondary); font-size: 0.8rem; margin-top: 4px;">🎙️ ${sample.channel}</p>
+          </div>
+        </div>
+        <div style="display: flex; flex-direction: column; gap: 10px; margin-top: 10px;">
+          <p style="font-size: 0.85rem; color: var(--text-secondary);">يتواجد هذا الفيديو مكرراً في القوائم السحابية التالية. اختر القائمة التي ترغب في حذف الفيديو منها:</p>
+          ${listHtml}
+        </div>
+      `;
+
+      modal.style.display = 'flex';
+    }
+
+    function closeDuplicateModal() {
+      const modal = document.getElementById('duplicateModal');
+      if (modal) modal.style.display = 'none';
+    }
+
+    async function deleteSpecificVideoCopy(id, videoId) {
+      const video = allVideos.find(v => v.id === id);
+      if (!video) return;
+
+      if (confirm(`هل أنت متأكد من رغبتك في حذف هذا الفيديو من هذه القائمة بالتحديد؟`)) {
+        const token = getValidAccessToken();
+        if (token && video.playlistItemId) {
+          try {
+            showToast('⏳ جاري الحذف سحابياً من يوتيوب...');
+            const res = await fetch(`https://www.googleapis.com/youtube/v3/playlistItems?id=${video.playlistItemId}`, {
+              method: 'DELETE',
+              headers: {
+                'Authorization': `Bearer ${token}`
+              }
+            });
+            if (res.status === 204) {
+              showToast('✅ تم حذف الفيديو سحابياً من يوتيوب!');
+            } else {
+              console.error('Cloud delete failed', res.status);
+              showToast('⚠️ تم الحذف محلياً فقط.');
+            }
+          } catch (err) {
+            console.error('Cloud delete network error', err);
+            showToast('⚠️ تم الحذف محلياً فقط.');
+          }
+        }
+
+        const filteredList = allVideos.filter(v => v.id !== id);
+        favoriteIds.delete(id);
+        localStorage.setItem('user_youtube_favorites', JSON.stringify([...favoriteIds]));
+        saveLibraryAndBackup(filteredList);
+
+        const remainingCopies = allVideos.filter(v => extractVideoID(v.url) === videoId);
+        if (remainingCopies.length <= 1) {
+          closeDuplicateModal();
+          showToast('✅ تم تصفية وإزالة التكرار لهذا الفيديو بنجاح!');
+        } else {
+          openDuplicateModal(videoId);
+        }
+      }
+    }
+
+    function playVideoInApp(id, videoId) {
+      logToCloudConsole(`🎬 تشغيل الفيديو ذو المعرف: ${videoId} مدمجاً داخل التطبيق.`);
+      const thumbArea = document.getElementById(`thumb-${id}`);
+      if (thumbArea) {
+        thumbArea.innerHTML = `
+          <iframe 
+            width="100%" 
+            height="100%" 
+            src="https://www.youtube.com/embed/${videoId}?autoplay=1&rel=0" 
+            frameborder="0" 
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
+            allowfullscreen
+            style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: none;">
+          </iframe>
+        `;
+        thumbArea.onclick = null;
+      }
     }
 
     function toggleLayout() {
@@ -2653,6 +3256,8 @@
     window.playVideoInApp = playVideoInApp;
     window.clearPlaylistCategories = clearPlaylistCategories;
     window.updateDurationsFromApi = updateDurationsFromApi;
+    window.triggerContinueImport = triggerContinueImport;
+    window.triggerCancelImport = triggerCancelImport;
   </script>
 </body>
 </html>
