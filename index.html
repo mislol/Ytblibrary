@@ -81,6 +81,7 @@
 
     .header-actions {
       display: flex;
+      align-items: center;
       gap: 8px;
       flex-wrap: wrap;
     }
@@ -770,6 +771,17 @@
       </div>
       <div class="header-actions">
         <button id="googleSignInBtn" class="btn btn-secondary" onclick="handleGoogleSignIn()"><span class="icon">🔐</span> دخول قوقل</button>
+        
+        <!-- القائمة المنسدلة للتحديث السحابي المضافة حديثاً في الأعلى -->
+        <div class="header-dropdown-sync" id="syncDropdownGroup" style="position: relative; display: none;">
+          <button id="headerSyncBtn" class="btn btn-gold" onclick="toggleSyncDropdown(event)">
+            <span class="icon" id="syncBtnIcon">🔄</span> تحديث <span class="arrow">▾</span>
+          </button>
+          <ul id="headerSyncDropdownMenu" class="categories-dropdown-menu" style="right: auto; left: 0; min-width: 250px;">
+            <!-- يتم تعبئتها ديناميكياً بقوائم تشغيل المستخدم -->
+          </ul>
+        </div>
+
         <button id="googleSignOutBtn" class="btn btn-secondary" style="display: none;" onclick="handleGoogleSignOut()"><span class="icon">🔓</span> خروج</button>
         <button id="updateDurationsFromApiBtn" class="btn btn-secondary" onclick="updateDurationsFromApi()"><span class="icon">🔄</span> تحديث التوقيتات</button>
         <button id="toggleImportBtn" class="btn btn-secondary">📥 استيراد</button>
@@ -844,13 +856,12 @@
         </div>
 
         <div class="google-playlists-container" id="googlePlaylistsContainer" style="display: none; flex-direction: column; gap: 10px; background-color: var(--bg-primary); padding: 15px; border-radius: 8px; border: 1px dashed var(--bg-tertiary); margin-bottom: 15px;">
-          <label for="googlePlaylistsSelect" style="font-size:0.85rem; font-weight:600;">📁 اختر قائمة تشغيل سحابية من حسابك:</label>
+          <label for="googlePlaylistsSelect" style="font-size:0.85rem; font-weight:600;">📁 اختر قائمة تشغيل سحابية من حسابك للاستيراد كجديدة:</label>
           <div style="display: flex; gap: 10px; width: 100%; flex-wrap: wrap;">
             <select id="googlePlaylistsSelect" style="flex:1; padding: 10px; border-radius: 8px; background-color: var(--bg-secondary); color: #fff; border: 1px solid var(--bg-tertiary); outline: none;">
               <option value="">-- جاري التحميل... --</option>
             </select>
-            <button id="importSelectedPlaylistBtn" class="btn btn-primary" onclick="triggerSelectedPlaylistImport()">📥 استيراد</button>
-            <button id="syncSelectedPlaylistBtn" class="btn btn-gold" onclick="triggerSelectedPlaylistSync()">🔄 مزامنة وتحديث</button>
+            <button id="importSelectedPlaylistBtn" class="btn btn-primary" onclick="triggerSelectedPlaylistImport()">📥 استيراد القائمة كجديدة</button>
           </div>
         </div>
 
@@ -1038,7 +1049,7 @@
   </div>
 
   <script>
-    // عينة افتراضية مبدئية فارغة
+    // عينة افتراضية مبدئية فارغة لتبدأ المكتبة فارغة بالكامل
     const defaultData = [];
 
     let allVideos = [];
@@ -1172,12 +1183,32 @@
         categoriesDropdownMenu.classList.toggle('show');
       });
 
+      // إغلاق أي قائمة منسدلة مفتوحة عند النقر على الشاشة في مكان خارجي
       document.addEventListener('click', (e) => {
         if (!pillCategoriesDropdownBtn.contains(e.target) && !categoriesDropdownMenu.contains(e.target)) {
           categoriesDropdownMenu.classList.remove('show');
         }
+        
+        const syncMenu = document.getElementById('categoriesDropdownMenu');
+        const syncBtn = document.getElementById('pillCategoriesDropdownBtn');
+        if (syncMenu && syncBtn && !syncBtn.contains(e.target) && !syncMenu.contains(e.target)) {
+          syncMenu.classList.remove('show');
+        }
+
+        const headerSyncMenu = document.getElementById('headerSyncDropdownMenu');
+        const headerSyncBtn = document.getElementById('headerSyncBtn');
+        if (headerSyncMenu && headerSyncBtn && !headerSyncBtn.contains(e.target) && !headerSyncMenu.contains(e.target)) {
+          headerSyncMenu.classList.remove('show');
+        }
       });
     });
+
+    // دالة التحكم في فتح قائمة التحديث المنسدلة في الشريط العلوي
+    function toggleSyncDropdown(e) {
+      e.stopPropagation();
+      const menu = document.getElementById('headerSyncDropdownMenu');
+      if (menu) menu.classList.toggle('show');
+    }
 
     // دالة كتابة السجلات البرمجية
     function logToCloudConsole(msg) {
@@ -1189,21 +1220,6 @@
       }
     }
     window.logToCloudConsole = logToCloudConsole;
-
-    // التبديل بين تبويبات الاستيراد
-    function switchTab(type) {
-      if (type === 'csv') {
-        tabCsvBtn.classList.add('active');
-        tabYoutubeBtn.classList.remove('active');
-        tabCsvContent.classList.add('active');
-        tabYoutubeContent.classList.remove('active');
-      } else {
-        tabYoutubeBtn.classList.add('active');
-        tabCsvBtn.classList.remove('active');
-        tabYoutubeContent.classList.add('active');
-        tabCsvContent.classList.remove('active');
-      }
-    }
 
     // جلب البيانات من الذاكرة المحلية
     function loadLibraryData() {
@@ -1884,22 +1900,39 @@
         if (res.ok) {
           const data = await res.json();
           googlePlaylistsSelect.innerHTML = '<option value="">-- اختر قائمة تشغيل --</option>';
+          
+          // ملء وتجهيز القائمة المنسدلة للتحديث السحابي في الشريط العلوي الجديد
+          const headerMenu = document.getElementById('headerSyncDropdownMenu');
+          if (headerMenu) headerMenu.innerHTML = '';
+
           if (data.items && data.items.length > 0) {
             logToCloudConsole(`📁 تم جلب ${data.items.length} قائمة تشغيل بنجاح وعرضها بالمنسدلة.`);
             
             playlistNamesMap = {};
             data.items.forEach(item => {
               playlistNamesMap[item.id] = item.snippet.title; 
+              
               const opt = document.createElement('option');
               opt.value = item.id;
               opt.textContent = `${item.snippet.title}`;
               googlePlaylistsSelect.appendChild(opt);
+
+              // إدراج عناصر التحديث المنسدلة في الهيدر العلوي
+              const li = document.createElement('li');
+              li.className = 'dropdown-item-cat';
+              li.innerHTML = `<span>📁 ${item.snippet.title}</span>`;
+              li.addEventListener('click', () => {
+                headerMenu.classList.remove('show');
+                syncPlaylistById(item.id);
+              });
+              headerMenu.appendChild(li);
             });
             localStorage.setItem('user_youtube_playlist_names_map', JSON.stringify(playlistNamesMap));
             googlePlaylistsContainer.style.display = 'flex'; 
           } else {
             logToCloudConsole('⚠️ لم يتم العثور على أي قوائم تشغيل عامة أو خاصة في حساب يوتيوب هذا.');
             googlePlaylistsSelect.innerHTML = '<option value="">-- لا توجد قوائم تشغيل بحسابك --</option>';
+            if (headerMenu) headerMenu.innerHTML = '<li class="dropdown-item-cat" style="color: var(--text-secondary);">لا توجد قوائم تشغيل</li>';
           }
         } else {
           const errData = await res.json();
@@ -2596,12 +2629,16 @@ ${titles.map((t, idx) => `${idx + 1}. ${t}`).join('\n')}`;
 
     function updateAuthUI() {
       const token = getValidAccessToken();
+      const syncDropdownGroup = document.getElementById('syncDropdownGroup');
+      
       if (token) {
         googleSignInBtn.style.display = 'none';
         googleSignOutBtn.style.display = 'inline-flex';
+        if (syncDropdownGroup) syncDropdownGroup.style.display = 'inline-block';
       } else {
         googleSignInBtn.style.display = 'inline-flex';
         googleSignOutBtn.style.display = 'none';
+        if (syncDropdownGroup) syncDropdownGroup.style.display = 'none';
       }
     }
 
@@ -3342,6 +3379,7 @@ ${titles.map((t, idx) => `${idx + 1}. ${t}`).join('\n')}`;
     window.handleCardCheckboxChange = handleCardCheckboxChange;
     window.applyBulkCategoryChange = applyBulkCategoryChange;
     window.applyBulkDelete = applyBulkDelete;
+    window.toggleSyncDropdown = toggleSyncDropdown;
   </script>
 </body>
 </html>
