@@ -1720,6 +1720,71 @@
       }
     }
 
+    // دالة الجلب السحابية الأساسية المعتمدة على الرمز الأمني المشفر وموقع الفيديوهات
+    async function fetchAllPlaylistItemsOAuth(playlistId, token) {
+      let videos = [];
+      let nextPageToken = '';
+      let hasNextPage = true;
+      let count = 0;
+
+      const playlistName = playlistNamesMap[playlistId] || 'قائمة سحابية مستوردة';
+
+      while (hasNextPage) {
+        let url = `https://www.googleapis.com/youtube/v3/playlistItems?part=snippet&maxResults=50&playlistId=${playlistId}`;
+        if (nextPageToken) {
+          url += `&pageToken=${nextPageToken}`;
+        }
+
+        const res = await fetch(url, {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        });
+        if (!res.ok) {
+          const errData = await res.json();
+          throw new Error(errData.error.message || 'خطأ في جلب بيانات القائمة السحابية.');
+        }
+
+        const data = await res.json();
+        if (data.items) {
+          data.items.forEach(item => {
+            const snippet = item.snippet;
+            if (snippet && snippet.resourceId && snippet.resourceId.kind === 'youtube#video') {
+              const videoId = snippet.resourceId.videoId;
+              const title = snippet.title;
+              const channel = snippet.videoOwnerChannelTitle || snippet.channelTitle || 'قناة يوتيوب';
+              const thumb = (snippet.thumbnails && snippet.thumbnails.high) ? snippet.thumbnails.high.url : `https://img.youtube.com/vi/${videoId}/hqdefault.jpg`;
+              const videoUrl = `https://www.youtube.com/watch?v=${videoId}`;
+              const playlistItemId = item.id;
+
+              videos.push({
+                id: videos.length + 1,
+                title: title,
+                category: "غ-مصنف", 
+                channel: channel,
+                duration: '00:00',
+                thumbnail: thumb,
+                url: videoUrl,
+                playlistItemId: playlistItemId,
+                parentPlaylistId: playlistId,
+                parentPlaylistName: playlistName,
+                position: snippet.position !== undefined ? snippet.position : videos.length
+              });
+            }
+          });
+        }
+
+        count += data.items ? data.items.length : 0;
+        globalImportStatus.textContent = `جاري جلب الفيديوهات... تم تحميل ${count}`;
+
+        nextPageToken = data.nextPageToken;
+        if (!nextPageToken) {
+          hasNextPage = false;
+        }
+      }
+      return videos;
+    }
+
     async function syncPlaylistById(playlistId) {
       const token = getValidAccessToken();
       
@@ -2234,6 +2299,7 @@ ${titles.map((t, idx) => `${idx + 1}. ${t}`).join('\n')}`;
       updateAuthUI();
     }
 
+    // تحقق من كود المصادقة بعد إعادة توجيه قوقل
     function checkOAuthHash() {
       if (window.location.hash) {
         const hash = window.location.hash.substring(1);
@@ -2453,10 +2519,10 @@ ${titles.map((t, idx) => `${idx + 1}. ${t}`).join('\n')}`;
         if (token && video.playlistItemId) {
           try {
             showToast('⏳ جاري الحذف سحابياً من يوتيوب...');
-            const res = await fetch(`https://www.googleapis.com/youtube/v3/playlistItems?id=${video.playlistItemId}`, {
+            const res = await fetch('https://www.googleapis.com/youtube/v3/playlistItems?id=' + video.playlistItemId, {
               method: 'DELETE',
               headers: {
-                'Authorization': `Bearer ${token}`
+                'Authorization': 'Bearer ' + token
               }
             });
             if (res.status === 204) {
@@ -3000,8 +3066,6 @@ ${titles.map((t, idx) => `${idx + 1}. ${t}`).join('\n')}`;
 
     // تصدير الدوال عالمياً للوصول الآمن من الـ HTML
     window.startManualClassification = startManualClassification;
-    window.triggerSelectedPlaylistImport = triggerSelectedPlaylistImport;
-    window.triggerSelectedPlaylistSync = triggerSelectedPlaylistSync;
     window.testGoogleClientId = testGoogleClientId;
     window.handleGoogleSignIn = handleGoogleSignIn;
     window.handleGoogleSignOut = handleGoogleSignOut;
@@ -3017,12 +3081,6 @@ ${titles.map((t, idx) => `${idx + 1}. ${t}`).join('\n')}`;
     window.updateDurationsFromApi = updateDurationsFromApi;
     window.triggerContinueImport = triggerContinueImport;
     window.triggerCancelImport = triggerCancelImport;
-    window.toggleBulkEditMode = toggleBulkEditMode;
-    window.selectAllOnCurrentPage = selectAllOnCurrentPage;
-    window.deselectAll = deselectAll;
-    window.handleCardCheckboxChange = handleCardCheckboxChange;
-    window.applyBulkCategoryChange = applyBulkCategoryChange;
-    window.applyBulkDelete = applyBulkDelete;
     window.toggleSyncDropdown = toggleSyncDropdown;
   </script>
 </body>
