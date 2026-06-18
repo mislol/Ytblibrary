@@ -1174,6 +1174,18 @@
       });
     });
 
+    // دالة استخراج معرّف الفيديو (الـ ID) الهامة جداً للتطبيق بالكامل
+    function extractVideoID(url) {
+      if (!url) return 'default';
+      const trimmed = url.trim();
+      if (trimmed.length === 11 && /^[a-zA-Z0-9_-]{11}$/.test(trimmed)) {
+        return trimmed;
+      }
+      const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/;
+      const match = trimmed.match(regExp);
+      return (match && match[2].length === 11) ? match[2] : 'default';
+    }
+
     // دالة التحكم في فتح قائمة التحديث المنسدلة في الشريط العلوي
     function toggleSyncDropdown(e) {
       e.stopPropagation();
@@ -1829,7 +1841,7 @@
       }
 
       globalProgressBarFill.style.width = '100%';
-      globalImportStatus.textContent = 'تم استيراد كافة التفاصيل والمدد الفعلية من قوقل بنجاح!';
+      globalImportStatus.textContent = 'تم استيراد كافة التفاصيل والمدد الزمنية من قوقل بنجاح!';
       setTimeout(() => { 
         globalImportStatusContainer.style.display = 'none';
       }, 3000);
@@ -1852,6 +1864,33 @@
       }
       result += (seconds < 10 ? '0' : '') + seconds;
       return result;
+    }
+
+    // جلب وتحديث التوقيتات مباشرة من خوادم يوتيوب سحابياً للمقاطع غير المصنفة
+    async function updateDurationsFromApi() {
+      const targets = allVideos.filter(v => v.duration === '00:00' || !v.duration);
+      if (targets.length === 0) {
+        showToast('✅ جميع مقاطع الفيديو في مكتبتك تحتوي على توقيتات حقيقية بالفعل.');
+        return;
+      }
+
+      const token = getValidAccessToken();
+
+      if (!token) {
+        showToast('⚠️ يرجى تسجيل الدخول بقوقل أولاً لتحديث التوقيتات سحابياً.');
+        importPanel.style.display = 'block';
+        return;
+      }
+
+      if (confirm(`تم العثور على ${targets.length} فيديو بتوقيت 00:00. هل تود تحديث توقيتاتها الحقيقية وعناوينها مباشرة من يوتيوب سحابياً؟`)) {
+        try {
+          await fetchApiMetadataInBatches(targets, '');
+          showToast(`✅ تم جلب وتحديث التوقيتات لـ ${targets.length} فيديو بنجاح!`);
+        } catch (e) {
+          console.error(e);
+          showToast(`❌ فشل تحديث التوقيتات: ${e.message}`);
+        }
+      }
     }
 
     // مسح تصنيفات قائمة كاملة وإرجاعها لـ "غ-مصنف"
@@ -2531,6 +2570,7 @@ ${titles.map((t, idx) => `${idx + 1}. ${t}`).join('\n')}`;
       renderGrid();
     }
 
+    // تحديد الكل بالصفحة الحالية للتعديل الجماعي
     function selectAllOnCurrentPage() {
       const startIndex = (currentPage - 1) * itemsPerPage;
       const endIndex = startIndex + itemsPerPage;
