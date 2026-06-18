@@ -217,7 +217,7 @@
       user-select: none;
     }
 
-    /* حقول الإدخال */
+    /* حقول الإدخال لمستورد يوتيوب وGemini */
     .input-group {
       display: flex;
       flex-direction: column;
@@ -246,7 +246,7 @@
       border-color: var(--accent-color);
     }
 
-    /* حاوية قوائم تشغيل حساب قوقل الشخصي */
+    /* حاوية وجدول قوائم تشغيل حساب قوقل الشخصي */
     .google-playlists-container {
       display: none;
       flex-direction: column;
@@ -1930,7 +1930,7 @@
           const data = await res.json();
           googlePlaylistsSelect.innerHTML = '<option value="">-- اختر قائمة تشغيل --</option>';
           if (data.items && data.items.length > 0) {
-            logToCloudConsole(`📁 تم جلب ${data.items.length} قائمة تشغيل بنجاحوعرضها بالمنسدلة.`);
+            logToCloudConsole(`📁 تم جلب ${data.items.length} قائمة تشغيل بنجاح وعرضها بالمنسدلة.`);
             
             playlistNamesMap = {};
             data.items.forEach(item => {
@@ -2489,12 +2489,12 @@ ${titles.map((t, idx) => `${idx + 1}. ${t}`).join('\n')}`;
 
         if (res.status === 429) {
           const err = await res.json();
-          throw { status: 429, message: err.error?.message || 'تجاوز حدود الاستهلاك المؤقتة لقوقل.' };
+          throw { status: 429, message: err.error?.message || 'تجاوز حدود الكوتا.' };
         }
 
         if (!res.ok) {
           const err = await res.json();
-          throw { status: 'FAIL', message: err.error?.message || 'خطأ في الاتصال بالذكاء الاصطناعي.' };
+          throw { status: 'FAIL', message: err.error?.message || 'خطأ اتصال بالذكاء الاصطناعي.' };
         }
 
         const data = await res.json();
@@ -2730,8 +2730,9 @@ ${titles.map((t, idx) => `${idx + 1}. ${t}`).join('\n')}`;
       }
     }
 
+    // سحب وقراءة النسخة الاحتياطية سحابياً من Google Drive مع حماية البيانات المحلية من الاستبدال غير المقصود [1209]
     async function loadBackupFromGoogleDrive(token) {
-      logToCloudConsole('🔍 جاري البحث في Google Drive عن نسخة احتياطية سابقة...');
+      logToCloudConsole('🔍 جاري البحث في Google Drive عن نسخة احتياطية سابقة للمكتبة...');
       const url = `https://www.googleapis.com/drive/v3/files?q=name='yt_library_db.json'+and+trashed=false&fields=files(id,name)`;
       try {
         const res = await fetch(url, {
@@ -2744,8 +2745,9 @@ ${titles.map((t, idx) => `${idx + 1}. ${t}`).join('\n')}`;
           if (data.files && data.files.length > 0) {
             const file = data.files[0];
             localStorage.setItem('user_google_drive_file_id', file.id);
-            logToCloudConsole(`📁 تم العثور على نسخة سحابية للمكتبة. جاري جلب الملف...`);
+            logToCloudConsole(`📁 تم العثور على ملف احتياطي بالمعرف سحابياً: ${file.id}. جاري سحب البيانات...`);
             
+            // سحب محتويات ملف الـ JSON
             const contentUrl = `https://www.googleapis.com/drive/v3/files/${file.id}?alt=media`;
             const contentRes = await fetch(contentUrl, {
               headers: {
@@ -2755,20 +2757,32 @@ ${titles.map((t, idx) => `${idx + 1}. ${t}`).join('\n')}`;
             if (contentRes.ok) {
               const backupVideos = await contentRes.json();
               if (Array.isArray(backupVideos) && backupVideos.length > 0) {
-                if (confirm(`تم العثور على نسخة احتياطية سحابية في Google Drive تحتوي على ${backupVideos.length} video. هل تود استرجاعها الآن؟`)) {
-                  allVideos = backupVideos;
-                  localStorage.setItem('user_youtube_library', JSON.stringify(allVideos));
-                  initApp();
-                  logToCloudConsole('✅ تم استرجاع النسخة الاحتياطية بنجاح!');
-                  showToast('✅ تم استرجاع مكتبتك بنجاح!');
+                // ميزة الحماية الذكية: نسأل المستخدم فقط إذا كانت مكتبته المحلية فارغة أو تحتوي فقط على البيانات التوضيحية الافتراضية
+                const isLocalEmpty = allVideos.length === 0 || 
+                                     (allVideos.length === 2 && allVideos[0].title.includes("مقدمة تعريفية"));
+                
+                if (isLocalEmpty) {
+                  if (confirm(`تم العثور على نسخة احتياطية سحابية في Google Drive تحتوي على ${backupVideos.length} فيديو.\nهل تود استرجاعها وعرضها الآن بالمتصفح؟`)) {
+                    allVideos = backupVideos;
+                    localStorage.setItem('user_youtube_library', JSON.stringify(allVideos));
+                    initApp();
+                    logToCloudConsole('✅ تم استرجاع ومزامنة النسخة الاحتياطية سحابياً من Google Drive بنجاح تام!');
+                    showToast('✅ تم استرجاع مكتبتك السحابية من Google Drive بنجاح!');
+                  } else {
+                    logToCloudConsole('🧹 تم اختيار: عدم استرجاع النسخة والبدء بمكتبة فارغة حالياً.');
+                  }
+                } else {
+                  logToCloudConsole('💡 توضيح: تم تخطي الاستيراد التلقائي للنسخة الاحتياطية لوجود مكتبة محلية نشطة في متصفحك حالياً.');
                 }
               }
             }
+          } else {
+            logToCloudConsole('ℹ️ لم يتم العثور على أي نسخ احتياطية سابقة للمكتبة في حساب Google Drive الخاص بك.');
           }
         }
       } catch (e) {
         console.error(e);
-        logToCloudConsole(`❌ خطأ أثناء استيراد النسخة السحابية: ${e.message}`);
+        logToCloudConsole(`❌ خطأ أثناء البحث وسحب نسخة Google Drive: ${e.message}`);
       }
     }
 
@@ -2856,7 +2870,7 @@ ${titles.map((t, idx) => `${idx + 1}. ${t}`).join('\n')}`;
           }
         }
 
-        const filteredList = allVideos.filter(v => v.id !== id);
+        const filteredList = allVideos.filter(v => { return v.id !== id; });
         favoriteIds.delete(id);
         localStorage.setItem('user_youtube_favorites', JSON.stringify([...favoriteIds]));
         saveLibraryAndBackup(filteredList);
