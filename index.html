@@ -42,14 +42,12 @@
       padding-bottom: 80px;
     }
 
-    /* شريط الملاحة الرئيسي */
+    /* شريط الملاحة الرئيسي - تم جعله طبيعياً وغير ملتصق للاستفادة من مساحة الشاشة بالكامل */
     .main-header {
       background-color: var(--bg-secondary);
       border-bottom: 1px solid var(--bg-tertiary);
-      position: sticky;
-      top: 0;
+      position: relative;
       z-index: 100;
-      backdrop-filter: blur(8px);
     }
 
     .header-container {
@@ -3125,4 +3123,4 @@ ${titles.map((t, idx) => `${idx + 1}. ${t}`).join('\n')}`;
     window.toggleSyncDropdown = toggleSyncDropdown;
   </script>
 </body>
-</html>
+</html
