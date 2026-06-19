@@ -933,12 +933,11 @@
           <!-- فلتر قائمة التشغيل -->
           <div class="filter-group">
             <label for="playlistFilter">قائمة التشغيل</label>
-            <div style="display: flex; gap: 4px; flex-wrap: wrap;">
-              <select id="playlistFilter" onchange="applyFiltersAndSort()" style="flex-grow: 1; min-width: 120px;">
+            <div style="display: flex; gap: 6px;">
+              <select id="playlistFilter" onchange="applyFiltersAndSort()" style="flex-grow: 1;">
                 <option value="">الكل</option>
               </select>
-              <button id="clearPlaylistCategoriesBtn" class="btn btn-secondary" style="padding: 4px 10px; font-size: 0.75rem;" onclick="clearPlaylistCategories()" title="إرجاع تصنيفات القائمة لـ غ-مصنف">🧹 تصفير</button>
-              <button id="deletePlaylistFromAppBtn" class="btn btn-secondary" style="padding: 4px 10px; font-size: 0.75rem; color: #ff3333;" onclick="deletePlaylistFromApp()" title="إزالة القائمة وفيديوهاتها من التطبيق فقط">🗑️ إزالة</button>
+              <button id="clearPlaylistCategoriesBtn" class="btn btn-secondary" style="padding: 4px 10px; font-size: 0.75rem; color: #ff3333;" onclick="clearPlaylistCategories()" title="مسح تصنيفات القائمة المحددة بالكامل وإرجاعها إلى غ-مصنف">🗑️ مسح</button>
             </div>
           </div>
 
@@ -3121,33 +3120,6 @@ ${titles.map((t, idx) => `${idx + 1}. ${t}`).join('\n')}`;
     window.triggerContinueImport = triggerContinueImport;
     window.triggerCancelImport = triggerCancelImport;
     window.toggleSyncDropdown = toggleSyncDropdown;
-// دالة حذف القائمة بالكامل محلياً من التطبيق فقط دون حذفها من يوتيوب
-    function deletePlaylistFromApp() {
-      const playlistFilter = document.getElementById('playlistFilter');
-      const selectedPlaylist = playlistFilter ? playlistFilter.value : '';
-      
-      if (!selectedPlaylist) {
-        showToast('⚠️ يرجى اختيار قائمة تشغيل محددة من القائمة أولاً لإزالتها.');
-        return;
-      }
-
-      if (confirm(`هل أنت متأكد من رغبتك في إزالة قائمة "${selectedPlaylist}" وكافة الفيديوهات التابعة لها من التطبيق فقط؟\n(لن يتم حذف أي شيء من حسابك على يوتيوب)`)) {
-        // تصفية الفيديوهات واستثناء فيديوهات القائمة المحددة
-        const filteredList = allVideos.filter(v => v.parentPlaylistName !== selectedPlaylist);
-        
-        // حفظ القائمة الجديدة المحدثة
-        saveLibraryAndBackup(filteredList);
-        
-        // إعادة تعيين الفلتر إلى الكل
-        playlistFilter.value = '';
-        applyFiltersAndSort();
-        
-        showToast(`✅ تم إزالة قائمة "${selectedPlaylist}" من التطبيق بنجاح.`);
-      }
-    }
-
-    // ربط الدالة بالنافذة العالمية
-    window.deletePlaylistFromApp = deletePlaylistFromApp;
   </script>
 </body>
 </html
