@@ -42,7 +42,7 @@
       padding-bottom: 80px;
     }
 
-    /* شريط الملاحة الرئيسي - طبيعي وغير ملتصق للاستفادة من كامل مساحة شاشات الهواتف */
+    /* شريط الملاحة الرئيسي - تم جعله طبيعياً وغير ملتصق للاستفادة من مساحة الشاشة بالكامل */
     .main-header {
       background-color: var(--bg-secondary);
       border-bottom: 1px solid var(--bg-tertiary);
@@ -735,20 +735,14 @@
       <div class="header-actions">
         <button id="googleSignInBtn" class="btn btn-secondary" onclick="handleGoogleSignIn()"><span class="icon">🔐</span> دخول قوقل</button>
         
-        <!-- زر التحديث السحابي المنسدل المطور -->
+        <!-- القائمة المنسدلة للتحديث السحابي المضافة حديثاً في الأعلى -->
         <div class="header-dropdown-sync" id="syncDropdownGroup" style="position: relative; display: none;">
           <button id="headerSyncBtn" class="btn btn-gold" onclick="toggleSyncDropdown(event)">
             <span class="icon" id="syncBtnIcon">🔄</span> تحديث <span class="arrow">▾</span>
           </button>
-          <ul id="headerSyncDropdownMenu" class="categories-dropdown-menu" style="right: 0; left: auto; min-width: 250px; max-width: calc(100vw - 30px);">
-            <!-- يتم تعبئتها ديناميكياً بقوائم تشغيل المستخدم -->
+          <ul id="headerSyncDropdownMenu" class="categories-dropdown-menu" style="right: 0; left: auto; min-width: 250px; max-width: calc(100vw - 30px);">            <!-- يتم تعبئتها ديناميكياً بقوائم تشغيل المستخدم -->
           </ul>
         </div>
-
-        <!-- زر خلاصة الاشتراكات الزمني الموحد المضاف حديثاً -->
-        <button id="subFeedBtn" class="btn btn-secondary" style="display: none; background-color: var(--bg-tertiary);" onclick="loadSubscriptionFeed()">
-          <span class="icon">🎙️</span> خلاصة الاشتراكات
-        </button>
 
         <button id="googleSignOutBtn" class="btn btn-secondary" style="display: none;" onclick="handleGoogleSignOut()"><span class="icon">🔓</span> خروج</button>
         <button id="updateDurationsFromApiBtn" class="btn btn-secondary" onclick="updateDurationsFromApi()"><span class="icon">🔄</span> تحديث التوقيتات</button>
@@ -1002,10 +996,6 @@
     let currentLayout = 'grid'; 
     let playlistNamesMap = {};
 
-    // متغيرات مخصصة لوضع خلاصة الاشتراكات الموحدة
-    let viewingSubscriptionFeed = false;
-    let subscriptionFeedVideos = [];
-
     // متغيرات مخصصة لوضع التعديل الجماعي
     let bulkEditActive = false;
     let selectedVideosSet = new Set();
@@ -1039,11 +1029,10 @@
     // صندوق تفعيل/تعطيل ذكاء جيميناي
     const enableAutoClassifyCheck = document.getElementById('enableAutoClassifyCheck');
 
-    // أزرار تسجيل الدخول وحساب قوقل والاشتراكات
+    // أزرار تسجيل الدخول وحساب قوقل
     const googleSignInBtn = document.getElementById('googleSignInBtn');
     const googleSignOutBtn = document.getElementById('googleSignOutBtn');
     const googleClientId = document.getElementById('googleClientId');
-    const subFeedBtn = document.getElementById('subFeedBtn');
 
     // لوحة الحالة الموحدة
     const globalImportStatusContainer = document.getElementById('globalImportStatusContainer');
@@ -1106,8 +1095,6 @@
       });
 
       pillAllBtn.addEventListener('click', () => {
-        viewingSubscriptionFeed = false; // العودة للمكتبة المحلية عند الضغط على الكل
-        subFeedBtn.classList.remove('active-gold');
         selectedCategory = '';
         currentPage = 1;
         updateMenuSelection();
@@ -1345,8 +1332,6 @@
     }
 
     function selectCategoryFromMenu(cat) {
-      viewingSubscriptionFeed = false; // إلغاء وضع خلاصة الاشتراكات عند اختيار تصنيف محدد
-      subFeedBtn.classList.remove('active-gold');
       selectedCategory = cat;
       currentPage = 1;
       updateMenuSelection();
@@ -1670,7 +1655,7 @@
       const playlistFilter = document.getElementById('playlistFilter');
       const selectedPlaylist = playlistFilter ? playlistFilter.value : '';
       if (!selectedPlaylist) {
-        showToast('⚠️ يرجى اختيار قائمة تشغيل حددة أولاً لمسح تصنيفاتها.');
+        showToast('⚠️ يرجى اختيار قائمة تشغيل محددة أولاً لمسح تصنيفاتها.');
         return;
       }
       if (confirm(`هل أنت متأكد من رغبتك في حذف كافة تصنيفات الفيديوهات التابعة لقائمة "${selectedPlaylist}" وإرجاعها إلى "غ-مصنف"؟`)) {
@@ -1903,135 +1888,6 @@
       } finally {
         globalImportStatusContainer.style.display = 'none';
       }
-    }
-
-    // دالة جلب وبناء "خلاصة الاشتراكات الموحدة" السريعة بنسبة 100% والموفرة للكوطا
-    async function loadSubscriptionFeed() {
-      const token = getValidAccessToken();
-      if (!token) {
-        showToast('🔐 يرجى تسجيل الدخول بقوقل أولاً لتشغيل خلاصة اشتراكاتك.');
-        return;
-      }
-
-      renderSkeletons();
-      subFeedBtn.classList.add('active-gold');
-      pillAllBtn.classList.remove('active');
-
-      logToCloudConsole('🌐 بدء جلب القنوات المشترك بها لبناء الخلاصة الموحدة...');
-      
-      try {
-        // 1. جلب الاشتراكات لـ 30 قناة
-        const resSub = await fetch('https://www.googleapis.com/youtube/v3/subscriptions?part=snippet&mine=true&maxResults=30', {
-          headers: { 'Authorization': 'Bearer ' + token }
-        });
-        
-        if (!resSub.ok) {
-          throw new Error('فشل جلب قائمة الاشتراكات من قوقل.');
-        }
-
-        const subData = await resSub.json();
-        if (!subData.items || subData.items.length === 0) {
-          showToast('ℹ️ لم نجد أي قنوات مشترك بها في حسابك هذا.');
-          initApp();
-          return;
-        }
-
-        logToCloudConsole(`🎙️ تم جلب ${subData.items.length} قناة بنجاح. بدء سحب الفيديوهات بالتوازي...`);
-        
-        // 2. تجهيز طلبات جلب الفيديوهات لكل القنوات بالتوازي (Promise.all) لتوفير الوقت والجهد
-        const fetchPromises = subData.items.map(async (item) => {
-          const channelId = item.snippet.resourceId.channelId;
-          const channelTitle = item.snippet.title;
-          
-          // الخدعة البرمجية الذكية للحصول على قائمة المرفوعات مباشرة دون طلبات كوطا إضافية
-          const uploadsPlaylistId = 'UU' + channelId.substring(2); 
-          const url = `https://www.googleapis.com/youtube/v3/playlistItems?part=snippet&maxResults=4&playlistId=${uploadsPlaylistId}`;
-          
-          try {
-            const resVideos = await fetch(url, {
-              headers: { 'Authorization': 'Bearer ' + token }
-            });
-            if (resVideos.ok) {
-              const videoData = await resVideos.json();
-              return videoData.items || [];
-            }
-          } catch (e) {
-            console.error('فشل الجلب لـ ' + channelTitle, e);
-          }
-          return [];
-        });
-
-        const allResults = await Promise.all(fetchPromises);
-        
-        // 3. تصفية ودمج الفيديوهات في مصفوفة واحدة
-        const mergedVideos = [];
-        allResults.forEach(items => {
-          items.forEach(item => {
-            const snippet = item.snippet;
-            if (snippet && snippet.resourceId && snippet.resourceId.kind === 'youtube#video') {
-              const videoId = snippet.resourceId.videoId;
-              const title = snippet.title;
-              const channel = snippet.channelTitle || 'قناة يوتيوب';
-              const thumb = (snippet.thumbnails && snippet.thumbnails.high) ? snippet.thumbnails.high.url : `https://img.youtube.com/vi/${videoId}/hqdefault.jpg`;
-              const videoUrl = `https://www.youtube.com/watch?v=${videoId}`;
-              
-              mergedVideos.push({
-                id: 'sub_' + videoId + '_' + Date.now(),
-                title: title,
-                category: "خلاصة الاشتراكات 🎙️",
-                channel: channel,
-                duration: '00:00', // يتم شحنها وتحديثها عند الحاجة
-                thumbnail: thumb,
-                url: videoUrl,
-                parentPlaylistName: 'خلاصة الاشتراكات',
-                publishedAt: snippet.publishedAt, // حقل الفرز الزمني
-                relativeTime: timeAgo(snippet.publishedAt) // حقل الوقت النسبي الودي
-              });
-            }
-          });
-        });
-
-        if (mergedVideos.length === 0) {
-          showToast('⚠️ لم يتم العثور على أي فيديوهات مرفوعة حديثاً من قنواتك.');
-          initApp();
-          return;
-        }
-
-        // 4. فرز وتصفية القائمة تنازلياً من الأحدث إلى الأقدم بالثانية واليوم
-        mergedVideos.sort((a, b) => new Date(b.publishedAt) - new Date(a.publishedAt));
-
-        // 5. حفظ الخلاصة الموحدة في مصفوفة مخصصة وتحديث الواجهة
-        subscriptionFeedVideos = mergedVideos;
-        viewingSubscriptionFeed = true;
-        currentPage = 1;
-        applyFiltersAndSort();
-
-        showToast(`✅ تم جلب وترتيب ${mergedVideos.length} فيديو حديث من اشتراكاتك تماماً كاليوتيوب!`);
-        logToCloudConsole('✅ مبروك! اكتمل بناء الخلاصة الموحدة بنجاح.');
-
-      } catch (err) {
-        console.error(err);
-        showToast(`❌ فشل بناء خلاصة الاشتراكات: ${err.message}`);
-        initApp();
-      }
-    }
-
-    // دالة ذكية وعربية لحساب التوقيت النسبي للفيديوهات
-    function timeAgo(dateString) {
-      const date = new Date(dateString);
-      const now = new Date();
-      const seconds = Math.floor((now - date) / 1000);
-      
-      if (seconds < 60) return "الآن";
-      const minutes = Math.floor(seconds / 60);
-      if (minutes < 60) return `منذ ${minutes} دقيقة`;
-      const hours = Math.floor(minutes / 60);
-      if (hours < 24) return `منذ ${hours} ساعة`;
-      const days = Math.round(hours / 24);
-      if (days === 1) return "أمس";
-      if (days === 2) return "منذ يومين";
-      if (days <= 10) return `منذ ${days} أيام`;
-      return `منذ ${days} يوم`;
     }
 
     async function triggerSmartMetadataFetch(importedList, geminiKey) {
@@ -2523,12 +2379,10 @@ ${titles.map((t, idx) => `${idx + 1}. ${t}`).join('\n')}`;
         googleSignInBtn.style.display = 'none';
         googleSignOutBtn.style.display = 'inline-flex';
         if (syncDropdownGroup) syncDropdownGroup.style.display = 'inline-block';
-        if (subFeedBtn) subFeedBtn.style.display = 'inline-flex'; // أظهر زر خلاصة الاشتراكات الموحد
       } else {
         googleSignInBtn.style.display = 'inline-flex';
         googleSignOutBtn.style.display = 'none';
         if (syncDropdownGroup) syncDropdownGroup.style.display = 'none';
-        if (subFeedBtn) subFeedBtn.style.display = 'none'; // اخفِ الزر عند تسجيل الخروج
       }
     }
 
@@ -2807,6 +2661,7 @@ ${titles.map((t, idx) => `${idx + 1}. ${t}`).join('\n')}`;
       renderGrid();
     }
 
+    // إدارة خانات الاختيار للتعديل الجماعي
     function handleCardCheckboxChange(id, checked) {
       if (checked) {
         selectedVideosSet.add(id);
@@ -2891,7 +2746,7 @@ ${titles.map((t, idx) => `${idx + 1}. ${t}`).join('\n')}`;
             const res = await fetch('https://www.googleapis.com/youtube/v3/playlistItems?id=' + video.playlistItemId, {
               method: 'DELETE',
               headers: {
-                'Authorization': `Bearer ' + token
+                'Authorization': 'Bearer ' + token
               }
             });
             if (res.status === 204) {
@@ -2960,11 +2815,8 @@ ${titles.map((t, idx) => `${idx + 1}. ${t}`).join('\n')}`;
 
       const dupCountsForFilter = getDuplicateCounts();
 
-      // تحديد مصفوفة المصدر للفلترة بناءً على وضع التصفح الحالي (المكتبة المحلية أم خلاصة الاشتراكات الحية)
-      const sourceList = viewingSubscriptionFeed ? subscriptionFeedVideos : allVideos;
-
       // البحث المرن المحدث
-      filteredVideos = sourceList.filter(v => {
+      filteredVideos = allVideos.filter(v => {
         let matchesSearch = true;
         if (query) {
           // تقسيم استعلام البحث ليدعم البحث بمرونة أكبر (فصل الكلمات ومطابقتها بشكل غير مترابط)
@@ -3105,9 +2957,6 @@ ${titles.map((t, idx) => `${idx + 1}. ${t}`).join('\n')}`;
           tagsHtml += `<span class="category-tag">${tag}</span>`;
         });
 
-        // ميزة عرض التوقيت النسبي الودي فقط عند تصفح خلاصة الاشتراكات الحية الموحدة
-        const timeDisplayHtml = (viewingSubscriptionFeed && video.relativeTime) ? ` | ⏱️ ${video.relativeTime}` : '';
-
         const card = document.createElement('div');
         card.className = 'video-card';
         
@@ -3135,7 +2984,7 @@ ${titles.map((t, idx) => `${idx + 1}. ${t}`).join('\n')}`;
                 </select>
               </div>
               <h4 class="video-title" onclick="openVideo('${video.url}')" title="${video.title}">${video.title}</h4>
-              <p class="channel-name">🎙️ ${video.channel}${video.parentPlaylistName ? ` | 📁 ${video.parentPlaylistName}` : ''}${timeDisplayHtml}</p>
+              <p class="channel-name">🎙️ ${video.channel}${video.parentPlaylistName ? ` | 📁 ${video.parentPlaylistName}` : ''}</p>
             </div>
             <div class="card-footer">
               <button class="btn btn-primary" onclick="openVideo('${video.url}')">مشاهدة</button>
@@ -3271,7 +3120,6 @@ ${titles.map((t, idx) => `${idx + 1}. ${t}`).join('\n')}`;
     window.triggerContinueImport = triggerContinueImport;
     window.triggerCancelImport = triggerCancelImport;
     window.toggleSyncDropdown = toggleSyncDropdown;
-    window.loadSubscriptionFeed = loadSubscriptionFeed;
   </script>
 </body>
-</html>
+</html
