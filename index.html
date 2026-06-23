@@ -2961,7 +2961,7 @@ ${titles.map((t, idx) => `${idx + 1}. ${t}`).join('\n')}`;
 
     function renderGrid() {
       videosGrid.innerHTML = '';
-      
+
       if (filteredVideos.length === 0) {
         videosGrid.innerHTML = '<div style="grid-column: 1/-1; text-align: center; padding: 60px; color: var(--text-secondary); font-weight:700;">لا توجد نتائج تطابق خيارات التصفية الحالية.</div>';
         paginationContainer.innerHTML = '';
@@ -2983,73 +2983,179 @@ ${titles.map((t, idx) => `${idx + 1}. ${t}`).join('\n')}`;
       activeCategories.sort();
       const dupCounts = getDuplicateCounts();
 
+      // نبني كل الكروت في DocumentFragment واحد بدل إلحاقها واحدة واحدة بالـ DOM،
+      // فيحدث reflow/repaint واحد فقط بدل عملية لكل كرت — مفيد جداً مع صفحات كبيرة.
+      const fragment = document.createDocumentFragment();
       paginatedItems.forEach(video => {
-        const isFav = favoriteIds.has(video.id);
-        const favIcon = isFav ? '★' : '☆';
-        
-        let catOptions = `<option value="${video.category}" selected>${video.category}</option>`;
-        
-        if (video.category !== 'غ-مصنف' && !activeCategories.includes('غ-مصنف')) {
-          activeCategories.push('غ-مصنف');
-        }
-
-        activeCategories.forEach(c => {
-          if (c !== video.category) {
-            catOptions += `<option value="${c}">${c}</option>`;
-          }
-        });
-
-        const vId = extractVideoID(video.url);
-        const isDuplicate = vId && dupCounts[vId] > 1;
-        const dupBadgeHtml = isDuplicate ? `<span class="category-tag" style="background-color: var(--accent-color); color: #fff; border-color: var(--accent-color); cursor: pointer;" onclick="openDuplicateModal('${vId}')" title="تصفية المكررات">⚠️ مكرر</span>` : '';
-
-        const displayTags = (video.category || '').split('/').map(c => c.trim()).filter(Boolean);
-        let tagsHtml = '';
-        displayTags.forEach(tag => {
-          tagsHtml += `<span class="category-tag">${tag}</span>`;
-        });
-
-        const card = document.createElement('div');
-        card.className = 'video-card';
-        
-        const isChecked = selectedVideosSet.has(video.id);
-        const checkboxStyleDisplay = bulkEditActive ? 'block' : 'none';
-
-        card.innerHTML = `
-          <!-- خانة اختيار التعديل الجماعي المضافة -->
-          <div class="card-checkbox-wrapper" style="display: ${checkboxStyleDisplay};">
-            <input type="checkbox" ${isChecked ? 'checked' : ''} onchange="handleCardCheckboxChange(${video.id}, this.checked)">
-          </div>
-          <div class="thumbnail-area" id="thumb-${video.id}" onclick="playVideoInApp(${video.id}, '${vId}')">
-            <img src="${video.thumbnail}" alt="${video.title}" loading="lazy">
-            <span class="duration-badge">${video.duration}</span>
-          </div>
-          <div class="card-body">
-            <div class="card-info-block">
-              <div class="meta-tags-row">
-                <div style="display: flex; gap: 4px; flex-wrap: wrap; align-items: center;">
-                  ${tagsHtml}
-                  ${dupBadgeHtml}
-                </div>
-                <select class="quick-cat-select" onchange="changeVideoCategory(${video.id}, this.value)" title="تعديل الفئة سريعاً">
-                  ${catOptions}
-                </select>
-              </div>
-              <h4 class="video-title" onclick="openVideo('${video.url}')" title="${video.title}">${video.title}</h4>
-              <p class="channel-name">🎙️ ${video.channel}${video.parentPlaylistName ? ` | 📁 ${video.parentPlaylistName}` : ''}</p>
-            </div>
-            <div class="card-footer">
-              <button class="btn btn-primary" onclick="openVideo('${video.url}')">مشاهدة</button>
-              <button class="btn btn-secondary" onclick="copyLink('${video.url}')" title="نسخ الرابط">🔗</button>
-              <button class="btn btn-secondary" onclick="toggleFavorite(${video.id})" style="color: var(--gold-color); font-size: 1.1rem; max-width: 45px;" title="إضافة للمفضلة">${favIcon}</button>
-              <button class="btn btn-secondary" onclick="deleteVideo(${video.id})" style="color: #ff3333; max-width: 45px;" title="حذف الفيديو">🗑️</button>
-            </div>
-          </div>
-        `;
-        videosGrid.appendChild(card);
+        fragment.appendChild(buildVideoCard(video, activeCategories, dupCounts));
       });
+      videosGrid.appendChild(fragment);
 
       renderPagination();
+    }
+
+    // بناء كرت فيديو واحد باستخدام DOM API (createElement/textContent) بدل innerHTML.
+    // textContent لا يفسّر أي HTML/سكربت داخل القيمة، فهذا يغلق ثغرة XSS المحتملة
+    // عبر عناوين الفيديوهات أو أسماء القنوات أو الفئات القادمة من بيانات مستوردة.
+    // كما أن استبدال onclick="" المضمّن بـ addEventListener يمنع مشاكل الإدراج داخل
+    // سياق JS/HTML المختلط (مثل رابط فيديو يحتوي على علامة اقتباس مفردة).
+    function buildVideoCard(video, activeCategories, dupCounts) {
+      const isFav = favoriteIds.has(video.id);
+      const favIcon = isFav ? '★' : '☆';
+
+      const catList = [...activeCategories];
+      if (video.category !== 'غ-مصنف' && !catList.includes('غ-مصنف')) {
+        catList.push('غ-مصنف');
+      }
+
+      const vId = extractVideoID(video.url);
+      const isDuplicate = vId && dupCounts[vId] > 1;
+      const displayTags = (video.category || '').split('/').map(c => c.trim()).filter(Boolean);
+      const isChecked = selectedVideosSet.has(video.id);
+
+      const card = document.createElement('div');
+      card.className = 'video-card';
+
+      // -- خانة اختيار التعديل الجماعي --
+      const checkboxWrapper = document.createElement('div');
+      checkboxWrapper.className = 'card-checkbox-wrapper';
+      checkboxWrapper.style.display = bulkEditActive ? 'block' : 'none';
+      const checkbox = document.createElement('input');
+      checkbox.type = 'checkbox';
+      checkbox.checked = isChecked;
+      checkbox.addEventListener('change', (e) => handleCardCheckboxChange(video.id, e.target.checked));
+      checkboxWrapper.appendChild(checkbox);
+      card.appendChild(checkboxWrapper);
+
+      // -- الصورة المصغرة --
+      const thumbArea = document.createElement('div');
+      thumbArea.className = 'thumbnail-area';
+      thumbArea.id = `thumb-${video.id}`;
+      thumbArea.addEventListener('click', () => playVideoInApp(video.id, vId));
+      const img = document.createElement('img');
+      img.src = video.thumbnail;
+      img.loading = 'lazy';
+      img.alt = video.title || '';
+      const durBadge = document.createElement('span');
+      durBadge.className = 'duration-badge';
+      durBadge.textContent = video.duration;
+      thumbArea.appendChild(img);
+      thumbArea.appendChild(durBadge);
+      card.appendChild(thumbArea);
+
+      // -- جسم الكرت --
+      const body = document.createElement('div');
+      body.className = 'card-body';
+
+      const infoBlock = document.createElement('div');
+      infoBlock.className = 'card-info-block';
+
+      const metaRow = document.createElement('div');
+      metaRow.className = 'meta-tags-row';
+
+      const tagsWrap = document.createElement('div');
+      tagsWrap.style.display = 'flex';
+      tagsWrap.style.gap = '4px';
+      tagsWrap.style.flexWrap = 'wrap';
+      tagsWrap.style.alignItems = 'center';
+
+      displayTags.forEach(tag => {
+        const tagSpan = document.createElement('span');
+        tagSpan.className = 'category-tag';
+        tagSpan.textContent = tag;
+        tagsWrap.appendChild(tagSpan);
+      });
+
+      if (isDuplicate) {
+        const dupSpan = document.createElement('span');
+        dupSpan.className = 'category-tag';
+        dupSpan.style.backgroundColor = 'var(--accent-color)';
+        dupSpan.style.color = '#fff';
+        dupSpan.style.borderColor = 'var(--accent-color)';
+        dupSpan.style.cursor = 'pointer';
+        dupSpan.title = 'تصفية المكررات';
+        dupSpan.textContent = '⚠️ مكرر';
+        dupSpan.addEventListener('click', () => openDuplicateModal(vId));
+        tagsWrap.appendChild(dupSpan);
+      }
+      metaRow.appendChild(tagsWrap);
+
+      const catSelect = document.createElement('select');
+      catSelect.className = 'quick-cat-select';
+      catSelect.title = 'تعديل الفئة سريعاً';
+
+      const currentOpt = document.createElement('option');
+      currentOpt.value = video.category;
+      currentOpt.selected = true;
+      currentOpt.textContent = video.category;
+      catSelect.appendChild(currentOpt);
+
+      catList.forEach(c => {
+        if (c !== video.category) {
+          const opt = document.createElement('option');
+          opt.value = c;
+          opt.textContent = c;
+          catSelect.appendChild(opt);
+        }
+      });
+      catSelect.addEventListener('change', (e) => changeVideoCategory(video.id, e.target.value));
+      metaRow.appendChild(catSelect);
+      infoBlock.appendChild(metaRow);
+
+      const titleEl = document.createElement('h4');
+      titleEl.className = 'video-title';
+      titleEl.title = video.title;
+      titleEl.textContent = video.title;
+      titleEl.addEventListener('click', () => openVideo(video.url));
+      infoBlock.appendChild(titleEl);
+
+      const channelP = document.createElement('p');
+      channelP.className = 'channel-name';
+      channelP.textContent = `🎙️ ${video.channel}${video.parentPlaylistName ? ` | 📁 ${video.parentPlaylistName}` : ''}`;
+      infoBlock.appendChild(channelP);
+
+      body.appendChild(infoBlock);
+
+      // -- أزرار الإجراءات --
+      const footer = document.createElement('div');
+      footer.className = 'card-footer';
+
+      const watchBtn = document.createElement('button');
+      watchBtn.className = 'btn btn-primary';
+      watchBtn.textContent = 'مشاهدة';
+      watchBtn.addEventListener('click', () => openVideo(video.url));
+      footer.appendChild(watchBtn);
+
+      const copyBtn = document.createElement('button');
+      copyBtn.className = 'btn btn-secondary';
+      copyBtn.title = 'نسخ الرابط';
+      copyBtn.textContent = '🔗';
+      copyBtn.addEventListener('click', () => copyLink(video.url));
+      footer.appendChild(copyBtn);
+
+      const favBtn = document.createElement('button');
+      favBtn.className = 'btn btn-secondary';
+      favBtn.style.color = 'var(--gold-color)';
+      favBtn.style.fontSize = '1.1rem';
+      favBtn.style.maxWidth = '45px';
+      favBtn.title = 'إضافة للمفضلة';
+      favBtn.textContent = favIcon;
+      favBtn.addEventListener('click', () => toggleFavorite(video.id));
+      footer.appendChild(favBtn);
+
+      const delBtn = document.createElement('button');
+      delBtn.className = 'btn btn-secondary';
+      delBtn.style.color = '#ff3333';
+      delBtn.style.maxWidth = '45px';
+      delBtn.title = 'حذف الفيديو';
+      delBtn.textContent = '🗑️';
+      delBtn.addEventListener('click', () => deleteVideo(video.id));
+      footer.appendChild(delBtn);
+
+      body.appendChild(footer);
+      card.appendChild(body);
+
+      return card;
     }
 
     function openVideo(url) {
