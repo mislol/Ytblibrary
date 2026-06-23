@@ -1401,13 +1401,14 @@
       return counts;
     }
 
-   // دالة تحليل الـ CSV المحدثة للتعرف تلقائياً على ملفات غوغل الخام وجلب بياناتها
+    // دالة تحليل الـ CSV الاحترافية المطورة بالتحليل الموضعي لمنع الخلط بين الحقول
     function parseCSVData(text, playlistId = '', playlistName = '') {
       const lines = text.split('\n');
       const results = [];
       
       if (lines.length === 0) return results;
 
+      // دالة تقسيم تدعم الفواصل والاقتباسات داخل الخانات
       function splitCsvLine(line) {
         let fields = [];
         let currentField = '';
@@ -1448,7 +1449,33 @@
         let categoryVal = 'غ-مصنف'; 
         let titleVal = '';
         let durationVal = '00:00';
+        let channelVal = 'قناة غير معروفة';
         let needsMetadataFetch = false;
+
+        // 1. تحديد موقع الرابط في السطر بدقة
+        const urlIdx = fields.findIndex(f => f.startsWith('http://') || f.startsWith('https://'));
+        if (urlIdx !== -1) {
+          urlVal = fields[urlIdx];
+        } else {
+          // إذا لم يجد رابطاً كاملاً، نبحث عن معرف 11 حرفاً كخيار بديل
+          const foundId = fields.find(f => /^[a-zA-Z0-9_-]{11}$/.test(f));
+          if (foundId) {
+            urlVal = `https://www.youtube.com/watch?v=${foundId}`;
+          }
+        }
+
+        // 2. البحث المرن عن التوقيت (المدة)
+        let foundDuration = '';
+        for (let f of fields) {
+          const match = f.match(/\b\d{1,2}:\d{2}(:\d{2})?\b/);
+          if (match) {
+            foundDuration = match[0];
+            break;
+          }
+        }
+        if (foundDuration) {
+          durationVal = foundDuration;
+        }
 
         // التحقق الذكي من ملفات Google Takeout (معرف الفيديو 11 حرفاً + تاريخ ووقت)
         const firstFieldIsId = fields[0] && fields[0].length === 11 && /^[a-zA-Z0-9_-]{11}$/.test(fields[0]);
@@ -1460,46 +1487,41 @@
           categoryVal = "غ-مصنف";
           durationVal = "00:00";
           needsMetadataFetch = true;
-        } else {
-          // الطريقة الاعتيادية لتحليل أسطر الـ CSV الأخرى
-          const foundUrl = fields.find(f => f.startsWith('http://') || f.startsWith('https://'));
-          if (foundUrl) {
-            urlVal = foundUrl;
-          } else {
-            const foundId = fields.find(f => /^[a-zA-Z0-9_-]{11}$/.test(f));
-            if (foundId) {
-              urlVal = `https://www.youtube.com/watch?v=${foundId}`;
-            }
-          }
-
-          let foundDuration = '';
-          for (let f of fields) {
-            const match = f.match(/\b\d{1,2}:\d{2}(:\d{2})?\b/);
-            if (match) {
-              foundDuration = match[0];
-              break;
-            }
-          }
-          if (foundDuration) {
-            durationVal = foundDuration;
-          }
-
-          const remaining = fields.filter(f => f !== foundUrl && f !== foundDuration && f !== extractVideoID(urlVal) && f !== fields[0]);
-
-          if (remaining.length >= 2) {
-            const sortedByLength = [...remaining].sort((a, b) => b.length - a.length);
-            titleVal = sortedByLength[0];
-            categoryVal = sortedByLength[1];
-          } else if (remaining.length === 1) {
-            if (remaining[0].length < 15) {
-              categoryVal = remaining[0];
+        } else if (urlVal) {
+          // 3. التحليل الموضعي المطور والآمن لحماية الحقول من التداخل
+          if (fields.length >= 6) {
+            // تنسيق التصدير القياسي للتطبيق: [الرقم, العنوان, التصنيف, اسم القناة, المدة, الرابط]
+            titleVal = fields[1] || '';
+            categoryVal = fields[2] || 'غ-مصنف';
+            channelVal = fields[3] || 'قناة غير معروفة';
+            durationVal = fields[4] || '00:00';
+          } else if (fields.length === 3) {
+            // تنسيق ملفك المخصص المكون من 3 أعمدة بالضبط: [التصنيف, العنوان, الرابط]
+            if (urlIdx === 2) {
+              categoryVal = fields[0] || 'غ-مصنف';
+              titleVal = fields[1] || '';
+            } else if (urlIdx === 0) {
+              titleVal = fields[1] || '';
+              categoryVal = fields[2] || 'غ-مصنف';
             } else {
+              const remaining = fields.filter((_, idx) => idx !== urlIdx);
+              titleVal = remaining[1] || '';
+              categoryVal = remaining[0] || 'غ-مصنف';
+            }
+          } else {
+            // احتياطي ذكي لأي توزيع عشوائي أخر يعتمد على تصفية الحقول
+            const remaining = fields.filter(f => f !== urlVal && f !== foundDuration && f !== extractVideoID(urlVal));
+            if (remaining.length >= 2) {
+              const sortedByLength = [...remaining].sort((a, b) => b.length - a.length);
+              titleVal = sortedByLength[0];
+              categoryVal = sortedByLength[1];
+            } else if (remaining.length === 1) {
               titleVal = remaining[0];
             }
           }
           
-          if (!titleVal) {
-            titleVal = `فيديو مستورد رقم ${results.length + 1}`;
+          if (!titleVal || titleVal.startsWith('جاري جلب')) {
+            titleVal = titleVal || `فيديو مستورد رقم ${results.length + 1}`;
             needsMetadataFetch = true;
           }
         }
@@ -1509,12 +1531,13 @@
             id: results.length + 1,
             title: titleVal,
             category: categoryVal || 'غ-مصنف',
-            channel: 'قناة غير معروفة',
+            channel: channelVal,
             duration: durationVal,
             thumbnail: `https://img.youtube.com/vi/${extractVideoID(urlVal)}/hqdefault.jpg`,
             url: urlVal,
             parentPlaylistId: playlistId,
             parentPlaylistName: playlistName,
+            position: results.length,
             needsMetadataFetch: needsMetadataFetch
           });
         }
