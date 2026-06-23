@@ -1528,7 +1528,7 @@
             url: urlVal,
             parentPlaylistId: playlistId,
             parentPlaylistName: playlistName,
-            position: snippet.position !== undefined ? snippet.position : videos.length
+            position: results.length // تم إصلاحها لتقرأ من عدد العناصر المحلية بأمان ودون تضارب
           });
         }
       }
