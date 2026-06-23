@@ -1401,7 +1401,7 @@
       return counts;
     }
 
-   // دالة تحليل الـ CSV المحدثة للتعرف تلقائياً على ملفات غوغل الخام وجلب بياناتها
+  // دالة تحليل الـ CSV الذكية المطورة لتفادي حذف التصنيفات النصية في العمود الأول
     function parseCSVData(text, playlistId = '', playlistName = '') {
       const lines = text.split('\n');
       const results = [];
@@ -1432,8 +1432,9 @@
         });
       }
 
+      // نتجاهل السطر الأول فقط إذا كان يحتوي على ترويسة واضحة
       let startIdx = 0;
-      if (lines[0] && (lines[0].includes('الرقم') || lines[0].includes('الرابط') || lines[0].includes('العنوان') || lines[0].includes('التصنيف') || lines[0].includes('Video ID'))) {
+      if (lines[0] && (lines[0].includes('الرقم') || lines[0].includes('الرابط') || lines[0].includes('العنوان') || lines[0].includes('التصنيف'))) {
         startIdx = 1;
       }
 
@@ -1445,10 +1446,46 @@
         if (fields.length === 0) continue;
 
         let urlVal = '';
-        let categoryVal = 'غ-مصنف'; 
+        let categoryVal = 'غ-مصنف'; // الفئة الافتراضية
         let titleVal = '';
         let durationVal = '00:00';
-        let needsMetadataFetch = false;
+
+        // 1. البحث عن الرابط في أي مكان بالسطر
+        const foundUrl = fields.find(f => f.startsWith('http://') || f.startsWith('https://'));
+        if (foundUrl) {
+          urlVal = foundUrl;
+        } else {
+          // إذا لم يجد رابطاً كاملاً، نبحث عن معرف 11 حرفاً
+          const foundId = fields.find(f => /^[a-zA-Z0-9_-]{11}$/.test(f));
+          if (foundId) {
+            urlVal = `https://www.youtube.com/watch?v=${foundId}`;
+          }
+        }
+
+        // 2. البحث المرن عن التوقيت (المدة)
+        let foundDuration = '';
+        for (let f of fields) {
+          const match = f.match(/\b\d{1,2}:\d{2}(:\d{2})?\b/);
+          if (match) {
+            foundDuration = match[0];
+            break;
+          }
+        }
+        if (foundDuration) {
+          durationVal = foundDuration;
+        }
+
+        // الفحص الذكي: هل الحقل الأول مجرد رقم تسلسلي (مثل 1, 2, 3) أم أنه نص حقيقي؟
+        const isFirstFieldNumeric = fields[0] && /^\d+$/.test(fields[0]);
+
+        // نقوم باستبعاد الحقل الأول فقط وحصرياً إذا ثبت أنه مجرد رقم تسلسلي
+        const remaining = fields.filter(f => {
+          const isUrl = (f === foundUrl);
+          const isDuration = (f === foundDuration);
+          const isId = (f === extractVideoID(urlVal));
+          const isSerial = (isFirstFieldNumeric && f === fields[0]);
+          return !isUrl && !isDuration && !isId && !isSerial;
+        });
 
         // التحقق الذكي من ملفات Google Takeout (معرف الفيديو 11 حرفاً + تاريخ ووقت)
         const firstFieldIsId = fields[0] && fields[0].length === 11 && /^[a-zA-Z0-9_-]{11}$/.test(fields[0]);
@@ -1462,30 +1499,6 @@
           needsMetadataFetch = true;
         } else {
           // الطريقة الاعتيادية لتحليل أسطر الـ CSV الأخرى
-          const foundUrl = fields.find(f => f.startsWith('http://') || f.startsWith('https://'));
-          if (foundUrl) {
-            urlVal = foundUrl;
-          } else {
-            const foundId = fields.find(f => /^[a-zA-Z0-9_-]{11}$/.test(f));
-            if (foundId) {
-              urlVal = `https://www.youtube.com/watch?v=${foundId}`;
-            }
-          }
-
-          let foundDuration = '';
-          for (let f of fields) {
-            const match = f.match(/\b\d{1,2}:\d{2}(:\d{2})?\b/);
-            if (match) {
-              foundDuration = match[0];
-              break;
-            }
-          }
-          if (foundDuration) {
-            durationVal = foundDuration;
-          }
-
-          const remaining = fields.filter(f => f !== foundUrl && f !== foundDuration && f !== extractVideoID(urlVal) && f !== fields[0]);
-
           if (remaining.length >= 2) {
             const sortedByLength = [...remaining].sort((a, b) => b.length - a.length);
             titleVal = sortedByLength[0];
@@ -1515,7 +1528,7 @@
             url: urlVal,
             parentPlaylistId: playlistId,
             parentPlaylistName: playlistName,
-            needsMetadataFetch: needsMetadataFetch
+            position: snippet.position !== undefined ? snippet.position : videos.length
           });
         }
       }
