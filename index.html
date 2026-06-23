@@ -1401,14 +1401,13 @@
       return counts;
     }
 
-    // دالة تحليل ومعالجة ملف الـ CSV بمطابقة الترويسات ديناميكياً لتفادي أخطاء الإزاحة
+   // دالة تحليل الـ CSV المحدثة للتعرف تلقائياً على ملفات غوغل الخام وجلب بياناتها
     function parseCSVData(text, playlistId = '', playlistName = '') {
       const lines = text.split('\n');
       const results = [];
       
       if (lines.length === 0) return results;
 
-      // دالة تقسيم تدعم الفواصل والاقتباسات داخل الخانات
       function splitCsvLine(line) {
         let fields = [];
         let currentField = '';
@@ -1433,9 +1432,8 @@
         });
       }
 
-      // نتجاهل السطر الأول فقط إذا كان يحتوي على ترويسة واضحة
       let startIdx = 0;
-      if (lines[0] && (lines[0].includes('الرقم') || lines[0].includes('الرابط') || lines[0].includes('العنوان') || lines[0].includes('التصنيف'))) {
+      if (lines[0] && (lines[0].includes('الرقم') || lines[0].includes('الرابط') || lines[0].includes('العنوان') || lines[0].includes('التصنيف') || lines[0].includes('Video ID'))) {
         startIdx = 1;
       }
 
@@ -1447,62 +1445,77 @@
         if (fields.length === 0) continue;
 
         let urlVal = '';
-        let categoryVal = 'غ-مصنف'; // الفئة الافتراضية
+        let categoryVal = 'غ-مصنف'; 
         let titleVal = '';
         let durationVal = '00:00';
+        let needsMetadataFetch = false;
 
-        // 1. البحث عن الرابط في أي مكان بالسطر
-        const foundUrl = fields.find(f => f.startsWith('http://') || f.startsWith('https://'));
-        if (foundUrl) {
-          urlVal = foundUrl;
+        // التحقق الذكي من ملفات Google Takeout (معرف الفيديو 11 حرفاً + تاريخ ووقت)
+        const firstFieldIsId = fields[0] && fields[0].length === 11 && /^[a-zA-Z0-9_-]{11}$/.test(fields[0]);
+        const secondFieldIsDate = fields[1] && fields[1].includes('T') && fields[1].includes(':');
+
+        if (fields.length === 2 && firstFieldIsId && secondFieldIsDate) {
+          urlVal = `https://www.youtube.com/watch?v=${fields[0]}`;
+          titleVal = "جاري جلب العنوان... ⏳";
+          categoryVal = "غ-مصنف";
+          durationVal = "00:00";
+          needsMetadataFetch = true;
         } else {
-          // إذا لم يجد رابطاً كاملاً، نبحث عن معرف 11 حرفاً
-          const foundId = fields.find(f => /^[a-zA-Z0-9_-]{11}$/.test(f));
-          if (foundId) {
-            urlVal = `https://www.youtube.com/watch?v=${foundId}`;
-          }
-        }
-
-        // 2. البحث المرن عن التوقيت (المدة)
-        let foundDuration = '';
-        for (let f of fields) {
-          const match = f.match(/\b\d{1,2}:\d{2}(:\d{2})?\b/);
-          if (match) {
-            foundDuration = match[0];
-            break;
-          }
-        }
-        if (foundDuration) {
-          durationVal = foundDuration;
-        }
-
-        // 3. تحديد الحقول المتبقية التي ليست رابطاً وليست توقيت وليست رقم الـ ID في أول العمود
-        const remaining = fields.filter(f => f !== foundUrl && f !== foundDuration && f !== extractVideoID(urlVal) && f !== fields[0]);
-
-        if (remaining.length >= 2) {
-          // الحقل الأطول هو العنوان، والأقصر هو التصنيف
-          const sortedByLength = [...remaining].sort((a, b) => b.length - a.length);
-          titleVal = sortedByLength[0]; // الأطول
-          categoryVal = sortedByLength[1]; // الأقصر
-        } else if (remaining.length === 1) {
-          if (remaining[0].length < 15) {
-            categoryVal = remaining[0];
+          // الطريقة الاعتيادية لتحليل أسطر الـ CSV الأخرى
+          const foundUrl = fields.find(f => f.startsWith('http://') || f.startsWith('https://'));
+          if (foundUrl) {
+            urlVal = foundUrl;
           } else {
-            titleVal = remaining[0];
+            const foundId = fields.find(f => /^[a-zA-Z0-9_-]{11}$/.test(f));
+            if (foundId) {
+              urlVal = `https://www.youtube.com/watch?v=${foundId}`;
+            }
+          }
+
+          let foundDuration = '';
+          for (let f of fields) {
+            const match = f.match(/\b\d{1,2}:\d{2}(:\d{2})?\b/);
+            if (match) {
+              foundDuration = match[0];
+              break;
+            }
+          }
+          if (foundDuration) {
+            durationVal = foundDuration;
+          }
+
+          const remaining = fields.filter(f => f !== foundUrl && f !== foundDuration && f !== extractVideoID(urlVal) && f !== fields[0]);
+
+          if (remaining.length >= 2) {
+            const sortedByLength = [...remaining].sort((a, b) => b.length - a.length);
+            titleVal = sortedByLength[0];
+            categoryVal = sortedByLength[1];
+          } else if (remaining.length === 1) {
+            if (remaining[0].length < 15) {
+              categoryVal = remaining[0];
+            } else {
+              titleVal = remaining[0];
+            }
+          }
+          
+          if (!titleVal) {
+            titleVal = `فيديو مستورد رقم ${results.length + 1}`;
+            needsMetadataFetch = true;
           }
         }
 
         if (urlVal) {
           results.push({
             id: results.length + 1,
-            title: titleVal || `فيديو يوتيوب رقم ${results.length + 1}`,
+            title: titleVal,
             category: categoryVal || 'غ-مصنف',
             channel: 'قناة غير معروفة',
-            duration: durationVal || '00:00',
+            duration: durationVal,
             thumbnail: `https://img.youtube.com/vi/${extractVideoID(urlVal)}/hqdefault.jpg`,
             url: urlVal,
             parentPlaylistId: playlistId,
-            parentPlaylistName: playlistName
+            parentPlaylistName: playlistName,
+            needsMetadataFetch: needsMetadataFetch
           });
         }
       }
@@ -1963,10 +1976,9 @@
               data.items.forEach(item => {
                 const videoId = item.id;
                 const targetVideo = targets.find(v => extractVideoID(v.url) === videoId);
-                if (targetVideo && item.snippet) {
-                  if (targetVideo.title.startsWith('فيديو مستورد') || targetVideo.title.startsWith('مقطع مستورد') || targetVideo.category === 'غ-مصنف') {
-                    targetVideo.title = item.snippet.title;
-                  }
+               if (targetVideo && item.snippet) {
+                  // تحديث العنوان الفعلي والقناة والمدة مباشرة دائماً وبدون شروط مقيدة
+                  targetVideo.title = item.snippet.title;
                   targetVideo.channel = item.snippet.channelTitle || 'قناة يوتيوب';
                   targetVideo.duration = parseISO8601Duration(item.contentDetails.duration);
                   delete targetVideo.needsMetadataFetch;
