@@ -19,12 +19,19 @@
       --bg-quaternary: #2a2a2a;
       --text-primary: #ffffff;
       --text-secondary: #b3b3b3;
+      --text-tertiary: #707070;
       --accent-color: #ff0000;
       --accent-hover: #cc0000;
+      --accent-soft: rgba(255, 0, 0, 0.12);
       --gold-color: #ffb700;
+      --gold-soft: rgba(255, 183, 0, 0.12);
       --green-color: #2ec4b6;
-      --card-shadow: 0 12px 32px rgba(0, 0, 0, 0.6);
+      --green-soft: rgba(46, 196, 182, 0.12);
+      --danger-color: var(--danger-color);
+      --card-shadow: 0 10px 28px rgba(0, 0, 0, 0.55);
+      --card-shadow-hover: 0 16px 36px rgba(0, 0, 0, 0.7);
       --border-radius: 16px;
+      --border-radius-sm: 10px;
       --transition-speed: 0.25s;
     }
 
@@ -33,6 +40,34 @@
       margin: 0;
       padding: 0;
     }
+
+    html {
+      scroll-behavior: smooth;
+    }
+
+    /* إظهار حلقة تركيز واضحة عند التنقل بلوحة المفاتيح فقط (بدون التأثير على وضوح النقر بالماوس) */
+    a:focus-visible, button:focus-visible, input:focus-visible,
+    select:focus-visible, textarea:focus-visible, [tabindex]:focus-visible {
+      outline: 2px solid var(--accent-color);
+      outline-offset: 2px;
+      border-radius: 4px;
+    }
+
+    /* احترام تفضيل تقليل الحركة على مستوى النظام */
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+        scroll-behavior: auto !important;
+      }
+    }
+
+    /* شريط تمرير رفيع يتماشى مع الوضع الداكن */
+    ::-webkit-scrollbar { width: 10px; height: 10px; }
+    ::-webkit-scrollbar-track { background: var(--bg-primary); }
+    ::-webkit-scrollbar-thumb { background: var(--bg-quaternary); border-radius: 8px; }
+    ::-webkit-scrollbar-thumb:hover { background: var(--text-tertiary); }
 
     body {
       background-color: var(--bg-primary);
@@ -48,6 +83,18 @@
       border-bottom: 1px solid var(--bg-tertiary);
       position: relative;
       z-index: 100;
+    }
+
+    .main-header::after {
+      content: '';
+      position: absolute;
+      bottom: -1px;
+      right: 0;
+      width: 220px;
+      max-width: 60%;
+      height: 3px;
+      background: linear-gradient(90deg, var(--accent-color), transparent);
+      pointer-events: none;
     }
 
     .header-container {
@@ -231,14 +278,32 @@
       gap: 15px;
       border: 1px solid var(--bg-tertiary);
       box-shadow: var(--card-shadow);
+      transition: transform var(--transition-speed), box-shadow var(--transition-speed);
+    }
+
+    .stat-card:hover {
+      transform: translateY(-3px);
+      box-shadow: var(--card-shadow-hover);
     }
 
     .stat-icon {
-      font-size: 2.2rem;
+      font-size: 1.5rem;
+      width: 54px;
+      height: 54px;
+      min-width: 54px;
+      border-radius: 14px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: var(--bg-tertiary);
     }
 
+    .stat-card.stat-videos .stat-icon { background: var(--accent-soft); }
+    .stat-card.stat-channels .stat-icon { background: var(--green-soft); }
+    .stat-card.stat-categories .stat-icon { background: var(--gold-soft); }
+
     .stat-info h3 {
-      font-size: 1.6rem;
+      font-size: 1.9rem;
       font-weight: 800;
       line-height: 1.2;
     }
@@ -282,6 +347,7 @@
     .category-pill-btn.active {
       background-color: var(--accent-color);
       border-color: var(--accent-color);
+      box-shadow: 0 4px 14px var(--accent-soft);
     }
 
     .category-pill-btn.active-gold {
@@ -408,13 +474,23 @@
     .filter-group select {
       width: 100%;
       padding: 10px;
-      border-radius: 8px;
+      border-radius: var(--border-radius-sm);
       border: 1px solid var(--bg-tertiary);
       background-color: var(--bg-primary);
       color: var(--text-primary);
       font-family: 'Cairo', sans-serif;
       outline: none;
       font-size: 0.9rem;
+      cursor: pointer;
+      transition: border-color var(--transition-speed);
+    }
+
+    .filter-group select:hover {
+      border-color: var(--bg-quaternary);
+    }
+
+    .filter-group select:focus {
+      border-color: var(--accent-color);
     }
 
     /* شبكة مقاطع الفيديو والبطاقات */
@@ -503,6 +579,24 @@
       overflow: hidden;
     }
 
+    .thumbnail-area::after {
+      content: '▶';
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.6rem;
+      color: #fff;
+      background: rgba(0, 0, 0, 0.32);
+      opacity: 0;
+      transition: opacity var(--transition-speed);
+    }
+
+    .video-card:hover .thumbnail-area::after {
+      opacity: 1;
+    }
+
     .thumbnail-area img {
       width: 100%;
       height: 100%;
@@ -560,6 +654,19 @@
       border-radius: 10px;
       outline: none;
       cursor: pointer;
+      transition: border-color var(--transition-speed), color var(--transition-speed);
+    }
+
+    .quick-cat-select:hover, .quick-cat-select:focus {
+      border-color: var(--accent-color);
+      color: var(--text-primary);
+    }
+
+    /* وسم "غ-مصنف" يُعرض بشكل أخف (متقطع، بلا تعبئة) لتمييزه بصرياً عن تصنيف فعلي اختاره المستخدم */
+    .category-tag-unclassified {
+      background-color: transparent !important;
+      border: 1px dashed var(--text-tertiary) !important;
+      color: var(--text-tertiary) !important;
     }
 
     .video-title {
@@ -584,12 +691,25 @@
     .card-footer {
       margin-top: auto;
       display: flex;
+      align-items: center;
       gap: 6px;
     }
 
     .card-footer .btn {
-      flex-grow: 1;
       padding: 8px 10px;
+    }
+
+    .card-footer .btn-primary {
+      flex: 1 1 auto;
+    }
+
+    .card-footer .icon-btn {
+      flex: 0 0 auto;
+      width: 36px;
+      height: 36px;
+      padding: 0;
+      border-radius: 50%;
+      font-size: 0.95rem;
     }
 
     /* شريط التعديل الجماعي العائم المضاف */
@@ -701,12 +821,49 @@
       cursor: not-allowed;
     }
 
+    /* حالة عدم وجود نتائج (سواء مكتبة فارغة أو فلاتر بلا نتائج) */
+    .empty-state {
+      grid-column: 1 / -1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+      padding: 70px 20px;
+      gap: 6px;
+    }
+
+    .empty-state-icon {
+      font-size: 2.6rem;
+      width: 84px;
+      height: 84px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 50%;
+      background: var(--bg-secondary);
+      border: 1px solid var(--bg-tertiary);
+      margin-bottom: 14px;
+    }
+
+    .empty-state-title {
+      font-size: 1.15rem;
+      font-weight: 800;
+      color: var(--text-primary);
+    }
+
+    .empty-state-desc {
+      font-size: 0.9rem;
+      color: var(--text-secondary);
+      max-width: 420px;
+      margin-bottom: 16px;
+    }
+
     /* رسالة التنبيه */
     .toast-msg {
       position: fixed;
       bottom: 30px;
       right: 30px;
-      background-color: #1a1a1a;
+      background-color: var(--bg-secondary);
       color: #ffffff;
       padding: 14px 28px;
       border-radius: 8px;
@@ -733,7 +890,7 @@
         <h1>مكتبة مرئيات يوتيوب</h1>
       </div>
       <div class="header-actions">
-        <button id="googleSignInBtn" class="btn btn-secondary" onclick="handleGoogleSignIn()"><span class="icon">🔐</span> دخول قوقل</button>
+        <button id="googleSignInBtn" class="btn btn-primary" onclick="handleGoogleSignIn()"><span class="icon">🔐</span> دخول قوقل</button>
         
         <!-- القائمة المنسدلة للتحديث السحابي المضافة حديثاً في الأعلى -->
         <div class="header-dropdown-sync" id="syncDropdownGroup" style="position: relative; display: none;">
@@ -749,7 +906,7 @@
         <button id="toggleImportBtn" class="btn btn-secondary">📥 استيراد</button>
         <button id="exportCsvBtn" class="btn btn-secondary">📤 تصدير لـ CSV</button>
         <button id="bulkEditModeBtn" class="btn btn-secondary" style="color: var(--gold-color);"><span class="icon">⚙️</span> تعديل جماعي</button>
-        <button id="clearListBtn" class="btn btn-secondary" style="color: #ff3333;"><span class="icon">🗑️</span> مسح</button>
+        <button id="clearListBtn" class="btn btn-secondary" style="color: var(--danger-color);"><span class="icon">🗑️</span> مسح</button>
       </div>
     </div>
   </header>
@@ -811,7 +968,7 @@
           <div style="display: flex; gap: 8px; flex-wrap: wrap;">
             <button id="saveImportBtn" class="btn btn-primary">💾 معالجة وحفظ كقائمة جديدة</button>
             <button id="mergeCsvCategoriesBtn" class="btn btn-gold">🏷️ دمج وتحديث التصنيفات فقط</button>
-            <button id="resetDefaultBtn" class="btn btn-secondary" style="color: #ff3333;">❌ إعادة ضبط الافتراضي</button>
+            <button id="resetDefaultBtn" class="btn btn-secondary" style="color: var(--danger-color);">❌ إعادة ضبط الافتراضي</button>
           </div>
         </div>
       </div>
@@ -821,7 +978,7 @@
         <span class="global-status-text" id="globalImportStatus">⏳ جاري الاتصال بالذكاء الاصطناعي...</span>
         <div style="display: flex; gap: 8px;">
           <button id="continueImportBtn" class="btn btn-gold" style="font-size: 0.8rem; padding: 5px 12px; display: none;" onclick="triggerContinueImport()">متابعة التصنيف ➡️</button>
-          <button id="cancelImportBtn" class="btn btn-secondary" style="color: #ff3333; font-size: 0.8rem; padding: 5px 12px;" onclick="triggerCancelImport()">إلغاء العملية 🛑</button>
+          <button id="cancelImportBtn" class="btn btn-secondary" style="color: var(--danger-color); font-size: 0.8rem; padding: 5px 12px;" onclick="triggerCancelImport()">إلغاء العملية 🛑</button>
         </div>
       </div>
 
@@ -836,7 +993,7 @@
     <div style="background-color: var(--bg-secondary); border: 1px solid var(--bg-tertiary); border-radius: var(--border-radius); padding: 22px; max-width: 500px; width: 100%; box-shadow: var(--card-shadow); text-align: right;">
       <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; border-bottom: 1px solid var(--bg-tertiary); padding-bottom: 12px;">
         <h3 style="font-size: 1.1rem; font-weight: 700; color: var(--gold-color);">⚙️ إدارة النسخ المكررة للفيديو</h3>
-        <button class="btn btn-secondary" style="padding: 4px 10px; font-size: 0.8rem; color: #ff3333;" onclick="closeDuplicateModal()">إغلاق ❌</button>
+        <button class="btn btn-secondary" style="padding: 4px 10px; font-size: 0.8rem; color: var(--danger-color);" onclick="closeDuplicateModal()">إغلاق ❌</button>
       </div>
       <div id="dupModalBody" style="display: flex; flex-direction: column; gap: 15px;"></div>
     </div>
@@ -845,21 +1002,21 @@
   <!-- مساحة الإحصائيات العلوية الفوقية -->
   <section class="stats-section">
     <div class="stats-grid">
-      <div class="stat-card">
+      <div class="stat-card stat-videos">
         <span class="stat-icon">📹</span>
         <div class="stat-info">
           <h3 id="statTotalVideos">0</h3>
           <p>إجمالي الفيديوهات</p>
         </div>
       </div>
-      <div class="stat-card">
+      <div class="stat-card stat-channels">
         <span class="stat-icon">🎙️</span>
         <div class="stat-info">
           <h3 id="statTotalChannels">0</h3>
           <p>عدد القنوات</p>
         </div>
       </div>
-      <div class="stat-card">
+      <div class="stat-card stat-categories">
         <span class="stat-icon">🏷️</span>
         <div class="stat-info">
           <h3 id="statTotalCategories">0</h3>
@@ -938,7 +1095,7 @@
                 <option value="">الكل</option>
               </select>
               <button id="clearPlaylistCategoriesBtn" class="btn btn-secondary" style="padding: 4px 10px; font-size: 0.75rem;" onclick="clearPlaylistCategories()" title="إرجاع تصنيفات القائمة لـ غ-مصنف">🧹 تصفير</button>
-              <button id="deletePlaylistFromAppBtn" class="btn btn-secondary" style="padding: 4px 10px; font-size: 0.75rem; color: #ff3333;" onclick="deletePlaylistFromApp()" title="إزالة القائمة وفيديوهاتها من التطبيق فقط">🗑️ إزالة</button>
+              <button id="deletePlaylistFromAppBtn" class="btn btn-secondary" style="padding: 4px 10px; font-size: 0.75rem; color: var(--danger-color);" onclick="deletePlaylistFromApp()" title="إزالة القائمة وفيديوهاتها من التطبيق فقط">🗑️ إزالة</button>
             </div>
           </div>
 
@@ -979,7 +1136,7 @@
         <!-- يتم تغذيته ديناميكياً -->
       </select>
       <button class="btn btn-gold" style="font-size: 0.85rem;" onclick="applyBulkCategoryChange()">تغيير فئة المحدد</button>
-      <button class="btn btn-secondary" style="color: #ff3333; font-size: 0.85rem;" onclick="applyBulkDelete()">حذف المحدد 🗑️</button>
+      <button class="btn btn-secondary" style="color: var(--danger-color); font-size: 0.85rem;" onclick="applyBulkDelete()">حذف المحدد 🗑️</button>
       <button class="btn btn-secondary" style="font-size: 0.85rem;" onclick="toggleBulkEditMode()">إغلاق التعديل</button>
     </div>
   </div>
@@ -2963,7 +3120,7 @@ ${titles.map((t, idx) => `${idx + 1}. ${t}`).join('\n')}`;
       videosGrid.innerHTML = '';
 
       if (filteredVideos.length === 0) {
-        videosGrid.innerHTML = '<div style="grid-column: 1/-1; text-align: center; padding: 60px; color: var(--text-secondary); font-weight:700;">لا توجد نتائج تطابق خيارات التصفية الحالية.</div>';
+        renderEmptyState();
         paginationContainer.innerHTML = '';
         return;
       }
@@ -2992,6 +3149,67 @@ ${titles.map((t, idx) => `${idx + 1}. ${t}`).join('\n')}`;
       videosGrid.appendChild(fragment);
 
       renderPagination();
+    }
+
+    // حالة فراغ مصممة بدل جملة نصية معزولة: تفرّق بين مكتبة فارغة بالكامل (دعوة للاستيراد)
+    // وبين نتائج بحث/تصفية فارغة (دعوة لإزالة الفلاتر)، عملاً بمبدأ أن الفراغ فرصة للتوجيه لا مجرد رسالة.
+    function renderEmptyState() {
+      const isLibraryEmpty = allVideos.length === 0;
+
+      const wrap = document.createElement('div');
+      wrap.className = 'empty-state';
+
+      const icon = document.createElement('div');
+      icon.className = 'empty-state-icon';
+      icon.textContent = isLibraryEmpty ? '📺' : '🔍';
+      wrap.appendChild(icon);
+
+      const title = document.createElement('h3');
+      title.className = 'empty-state-title';
+      title.textContent = isLibraryEmpty ? 'مكتبتك فارغة حالياً' : 'لا توجد نتائج مطابقة';
+      wrap.appendChild(title);
+
+      const desc = document.createElement('p');
+      desc.className = 'empty-state-desc';
+      desc.textContent = isLibraryEmpty
+        ? 'استورد قائمة تشغيل من يوتيوب أو ملف CSV لتبدأ في تنظيم مكتبتك.'
+        : 'جرّب تعديل أو إزالة بعض خيارات البحث والتصفية الحالية.';
+      wrap.appendChild(desc);
+
+      const actionBtn = document.createElement('button');
+      actionBtn.className = isLibraryEmpty ? 'btn btn-primary' : 'btn btn-secondary';
+      actionBtn.textContent = isLibraryEmpty ? '📥 استيراد المكتبة الآن' : '✖️ إزالة كل الفلاتر';
+      actionBtn.addEventListener('click', () => {
+        if (isLibraryEmpty) {
+          importPanel.style.display = 'block';
+          importPanel.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        } else {
+          resetAllFilters();
+        }
+      });
+      wrap.appendChild(actionBtn);
+
+      videosGrid.appendChild(wrap);
+    }
+
+    // إعادة كل عناصر التصفية والبحث إلى حالتها الافتراضية دفعة واحدة
+    function resetAllFilters() {
+      searchInput.value = '';
+      channelFilter.value = '';
+      const durationEl = document.getElementById('durationFilter');
+      const classEl = document.getElementById('classificationFilter');
+      const playlistEl = document.getElementById('playlistFilter');
+      if (durationEl) durationEl.value = '';
+      if (classEl) classEl.value = '';
+      if (playlistEl) playlistEl.value = '';
+
+      selectedCategory = '';
+      currentPage = 1;
+      categoryFilter.value = '';
+      pillAllBtn.classList.add('active');
+      if (typeof updateMenuSelection === 'function') updateMenuSelection();
+
+      applyFiltersAndSort();
     }
 
     // بناء كرت فيديو واحد باستخدام DOM API (createElement/textContent) بدل innerHTML.
@@ -3061,7 +3279,7 @@ ${titles.map((t, idx) => `${idx + 1}. ${t}`).join('\n')}`;
 
       displayTags.forEach(tag => {
         const tagSpan = document.createElement('span');
-        tagSpan.className = 'category-tag';
+        tagSpan.className = 'category-tag' + (tag === 'غ-مصنف' ? ' category-tag-unclassified' : '');
         tagSpan.textContent = tag;
         tagsWrap.appendChild(tagSpan);
       });
@@ -3127,26 +3345,23 @@ ${titles.map((t, idx) => `${idx + 1}. ${t}`).join('\n')}`;
       footer.appendChild(watchBtn);
 
       const copyBtn = document.createElement('button');
-      copyBtn.className = 'btn btn-secondary';
+      copyBtn.className = 'btn btn-secondary icon-btn';
       copyBtn.title = 'نسخ الرابط';
       copyBtn.textContent = '🔗';
       copyBtn.addEventListener('click', () => copyLink(video.url));
       footer.appendChild(copyBtn);
 
       const favBtn = document.createElement('button');
-      favBtn.className = 'btn btn-secondary';
+      favBtn.className = 'btn btn-secondary icon-btn';
       favBtn.style.color = 'var(--gold-color)';
-      favBtn.style.fontSize = '1.1rem';
-      favBtn.style.maxWidth = '45px';
       favBtn.title = 'إضافة للمفضلة';
       favBtn.textContent = favIcon;
       favBtn.addEventListener('click', () => toggleFavorite(video.id));
       footer.appendChild(favBtn);
 
       const delBtn = document.createElement('button');
-      delBtn.className = 'btn btn-secondary';
-      delBtn.style.color = '#ff3333';
-      delBtn.style.maxWidth = '45px';
+      delBtn.className = 'btn btn-secondary icon-btn';
+      delBtn.style.color = 'var(--danger-color)';
       delBtn.title = 'حذف الفيديو';
       delBtn.textContent = '🗑️';
       delBtn.addEventListener('click', () => deleteVideo(video.id));
