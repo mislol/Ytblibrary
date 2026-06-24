@@ -1134,22 +1134,7 @@
         </div>
       </div>
 
-      <!-- شريط الحالة الموحد المطور مع شريط التقدم البصري المدمج -->
-      <div class="global-status-container" id="globalImportStatusContainer">
-        <div class="global-status-header">
-          <span class="global-status-text" id="globalImportStatus" data-i18n="initialStatusMsg">⏳ جاري الاتصال بالذكاء الاصطناعي...</span>
-        </div>
-        
-        <!-- الحاوية البصرية للتقدم -->
-        <div class="progress-bar-wrapper">
-          <div class="progress-bar-fill" id="globalProgressBarFill" style="width: 0%;"></div>
-        </div>
-        
-        <div class="global-status-actions">
-          <button id="continueImportBtn" class="btn btn-gold" style="display: none;" onclick="triggerContinueImport()"><span data-i18n="continueImportBtn">متابعة التصنيف ➡️</span></button>
-          <button id="cancelImportBtn" class="btn btn-secondary" style="color: var(--danger-color);" onclick="triggerCancelImport()"><span data-i18n="cancelImportBtn">إلغاء العملية 🛑</span></button>
-        </div>
-      </div>
+      
 
       <!-- سجل عمليات السحاب التفاعلي -->
       <div id="cloudConsoleLogs" style="background-color: #000; color: #33cc33; font-family: monospace; font-size: 0.82rem; padding: 12px; border-radius: 8px; border: 1px solid var(--bg-tertiary); max-height: 150px; overflow-y: auto; margin-top: 15px; display: none; line-height: 1.4; text-align: left; direction: ltr;"></div>
@@ -1303,7 +1288,24 @@
       <div class="pagination-container" id="paginationContainer"></div>
     </main>
   </div>
+<!-- شريط الحالة الموحد المطور مع شريط التقدم البصري المدمج (خارج لوحة الاستيراد ليظهر في الواجهة) -->
+  <div class="global-status-container" id="globalImportStatusContainer">
+    <div class="global-status-header">
+      <span class="global-status-text" id="globalImportStatus" data-i18n="initialStatusMsg">⏳ جاري الاتصال بالذكاء الاصطناعي...</span>
+    </div>
+    
+    <!-- الحاوية البصرية للتقدم -->
+    <div class="progress-bar-wrapper">
+      <div class="progress-bar-fill" id="globalProgressBarFill" style="width: 0%;"></div>
+    </div>
+    
+    <div class="global-status-actions">
+      <button id="continueImportBtn" class="btn btn-gold" style="display: none;" onclick="triggerContinueImport()"><span data-i18n="continueImportBtn">متابعة التصنيف ➡️</span></button>
+      <button id="cancelImportBtn" class="btn btn-secondary" style="color: var(--danger-color);" onclick="triggerCancelImport()"><span data-i18n="cancelImportBtn">إلغاء العملية 🛑</span></button>
+    </div>
+  </div>
 
+  
   <!-- شريط التحكم بالتعديل الجماعي العائم المضاف -->
   <div class="bulk-action-bar" id="bulkMenuBar">
     <div class="bulk-info-side">
