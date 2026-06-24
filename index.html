@@ -452,14 +452,21 @@
 
    .search-row-container {
       display: flex;
-      gap: 10px;
+      flex-direction: column; /* جعل مربع البحث بالأعلى والأزرار بالأسفل */
+      gap: 12px;
       margin-bottom: 15px;
-      align-items: center;
     }
 
     .search-box {
       position: relative;
-      flex-grow: 1;
+      width: 100%; /* جعل مربع البحث يأخذ كامل عرض الشاشة */
+    }
+
+    /* حاوية لتنظيم الأزرار تحت مربع البحث */
+    .search-buttons-row {
+      display: flex;
+      gap: 10px;
+      justify-content: flex-start; /* رص الأزرار بجانب بعضها من اليمين */
     }
 
     /* فئة إخفاء الفلاتر افتراضياً */
@@ -1148,17 +1155,22 @@
       <!-- لوحة التصفية والبحث الفوقية -->
       <div class="filter-panel">
         <div class="search-row-container">
+          <!-- مربع البحث بالأعلى بشكل منفصل ليأخذ المساحة كاملة -->
           <div class="search-box">
             <input type="text" id="searchInput" data-i18n-ph="searchPlaceholder" placeholder="ابحث عن عنوان، قناة أو تصنيف...">
             <span class="search-icon">🔍</span>
           </div>
-          <!-- زر منسدل مضاف لفتح الفلاتر -->
-          <button id="filterToggleBtn" class="btn btn-secondary" title="إظهار / إخفاء الفلاتر">
-            <span data-i18n="toggleFilters">⚙️ خيارات التصفية</span>
-          </button>
-          <button id="layoutToggleBtn" class="btn btn-secondary" data-i18n-title="viewToggleTitle" title="تغيير نمط العرض">
-            <span data-i18n="viewList">📝 عرض القائمة</span>
-          </button>
+          
+          <!-- الأزرار مجمعة بالأسفل بجانب بعضها -->
+          <div class="search-buttons-row">
+            <button id="filterToggleBtn" class="btn btn-secondary" title="إظهار / إخفاء الفلاتر">
+              <span data-i18n="toggleFilters">⚙️ خيارات التصفية</span>
+            </button>
+            <button id="layoutToggleBtn" class="btn btn-secondary" data-i18n-title="viewToggleTitle" title="تغيير نمط العرض">
+              <span data-i18n="viewList">📝 عرض القائمة</span>
+            </button>
+          </div>
+        </div>
         </div>
         
         <!-- تم إضافة id وفئة hidden-filters لإخفائها افتراضياً -->
