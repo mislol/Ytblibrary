@@ -400,13 +400,14 @@
     .categories-dropdown-menu {
       position: absolute;
       top: calc(100% + 6px);
-      right: 20px;
+      inset-inline-start: 20px;
       background-color: var(--bg-secondary);
       border: 1px solid var(--bg-tertiary);
       border-radius: var(--border-radius);
       list-style: none;
       padding: 8px 0;
       min-width: 260px;
+      max-width: calc(100vw - 30px);
       box-shadow: var(--card-shadow);
       z-index: 150;
       display: none;
@@ -965,7 +966,7 @@
           <button id="headerSyncBtn" class="btn btn-gold" onclick="toggleSyncDropdown(event)">
             <span class="icon" id="syncBtnIcon">🔄</span> <span data-i18n="sync">تحديث</span> <span class="arrow">▾</span>
           </button>
-          <ul id="headerSyncDropdownMenu" class="categories-dropdown-menu" style="right: 0; left: auto; min-width: 250px; max-width: calc(100vw - 30px);">            <!-- يتم تعبئتها ديناميكياً بقوائم تشغيل المستخدم -->
+          <ul id="headerSyncDropdownMenu" class="categories-dropdown-menu" style="inset-inline-start: 0; min-width: 250px; max-width: calc(100vw - 30px);">            <!-- يتم تعبئتها ديناميكياً بقوائم تشغيل المستخدم -->
           </ul>
         </div>
 
@@ -977,7 +978,7 @@
           <button id="toolsMenuBtn" class="btn btn-secondary" onclick="toggleToolsDropdown(event)">
             <span class="icon">🛠️</span> <span data-i18n="tools">أدوات</span> <span class="arrow">▾</span>
           </button>
-          <div id="toolsDropdownMenu" class="categories-dropdown-menu tools-dropdown-menu" style="right: 0; left: auto; min-width: 210px;">
+          <div id="toolsDropdownMenu" class="categories-dropdown-menu tools-dropdown-menu" style="inset-inline-start: 0; min-width: 210px; max-width: calc(100vw - 30px);">
             <button id="updateDurationsFromApiBtn" class="dropdown-menu-btn" onclick="updateDurationsFromApi()">🔄 <span data-i18n="updateDurations">تحديث التوقيتات</span></button>
             <button id="toggleImportBtn" class="dropdown-menu-btn">📥 <span data-i18n="importBtn">استيراد</span></button>
             <button id="exportCsvBtn" class="dropdown-menu-btn">📤 <span data-i18n="exportCsv">تصدير لـ CSV</span></button>
@@ -3292,8 +3293,10 @@ ${titles.map((t, idx) => `${idx + 1}. ${t}`).join('\n')}`;
             height="100%" 
             src="https://www.youtube.com/embed/${videoId}?autoplay=1&rel=0" 
             frameborder="0" 
-            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share; fullscreen" 
             allowfullscreen
+            webkitallowfullscreen
+            mozallowfullscreen
             style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: none;">
           </iframe>
         `;
