@@ -450,15 +450,29 @@
       box-shadow: var(--card-shadow);
     }
 
-    .search-row-container {
+   .search-row-container {
       display: flex;
       gap: 10px;
       margin-bottom: 15px;
+      align-items: center;
     }
 
     .search-box {
       position: relative;
       flex-grow: 1;
+    }
+
+    /* فئة إخفاء الفلاتر افتراضياً */
+    .filters-row.hidden-filters {
+      display: none !important;
+    }
+
+    /* تصغير زر التخطيط وزر خيارات التصفية الجديد */
+    #layoutToggleBtn, #filterToggleBtn {
+      padding: 6px 12px;
+      font-size: 0.75rem;
+      height: 38px;
+      white-space: nowrap;
     }
 
     .search-box input {
@@ -1138,10 +1152,17 @@
             <input type="text" id="searchInput" data-i18n-ph="searchPlaceholder" placeholder="ابحث عن عنوان، قناة أو تصنيف...">
             <span class="search-icon">🔍</span>
           </div>
-          <button id="layoutToggleBtn" class="btn btn-secondary" data-i18n-title="viewToggleTitle" title="تغيير نمط العرض"><span data-i18n="viewList">📝 عرض القائمة</span></button>
+          <!-- زر منسدل مضاف لفتح الفلاتر -->
+          <button id="filterToggleBtn" class="btn btn-secondary" title="إظهار / إخفاء الفلاتر">
+            <span data-i18n="toggleFilters">⚙️ خيارات التصفية</span>
+          </button>
+          <button id="layoutToggleBtn" class="btn btn-secondary" data-i18n-title="viewToggleTitle" title="تغيير نمط العرض">
+            <span data-i18n="viewList">📝 عرض القائمة</span>
+          </button>
         </div>
         
-        <div class="filters-row">
+        <!-- تم إضافة id وفئة hidden-filters لإخفائها افتراضياً -->
+        <div class="filters-row hidden-filters" id="filtersRow">
           <div class="filter-group">
             <label for="categoryFilter" data-i18n="filterCategory">التصنيف</label>
             <select id="categoryFilter">
@@ -1288,6 +1309,7 @@
     "viewList": "📝 عرض القائمة",
     "viewGrid": "📱 عرض الشبكة",
     "viewToggleTitle": "تغيير نمط العرض",
+    "toggleFilters": "⚙️ خيارات التصفية",
     "filterCategory": "التصنيف",
     "filterChannel": "القناة",
     "filterDuration": "المدة الزمنية",
@@ -1432,6 +1454,7 @@
     "viewList": "📝 List view",
     "viewGrid": "📱 Grid view",
     "viewToggleTitle": "Switch view style",
+    "toggleFilters": "⚙️ Filter Options",
     "filterCategory": "Category",
     "filterChannel": "Channel",
     "filterDuration": "Duration",
@@ -1708,10 +1731,19 @@
       exportCsvBtn.addEventListener('click', exportToCSV);
       clearListBtn.addEventListener('click', clearCurrentLibrary);
 
-      layoutToggleBtn.addEventListener('click', toggleLayout);
+      layoutToggleBtn.addEventListener('click', () => { toggleLayout(); });
       bulkEditModeBtn.addEventListener('click', toggleBulkEditMode);
       themeToggleBtn.addEventListener('click', toggleTheme);
       langToggleBtn.addEventListener('click', toggleLanguage);
+
+      // كود إظهار وإخفاء الفلاتر عند الضغط على الزر الجديد
+      const filterToggleBtn = document.getElementById('filterToggleBtn');
+      const filtersRow = document.getElementById('filtersRow');
+      if (filterToggleBtn && filtersRow) {
+        filterToggleBtn.addEventListener('click', () => {
+          filtersRow.classList.toggle('hidden-filters');
+        });
+      }
 
       toggleImportBtn.addEventListener('click', () => {
         importPanel.style.display = (importPanel.style.display === 'block') ? 'none' : 'block';
