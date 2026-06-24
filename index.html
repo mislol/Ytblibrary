@@ -613,6 +613,8 @@
       overflow: hidden;
     }
 
+    /* طبقة زر التشغيل عند التحويم: تجميلية بحتة، لذلك pointer-events:none ضرورية
+       حتى لا تعترض أي لمس/نقر على عناصر تحكم يوتيوب الحقيقية أسفلها بعد بدء التشغيل */
     .thumbnail-area::after {
       content: '▶';
       position: absolute;
@@ -625,10 +627,21 @@
       background: rgba(0, 0, 0, 0.32);
       opacity: 0;
       transition: opacity var(--transition-speed);
+      pointer-events: none;
     }
 
-    .video-card:hover .thumbnail-area::after {
-      opacity: 1;
+    /* تُفعَّل فقط على الأجهزة التي تدعم تحويماً حقيقياً بمؤشر (فأرة)، لتجنّب علوق
+       حالة :hover بشكل دائم على الشاشات اللمسية التي لا تملك "خروج مؤشر" */
+    @media (hover: hover) and (pointer: fine) {
+      .video-card:hover .thumbnail-area::after {
+        opacity: 1;
+      }
+    }
+
+    /* إخفاء طبقة زر التشغيل تماماً بعد بدء تشغيل الفيديو فعلياً داخل التطبيق،
+       كحماية إضافية حتى لو علقت حالة hover لأي سبب */
+    .thumbnail-area.is-playing::after {
+      content: none;
     }
 
     .thumbnail-area img {
@@ -3287,6 +3300,7 @@ ${titles.map((t, idx) => `${idx + 1}. ${t}`).join('\n')}`;
       logToCloudConsole('🎬 تشغيل الفيديو ذو المعرف: ' + videoId + ' مدمجاً داخل التطبيق.');
       const thumbArea = document.getElementById('thumb-' + id);
       if (thumbArea) {
+        thumbArea.classList.add('is-playing');
         thumbArea.innerHTML = `
           <iframe 
             width="100%" 
