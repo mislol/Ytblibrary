@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>مكتبة مرئيات يوتيوب الاحترافية الشاملة</title>
+  <title data-i18n="appTitle">مكتبة مرئيات يوتيوب الاحترافية الشاملة</title>
   
   <!-- خط Cairo من Google Fonts للمظهر العربي الحديث -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -33,6 +33,33 @@
       --border-radius: 16px;
       --border-radius-sm: 10px;
       --transition-speed: 0.25s;
+
+      /* رسالة التنبيه العائمة تبقى دوماً بنفس الطابع الغامق لضمان وضوحها فوق أي محتوى بغض النظر عن المظهر العام */
+      --toast-bg: #1a1a1a;
+      --toast-text: #ffffff;
+    }
+
+    /* الوضع النهاري: نفس الهوية الحمراء، لكن على قماش فاتح بدل الداكن.
+       الألوان الدلالية (الذهبي/الأخضر/الأحمر) عُتّمت قليلاً هنا خصيصاً لتبقى مقروءة
+       كنص فوق خلفيات فاتحة، بعد أن كانت مضبوطة أصلاً للقراءة فوق خلفيات داكنة. */
+    :root[data-theme="light"] {
+      --bg-primary: #f6f6f7;
+      --bg-secondary: #ffffff;
+      --bg-tertiary: #e9e9eb;
+      --bg-quaternary: #dcdcdf;
+      --text-primary: #15151a;
+      --text-secondary: #5b5b63;
+      --text-tertiary: #8d8d93;
+      --accent-color: #ff0000;
+      --accent-hover: #d60000;
+      --accent-soft: rgba(255, 0, 0, 0.08);
+      --gold-color: #a8740a;
+      --gold-soft: rgba(168, 116, 10, 0.10);
+      --green-color: #0e8c7f;
+      --green-soft: rgba(14, 140, 127, 0.10);
+      --danger-color: #d92626;
+      --card-shadow: 0 6px 18px rgba(20, 20, 25, 0.08);
+      --card-shadow-hover: 0 12px 26px rgba(20, 20, 25, 0.12);
     }
 
     * {
@@ -347,6 +374,7 @@
     .category-pill-btn.active {
       background-color: var(--accent-color);
       border-color: var(--accent-color);
+      color: #fff;
       box-shadow: 0 4px 14px var(--accent-soft);
     }
 
@@ -357,11 +385,16 @@
     }
 
     .category-pill-btn .badge {
-      background-color: rgba(0, 0, 0, 0.25);
-      color: #fff;
+      background-color: var(--bg-quaternary);
+      color: var(--text-primary);
       padding: 2px 8px;
       border-radius: 12px;
       font-size: 0.8rem;
+    }
+
+    .category-pill-btn.active .badge {
+      background-color: rgba(255, 255, 255, 0.25);
+      color: #fff;
     }
 
     .categories-dropdown-menu {
@@ -515,7 +548,7 @@
 
     .video-card:hover {
       transform: translateY(-5px);
-      box-shadow: 0 12px 30px rgba(0, 0, 0, 0.7);
+      box-shadow: var(--card-shadow-hover);
     }
 
     /* بطاقة التحميل الهيكلية (Skeleton) */
@@ -531,14 +564,14 @@
 
     .skeleton-thumb {
       aspect-ratio: 16/9;
-      background: linear-gradient(90deg, #1f1f1f 25%, #2d2d2d 50%, #1f1f1f 75%);
+      background: linear-gradient(90deg, var(--bg-tertiary) 25%, var(--bg-quaternary) 50%, var(--bg-tertiary) 75%);
       background-size: 200% 100%;
       animation: skeleton-pulse 1.5s infinite;
     }
 
     .skeleton-text {
       height: 16px;
-      background: linear-gradient(90deg, #1f1f1f 25%, #2d2d2d 50%, #1f1f1f 75%);
+      background: linear-gradient(90deg, var(--bg-tertiary) 25%, var(--bg-quaternary) 50%, var(--bg-tertiary) 75%);
       background-size: 200% 100%;
       animation: skeleton-pulse 1.5s infinite;
       border-radius: 4px;
@@ -613,6 +646,7 @@
       bottom: 8px;
       left: 8px;
       background-color: rgba(0, 0, 0, 0.85);
+      color: #fff;
       padding: 2px 8px;
       border-radius: 4px;
       font-size: 0.8rem;
@@ -814,6 +848,7 @@
     .page-btn:hover, .page-btn.active {
       background-color: var(--accent-color);
       border-color: var(--accent-color);
+      color: #fff;
     }
 
     .page-btn.disabled {
@@ -858,13 +893,43 @@
       margin-bottom: 16px;
     }
 
+    /* قائمة الأدوات المنسدلة في الرأس */
+    .tools-dropdown-menu.show {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      padding: 8px;
+    }
+
+    .dropdown-menu-btn {
+      width: 100%;
+      text-align: start;
+      background: transparent;
+      border: none;
+      color: var(--text-primary);
+      font-family: 'Cairo', sans-serif;
+      font-size: 0.9rem;
+      font-weight: 700;
+      padding: 10px 14px;
+      border-radius: var(--border-radius-sm);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      transition: background-color var(--transition-speed);
+    }
+
+    .dropdown-menu-btn:hover {
+      background-color: var(--bg-tertiary);
+    }
+
     /* رسالة التنبيه */
     .toast-msg {
       position: fixed;
       bottom: 30px;
       right: 30px;
-      background-color: var(--bg-secondary);
-      color: #ffffff;
+      background-color: var(--toast-bg);
+      color: var(--toast-text);
       padding: 14px 28px;
       border-radius: 8px;
       box-shadow: var(--card-shadow);
@@ -887,26 +952,38 @@
     <div class="header-container">
       <div class="logo-section">
         <span class="logo-icon">📺</span>
-        <h1>مكتبة مرئيات يوتيوب</h1>
+        <h1 data-i18n="appTitle">مكتبة مرئيات يوتيوب</h1>
       </div>
       <div class="header-actions">
-        <button id="googleSignInBtn" class="btn btn-primary" onclick="handleGoogleSignIn()"><span class="icon">🔐</span> دخول قوقل</button>
+        <button id="langToggleBtn" class="btn btn-secondary" title="Change language / تغيير اللغة">EN</button>
+        <button id="themeToggleBtn" class="btn btn-secondary" title="تبديل المظهر الداكن / النهاري">🌙</button>
+
+        <button id="googleSignInBtn" class="btn btn-primary" onclick="handleGoogleSignIn()"><span class="icon">🔐</span> <span data-i18n="signIn">دخول قوقل</span></button>
         
         <!-- القائمة المنسدلة للتحديث السحابي المضافة حديثاً في الأعلى -->
         <div class="header-dropdown-sync" id="syncDropdownGroup" style="position: relative; display: none;">
           <button id="headerSyncBtn" class="btn btn-gold" onclick="toggleSyncDropdown(event)">
-            <span class="icon" id="syncBtnIcon">🔄</span> تحديث <span class="arrow">▾</span>
+            <span class="icon" id="syncBtnIcon">🔄</span> <span data-i18n="sync">تحديث</span> <span class="arrow">▾</span>
           </button>
           <ul id="headerSyncDropdownMenu" class="categories-dropdown-menu" style="right: 0; left: auto; min-width: 250px; max-width: calc(100vw - 30px);">            <!-- يتم تعبئتها ديناميكياً بقوائم تشغيل المستخدم -->
           </ul>
         </div>
 
-        <button id="googleSignOutBtn" class="btn btn-secondary" style="display: none;" onclick="handleGoogleSignOut()"><span class="icon">🔓</span> خروج</button>
-        <button id="updateDurationsFromApiBtn" class="btn btn-secondary" onclick="updateDurationsFromApi()"><span class="icon">🔄</span> تحديث التوقيتات</button>
-        <button id="toggleImportBtn" class="btn btn-secondary">📥 استيراد</button>
-        <button id="exportCsvBtn" class="btn btn-secondary">📤 تصدير لـ CSV</button>
-        <button id="bulkEditModeBtn" class="btn btn-secondary" style="color: var(--gold-color);"><span class="icon">⚙️</span> تعديل جماعي</button>
-        <button id="clearListBtn" class="btn btn-secondary" style="color: var(--danger-color);"><span class="icon">🗑️</span> مسح</button>
+        <button id="googleSignOutBtn" class="btn btn-secondary" style="display: none;" onclick="handleGoogleSignOut()"><span class="icon">🔓</span> <span data-i18n="signOut">خروج</span></button>
+        <button id="bulkEditModeBtn" class="btn btn-secondary" style="color: var(--gold-color);"><span class="icon">⚙️</span> <span data-i18n="bulkEdit">تعديل جماعي</span></button>
+
+        <!-- قائمة الأدوات المنسدلة: تجمع استيراد/تحديث التوقيتات/تصدير/مسح بدل تشتيتها كأزرار منفصلة -->
+        <div class="dropdown-tools-group" style="position: relative; display: inline-block;">
+          <button id="toolsMenuBtn" class="btn btn-secondary" onclick="toggleToolsDropdown(event)">
+            <span class="icon">🛠️</span> <span data-i18n="tools">أدوات</span> <span class="arrow">▾</span>
+          </button>
+          <div id="toolsDropdownMenu" class="categories-dropdown-menu tools-dropdown-menu" style="right: 0; left: auto; min-width: 210px;">
+            <button id="updateDurationsFromApiBtn" class="dropdown-menu-btn" onclick="updateDurationsFromApi()">🔄 <span data-i18n="updateDurations">تحديث التوقيتات</span></button>
+            <button id="toggleImportBtn" class="dropdown-menu-btn">📥 <span data-i18n="importBtn">استيراد</span></button>
+            <button id="exportCsvBtn" class="dropdown-menu-btn">📤 <span data-i18n="exportCsv">تصدير لـ CSV</span></button>
+            <button id="clearListBtn" class="dropdown-menu-btn" style="color: var(--danger-color);">🗑️ <span data-i18n="clearList">مسح</span></button>
+          </div>
+        </div>
       </div>
     </div>
   </header>
@@ -917,68 +994,68 @@
       
       <!-- إدخال مفتاح ذكاء جيميناي (Gemini API Key) -->
       <div class="input-group">
-        <label for="geminiApiKey">🤖 مفتاح ذكاء جيميناي (Gemini API Key)</label>
-        <input type="text" id="geminiApiKey" placeholder="أدخل مفتاح Gemini الخاص بك...">
+        <label for="geminiApiKey" data-i18n="geminiKeyLabel">🤖 مفتاح ذكاء جيميناي (Gemini API Key)</label>
+        <input type="text" id="geminiApiKey" data-i18n-ph="geminiKeyPlaceholder" placeholder="أدخل مفتاح Gemini الخاص بك...">
         
         <!-- مربع تفعيل/تعطيل ذكاء جيميناي الجديد والمطلوب -->
         <div class="import-options" style="display: flex; align-items: center; gap: 8px; margin-top: 10px; background: var(--bg-primary); padding: 8px 12px; border-radius: 8px; border: 1px solid var(--bg-tertiary);">
           <input type="checkbox" id="enableAutoClassifyCheck" checked style="width:16px; height:16px; accent-color: var(--accent-color); cursor:pointer;">
-          <label for="enableAutoClassifyCheck" style="font-size:0.85rem; cursor:pointer; user-select:none;">🤖 تفعيل التصنيف التلقائي الذكي بواسطة Gemini عند المزامنة والاستيراد</label>
+          <label for="enableAutoClassifyCheck" style="font-size:0.85rem; cursor:pointer; user-select:none;" data-i18n="autoClassifyLabel">🤖 تفعيل التصنيف التلقائي الذكي بواسطة Gemini عند المزامنة والاستيراد</label>
         </div>
 
         <div style="margin-top: 12px; display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
-          <button id="testGeminiBtn" class="btn btn-secondary" style="font-size: 0.8rem; padding: 6px 12px;">⚡ فحص اتصال الذكاء الاصطناعي</button>
-          <button id="classifyCurrentLibraryBtn" class="btn btn-gold" style="font-size: 0.8rem; padding: 6px 12px;" onclick="startManualClassification()">🏷️ تصنيف الفيديوهات غير المصنفة</button>
+          <button id="testGeminiBtn" class="btn btn-secondary" style="font-size: 0.8rem; padding: 6px 12px;"><span data-i18n="testGeminiBtn">⚡ فحص اتصال الذكاء الاصطناعي</span></button>
+          <button id="classifyCurrentLibraryBtn" class="btn btn-gold" style="font-size: 0.8rem; padding: 6px 12px;" onclick="startManualClassification()"><span data-i18n="classifyLibraryBtn">🏷️ تصنيف الفيديوهات غير المصنفة</span></button>
           <span id="geminiTestStatus" style="font-size: 0.85rem; font-weight: 600;"></span>
         </div>
       </div>
 
       <!-- معرف عميل قوقل للاستيراد السحابي والمزامنة -->
       <div class="input-group" style="margin-top: 20px;">
-        <label for="googleClientId">🔐 معرف عميل قوقل (Google OAuth Client ID)</label>
-        <input type="text" id="googleClientId" placeholder="أدخل معرف OAuth Client ID الخاص بك...">
+        <label for="googleClientId" data-i18n="googleClientIdLabel">🔐 معرف عميل قوقل (Google OAuth Client ID)</label>
+        <input type="text" id="googleClientId" data-i18n-ph="googleClientIdPlaceholder" placeholder="أدخل معرف OAuth Client ID الخاص بك...">
         <div style="margin-top: 8px; display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
-          <button id="testGoogleClientBtn" class="btn btn-secondary" style="font-size: 0.8rem; padding: 6px 12px;" onclick="testGoogleClientId()">⚡ فحص معرف عميل قوقل</button>
+          <button id="testGoogleClientBtn" class="btn btn-secondary" style="font-size: 0.8rem; padding: 6px 12px;" onclick="testGoogleClientId()"><span data-i18n="testGoogleClientBtn">⚡ فحص معرف عميل قوقل</span></button>
           <span id="googleClientIdTestStatus" style="font-size: 0.85rem; font-weight: 600;"></span>
         </div>
       </div>
 
       <!-- استيراد ملف CSV / نص يدوي -->
       <div style="margin-top: 25px; border-top: 1px solid var(--bg-tertiary); padding-top: 20px;">
-        <h3 style="font-size: 1rem; margin-bottom: 10px; display: flex; align-items: center; gap: 8px;">📄 استيراد ملف CSV / نص يدوي</h3>
-        <p style="margin-bottom:15px; font-size:0.9rem; color:var(--text-secondary);">قم بلصق محتوى ملف CSV الخاص بك أو اختر ملفاً من جهازك بالأسفل. يمكنك تحديث تصنيفات الفيديوهات الحالية فقط من الملف.</p>
+        <h3 style="font-size: 1rem; margin-bottom: 10px; display: flex; align-items: center; gap: 8px;" data-i18n="importSectionTitle">📄 استيراد ملف CSV / نص يدوي</h3>
+        <p style="margin-bottom:15px; font-size:0.9rem; color:var(--text-secondary);" data-i18n="importSectionDesc">قم بلصق محتوى ملف CSV الخاص بك أو اختر ملفاً من جهازك بالأسفل. يمكنك تحديث تصنيفات الفيديوهات الحالية فقط من الملف.</p>
         
         <div class="input-group">
-          <label for="csvPlaylistName">اسم قائمة التشغيل (يدوي)</label>
-          <input type="text" id="csvPlaylistName" placeholder="مثال: كورس تصميم">
+          <label for="csvPlaylistName" data-i18n="csvPlaylistNameLabel">اسم قائمة التشغيل (يدوي)</label>
+          <input type="text" id="csvPlaylistName" data-i18n-ph="csvPlaylistNamePlaceholder" placeholder="مثال: كورس تصميم">
         </div>
 
-        <textarea id="importTextarea" class="import-textarea" placeholder="الصق أسطر الـ CSV هنا...&#10;مثال: 1,أفضل طريقة للمذاكرة,,تعليم,دروس أونلاين,12:29,,https://www.youtube.com/..."></textarea>
+        <textarea id="importTextarea" class="import-textarea" data-i18n-ph="importTextareaPlaceholder" placeholder="الصق أسطر الـ CSV هنا...&#10;مثال: 1,أفضل طريقة للمذاكرة,,تعليم,دروس أونلاين,12:29,,https://www.youtube.com/..."></textarea>
         
         <div class="import-options" style="display: flex; align-items: center; gap: 8px; margin-bottom: 15px; background: var(--bg-primary); padding: 12px; border-radius: 8px; border: 1px solid var(--bg-tertiary);">
           <input type="checkbox" id="overwriteCategoriesCheck" checked style="width:16px; height:16px; accent-color: var(--accent-color); cursor:pointer;">
-          <label for="overwriteCategoriesCheck" style="font-size:0.85rem; cursor:pointer; user-select:none;">🔄 استبدال التصنيفات الحالية بالتصنيفات المستوردة (حتى لو كانت مصنفة مسبقاً)</label>
+          <label for="overwriteCategoriesCheck" style="font-size:0.85rem; cursor:pointer; user-select:none;" data-i18n="overwriteCategoriesLabel">🔄 استبدال التصنيفات الحالية بالتصنيفات المستوردة (حتى لو كانت مصنفة مسبقاً)</label>
         </div>
 
         <div class="import-footer" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
           <div class="file-input-wrapper" style="position: relative; overflow: hidden; display: inline-block;">
-            <button class="btn btn-secondary">📂 اختر ملف CSV</button>
+            <button class="btn btn-secondary"><span data-i18n="chooseCsvFile">📂 اختر ملف CSV</span></button>
             <input type="file" id="csvFileInput" accept=".csv, .txt" style="position: absolute; left: 0; top: 0; opacity: 0; cursor: pointer; height:100%; width:100%;">
           </div>
           <div style="display: flex; gap: 8px; flex-wrap: wrap;">
-            <button id="saveImportBtn" class="btn btn-primary">💾 معالجة وحفظ كقائمة جديدة</button>
-            <button id="mergeCsvCategoriesBtn" class="btn btn-gold">🏷️ دمج وتحديث التصنيفات فقط</button>
-            <button id="resetDefaultBtn" class="btn btn-secondary" style="color: var(--danger-color);">❌ إعادة ضبط الافتراضي</button>
+            <button id="saveImportBtn" class="btn btn-primary"><span data-i18n="saveImportBtn">💾 معالجة وحفظ كقائمة جديدة</span></button>
+            <button id="mergeCsvCategoriesBtn" class="btn btn-gold"><span data-i18n="mergeCsvCategoriesBtn">🏷️ دمج وتحديث التصنيفات فقط</span></button>
+            <button id="resetDefaultBtn" class="btn btn-secondary" style="color: var(--danger-color);"><span data-i18n="resetDefaultBtn">❌ إعادة ضبط الافتراضي</span></button>
           </div>
         </div>
       </div>
 
       <!-- شريط الحالة الموحد التفاعلي -->
       <div class="global-status-container" id="globalImportStatusContainer" style="margin-top: 20px;">
-        <span class="global-status-text" id="globalImportStatus">⏳ جاري الاتصال بالذكاء الاصطناعي...</span>
+        <span class="global-status-text" id="globalImportStatus" data-i18n="initialStatusMsg">⏳ جاري الاتصال بالذكاء الاصطناعي...</span>
         <div style="display: flex; gap: 8px;">
-          <button id="continueImportBtn" class="btn btn-gold" style="font-size: 0.8rem; padding: 5px 12px; display: none;" onclick="triggerContinueImport()">متابعة التصنيف ➡️</button>
-          <button id="cancelImportBtn" class="btn btn-secondary" style="color: var(--danger-color); font-size: 0.8rem; padding: 5px 12px;" onclick="triggerCancelImport()">إلغاء العملية 🛑</button>
+          <button id="continueImportBtn" class="btn btn-gold" style="font-size: 0.8rem; padding: 5px 12px; display: none;" onclick="triggerContinueImport()"><span data-i18n="continueImportBtn">متابعة التصنيف ➡️</span></button>
+          <button id="cancelImportBtn" class="btn btn-secondary" style="color: var(--danger-color); font-size: 0.8rem; padding: 5px 12px;" onclick="triggerCancelImport()"><span data-i18n="cancelImportBtn">إلغاء العملية 🛑</span></button>
         </div>
       </div>
 
@@ -990,10 +1067,10 @@
 
   <!-- نافذة إدارة التكرار التفاعلية -->
   <div id="duplicateModal" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.85); z-index: 200; display: none; align-items: center; justify-content: center; padding: 20px;">
-    <div style="background-color: var(--bg-secondary); border: 1px solid var(--bg-tertiary); border-radius: var(--border-radius); padding: 22px; max-width: 500px; width: 100%; box-shadow: var(--card-shadow); text-align: right;">
+    <div style="background-color: var(--bg-secondary); border: 1px solid var(--bg-tertiary); border-radius: var(--border-radius); padding: 22px; max-width: 500px; width: 100%; box-shadow: var(--card-shadow); text-align: start;">
       <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; border-bottom: 1px solid var(--bg-tertiary); padding-bottom: 12px;">
-        <h3 style="font-size: 1.1rem; font-weight: 700; color: var(--gold-color);">⚙️ إدارة النسخ المكررة للفيديو</h3>
-        <button class="btn btn-secondary" style="padding: 4px 10px; font-size: 0.8rem; color: var(--danger-color);" onclick="closeDuplicateModal()">إغلاق ❌</button>
+        <h3 style="font-size: 1.1rem; font-weight: 700; color: var(--gold-color);" data-i18n="dupModalTitle">⚙️ إدارة النسخ المكررة للفيديو</h3>
+        <button class="btn btn-secondary" style="padding: 4px 10px; font-size: 0.8rem; color: var(--danger-color);" onclick="closeDuplicateModal()"><span data-i18n="closeBtn">إغلاق ❌</span></button>
       </div>
       <div id="dupModalBody" style="display: flex; flex-direction: column; gap: 15px;"></div>
     </div>
@@ -1006,21 +1083,21 @@
         <span class="stat-icon">📹</span>
         <div class="stat-info">
           <h3 id="statTotalVideos">0</h3>
-          <p>إجمالي الفيديوهات</p>
+          <p data-i18n="statVideos">إجمالي الفيديوهات</p>
         </div>
       </div>
       <div class="stat-card stat-channels">
         <span class="stat-icon">🎙️</span>
         <div class="stat-info">
           <h3 id="statTotalChannels">0</h3>
-          <p>عدد القنوات</p>
+          <p data-i18n="statChannels">عدد القنوات</p>
         </div>
       </div>
       <div class="stat-card stat-categories">
         <span class="stat-icon">🏷️</span>
         <div class="stat-info">
           <h3 id="statTotalCategories">0</h3>
-          <p>عدد التصنيفات</p>
+          <p data-i18n="statCategories">عدد التصنيفات</p>
         </div>
       </div>
     </div>
@@ -1028,10 +1105,10 @@
 
   <!-- شريط الأزرار والحبات التفاعلي للتصنيفات -->
   <div class="category-selection-area">
-    <button id="pillAllBtn" class="category-pill-btn active">الكل <span class="badge" id="pillAllBadge">0</span></button>
+    <button id="pillAllBtn" class="category-pill-btn active"><span data-i18n="pillAll">الكل</span> <span class="badge" id="pillAllBadge">0</span></button>
     
     <div class="dropdown-category-container" style="position: relative; display: inline-block;">
-      <button id="pillCategoriesDropdownBtn" class="category-pill-btn">التصنيفات <span class="arrow">▾</span></button>
+      <button id="pillCategoriesDropdownBtn" class="category-pill-btn"><span data-i18n="pillCategories">التصنيفات</span> <span class="arrow">▾</span></button>
       <ul id="categoriesDropdownMenu" class="categories-dropdown-menu"></ul>
     </div>
   </div>
@@ -1044,22 +1121,22 @@
       <div class="filter-panel">
         <div class="search-row-container">
           <div class="search-box">
-            <input type="text" id="searchInput" placeholder="ابحث عن عنوان، قناة أو تصنيف...">
+            <input type="text" id="searchInput" data-i18n-ph="searchPlaceholder" placeholder="ابحث عن عنوان، قناة أو تصنيف...">
             <span class="search-icon">🔍</span>
           </div>
-          <button id="layoutToggleBtn" class="btn btn-secondary" title="تغيير نمط العرض">📝 عرض القائمة</button>
+          <button id="layoutToggleBtn" class="btn btn-secondary" data-i18n-title="viewToggleTitle" title="تغيير نمط العرض"><span data-i18n="viewList">📝 عرض القائمة</span></button>
         </div>
         
         <div class="filters-row">
           <div class="filter-group">
-            <label for="categoryFilter">التصنيف</label>
+            <label for="categoryFilter" data-i18n="filterCategory">التصنيف</label>
             <select id="categoryFilter">
               <option value="">الكل</option>
             </select>
           </div>
 
           <div class="filter-group">
-            <label for="channelFilter">القناة</label>
+            <label for="channelFilter" data-i18n="filterChannel">القناة</label>
             <select id="channelFilter">
               <option value="">الكل</option>
             </select>
@@ -1067,49 +1144,49 @@
 
           <!-- فلتر المدة الزمنية المتقدم المضاف -->
           <div class="filter-group">
-            <label for="durationFilter">المدة الزمنية</label>
+            <label for="durationFilter" data-i18n="filterDuration">المدة الزمنية</label>
             <select id="durationFilter" onchange="applyFiltersAndSort()">
-              <option value="">الكل</option>
-              <option value="short">قصير (أقل من 5 دقائق)</option>
-              <option value="medium">متوسط (5 - 20 دقيقة)</option>
-              <option value="long">طويل (20 دقيقة - ساعة)</option>
-              <option value="very-long">بودكاست وشروحات (أكثر من ساعة)</option>
+              <option value="" data-i18n="optAll">الكل</option>
+              <option value="short" data-i18n="durationShort">قصير (أقل من 5 دقائق)</option>
+              <option value="medium" data-i18n="durationMedium">متوسط (5 - 20 دقيقة)</option>
+              <option value="long" data-i18n="durationLong">طويل (20 دقيقة - ساعة)</option>
+              <option value="very-long" data-i18n="durationVeryLong">بودكاست وشروحات (أكثر من ساعة)</option>
             </select>
           </div>
 
           <!-- فلتر حالة التصنيف المتقدم المضاف -->
           <div class="filter-group">
-            <label for="classificationFilter">حالة التصنيف</label>
+            <label for="classificationFilter" data-i18n="filterClassification">حالة التصنيف</label>
             <select id="classificationFilter" onchange="applyFiltersAndSort()">
-              <option value="">الكل</option>
-              <option value="unclassified">فيديوهات غير مصنفة (غ-مصنف)</option>
-              <option value="classified">فيديوهات مصنفة</option>
+              <option value="" data-i18n="optAll">الكل</option>
+              <option value="unclassified" data-i18n="classUnclassified">فيديوهات غير مصنفة (غ-مصنف)</option>
+              <option value="classified" data-i18n="classClassified">فيديوهات مصنفة</option>
             </select>
           </div>
 
           <!-- فلتر قائمة التشغيل -->
           <div class="filter-group">
-            <label for="playlistFilter">قائمة التشغيل</label>
+            <label for="playlistFilter" data-i18n="filterPlaylist">قائمة التشغيل</label>
             <div style="display: flex; gap: 4px; flex-wrap: wrap;">
               <select id="playlistFilter" onchange="applyFiltersAndSort()" style="flex-grow: 1; min-width: 120px;">
                 <option value="">الكل</option>
               </select>
-              <button id="clearPlaylistCategoriesBtn" class="btn btn-secondary" style="padding: 4px 10px; font-size: 0.75rem;" onclick="clearPlaylistCategories()" title="إرجاع تصنيفات القائمة لـ غ-مصنف">🧹 تصفير</button>
-              <button id="deletePlaylistFromAppBtn" class="btn btn-secondary" style="padding: 4px 10px; font-size: 0.75rem; color: var(--danger-color);" onclick="deletePlaylistFromApp()" title="إزالة القائمة وفيديوهاتها من التطبيق فقط">🗑️ إزالة</button>
+              <button id="clearPlaylistCategoriesBtn" class="btn btn-secondary" style="padding: 4px 10px; font-size: 0.75rem;" onclick="clearPlaylistCategories()" data-i18n-title="clearPlaylistCatsTitle" title="إرجاع تصنيفات القائمة لـ غ-مصنف"><span data-i18n="clearPlaylistCats">🧹 تصفير</span></button>
+              <button id="deletePlaylistFromAppBtn" class="btn btn-secondary" style="padding: 4px 10px; font-size: 0.75rem; color: var(--danger-color);" onclick="deletePlaylistFromApp()" data-i18n-title="deletePlaylistTitle" title="إزالة القائمة وفيديوهاتها من التطبيق فقط"><span data-i18n="deletePlaylist">🗑️ إزالة</span></button>
             </div>
           </div>
 
           <div class="filter-group">
-            <label for="sortSelect">ترتيب حسب</label>
+            <label for="sortSelect" data-i18n="filterSort">ترتيب حسب</label>
             <select id="sortSelect">
-              <option value="playlist-pos">ترتيب يوتيوب الأصلي ⏱️</option>
-              <option value="id-asc">الرقم الافتراضي</option>
-              <option value="title-asc">العنوان أ - ي</option>
-              <option value="title-desc">العنوان ي - أ</option>
-              <option value="channel-asc">اسم القناة</option>
-              <option value="category-asc">التصنيف</option>
-              <option value="duration-desc">المدة (الأطول)</option>
-              <option value="duration-asc">المدة (الأقصر)</option>
+              <option value="playlist-pos" data-i18n="sortPlaylistPos">ترتيب يوتيوب الأصلي ⏱️</option>
+              <option value="id-asc" data-i18n="sortIdAsc">الرقم الافتراضي</option>
+              <option value="title-asc" data-i18n="sortTitleAsc">العنوان أ - ي</option>
+              <option value="title-desc" data-i18n="sortTitleDesc">العنوان ي - أ</option>
+              <option value="channel-asc" data-i18n="sortChannelAsc">اسم القناة</option>
+              <option value="category-asc" data-i18n="sortCategoryAsc">التصنيف</option>
+              <option value="duration-desc" data-i18n="sortDurationDesc">المدة (الأطول)</option>
+              <option value="duration-asc" data-i18n="sortDurationAsc">المدة (الأقصر)</option>
             </select>
           </div>
         </div>
@@ -1126,22 +1203,402 @@
   <!-- شريط التحكم بالتعديل الجماعي العائم المضاف -->
   <div class="bulk-action-bar" id="bulkMenuBar">
     <div class="bulk-info-side">
-      <span style="font-size: 1.1rem;">⚙️ <strong id="bulkSelectedCount">0</strong> فيديوهات محددة</span>
-      <button class="btn btn-secondary" style="font-size:0.8rem; padding: 4px 10px;" onclick="selectAllOnCurrentPage()">تحديد الكل بالصفحة</button>
-      <button class="btn btn-secondary" style="font-size:0.8rem; padding: 4px 10px;" onclick="deselectAll()">إلغاء التحديد</button>
+      <span style="font-size: 1.1rem;">⚙️ <strong id="bulkSelectedCount">0</strong> <span data-i18n="bulkSelectedSuffix">فيديوهات محددة</span></span>
+      <button class="btn btn-secondary" style="font-size:0.8rem; padding: 4px 10px;" onclick="selectAllOnCurrentPage()"><span data-i18n="selectAllOnPage">تحديد الكل بالصفحة</span></button>
+      <button class="btn btn-secondary" style="font-size:0.8rem; padding: 4px 10px;" onclick="deselectAll()"><span data-i18n="deselectAll">إلغاء التحديد</span></button>
     </div>
     <div class="bulk-actions-side">
-      <label for="bulkCategorySelect" style="font-size: 0.85rem; font-weight: 700;">نقل الفئة إلى:</label>
-      <select id="bulkCategorySelect" style="padding:6px 12px; border-radius:8px; background-color: var(--bg-primary); color:#fff; border: 1px solid var(--bg-tertiary); font-family:'Cairo'; font-size: 0.85rem;">
+      <label for="bulkCategorySelect" style="font-size: 0.85rem; font-weight: 700;" data-i18n="moveToCategory">نقل الفئة إلى:</label>
+      <select id="bulkCategorySelect" style="padding:6px 12px; border-radius:8px; background-color: var(--bg-primary); color: var(--text-primary); border: 1px solid var(--bg-tertiary); font-family:'Cairo'; font-size: 0.85rem;">
         <!-- يتم تغذيته ديناميكياً -->
       </select>
-      <button class="btn btn-gold" style="font-size: 0.85rem;" onclick="applyBulkCategoryChange()">تغيير فئة المحدد</button>
-      <button class="btn btn-secondary" style="color: var(--danger-color); font-size: 0.85rem;" onclick="applyBulkDelete()">حذف المحدد 🗑️</button>
-      <button class="btn btn-secondary" style="font-size: 0.85rem;" onclick="toggleBulkEditMode()">إغلاق التعديل</button>
+      <button class="btn btn-gold" style="font-size: 0.85rem;" onclick="applyBulkCategoryChange()"><span data-i18n="changeSelectedCategory">تغيير فئة المحدد</span></button>
+      <button class="btn btn-secondary" style="color: var(--danger-color); font-size: 0.85rem;" onclick="applyBulkDelete()"><span data-i18n="deleteSelected">حذف المحدد 🗑️</span></button>
+      <button class="btn btn-secondary" style="font-size: 0.85rem;" onclick="toggleBulkEditMode()"><span data-i18n="closeBulkEdit">إغلاق التعديل</span></button>
     </div>
   </div>
 
   <script>
+    function applyTheme(theme) {
+      document.documentElement.setAttribute('data-theme', theme);
+      try { localStorage.setItem('appTheme', theme); } catch (e) { /* تجاهل: قد يكون التخزين معطّلاً */ }
+      const btn = document.getElementById('themeToggleBtn');
+      if (btn) btn.textContent = theme === 'light' ? '🌙' : '☀️';
+    }
+
+    function toggleTheme() {
+      const current = document.documentElement.getAttribute('data-theme') || 'light';
+      applyTheme(current === 'light' ? 'dark' : 'light');
+    }
+
+    // تطبيق المظهر المحفوظ فوراً عند تحميل الصفحة (الافتراضي: نهاري)
+    (function initThemeEarly() {
+      let saved = null;
+      try { saved = localStorage.getItem('appTheme'); } catch (e) { /* تجاهل */ }
+      applyTheme(saved === 'dark' ? 'dark' : 'light');
+    })();
+
+    // =====================================================================
+    // نظام الترجمة (عربي/إنجليزي): يغطي واجهة التصفح الأساسية بالكامل (الرأس،
+    // الإحصائيات، التصفية، بطاقات الفيديو، حالات الفراغ، شريط التعديل الجماعي،
+    // ولوحة الاستيراد) ورسائل التنبيه. ملاحظة: محتوى المستخدم نفسه (عناوين
+    // الفيديوهات، أسماء القنوات، التصنيفات التي كتبها) لا يُترجم أبداً لأنه
+    // بيانات لا واجهة. سجلات المزامنة السحابية التقنية المتقدمة (وحدة التحكم
+    // السحابية ورسائل حالة Gemini/Google التفصيلية) تبقى بالعربية حالياً.
+    // =====================================================================
+    let currentLang = 'ar';
+
+    const translations = {
+  "ar": {
+    "appTitle": "مكتبة مرئيات يوتيوب",
+    "signIn": "دخول قوقل",
+    "signOut": "خروج",
+    "sync": "تحديث",
+    "bulkEdit": "تعديل جماعي",
+    "tools": "أدوات",
+    "updateDurations": "تحديث التوقيتات",
+    "importBtn": "استيراد",
+    "exportCsv": "تصدير لـ CSV",
+    "clearList": "مسح",
+    "statVideos": "إجمالي الفيديوهات",
+    "statChannels": "عدد القنوات",
+    "statCategories": "عدد التصنيفات",
+    "pillAll": "الكل",
+    "pillCategories": "التصنيفات",
+    "pillCategoriesFavorites": "التصنيفات: المفضلة ⭐",
+    "pillCategoriesDuplicates": "التصنيفات: المكرر ⚠️",
+    "favoritesLabel": "المفضلة ⭐️",
+    "duplicatesLabel": "المكرر ⚠️",
+    "uncategorized": "غ-مصنف",
+    "searchPlaceholder": "ابحث عن عنوان، قناة أو تصنيف...",
+    "viewList": "📝 عرض القائمة",
+    "viewGrid": "📱 عرض الشبكة",
+    "viewToggleTitle": "تغيير نمط العرض",
+    "filterCategory": "التصنيف",
+    "filterChannel": "القناة",
+    "filterDuration": "المدة الزمنية",
+    "filterClassification": "حالة التصنيف",
+    "filterPlaylist": "قائمة التشغيل",
+    "filterSort": "ترتيب حسب",
+    "optAll": "الكل",
+    "durationShort": "قصير (أقل من 5 دقائق)",
+    "durationMedium": "متوسط (5 - 20 دقيقة)",
+    "durationLong": "طويل (20 دقيقة - ساعة)",
+    "durationVeryLong": "بودكاست وشروحات (أكثر من ساعة)",
+    "classUnclassified": "فيديوهات غير مصنفة (غ-مصنف)",
+    "classClassified": "فيديوهات مصنفة",
+    "clearPlaylistCats": "🧹 تصفير",
+    "clearPlaylistCatsTitle": "إرجاع تصنيفات القائمة لـ غ-مصنف",
+    "deletePlaylist": "🗑️ إزالة",
+    "deletePlaylistTitle": "إزالة القائمة وفيديوهاتها من التطبيق فقط",
+    "sortPlaylistPos": "ترتيب يوتيوب الأصلي ⏱️",
+    "sortIdAsc": "الرقم الافتراضي",
+    "sortTitleAsc": "العنوان أ - ي",
+    "sortTitleDesc": "العنوان ي - أ",
+    "sortChannelAsc": "اسم القناة",
+    "sortCategoryAsc": "التصنيف",
+    "sortDurationDesc": "المدة (الأطول)",
+    "sortDurationAsc": "المدة (الأقصر)",
+    "geminiKeyLabel": "🤖 مفتاح ذكاء جيميناي (Gemini API Key)",
+    "geminiKeyPlaceholder": "أدخل مفتاح Gemini الخاص بك...",
+    "autoClassifyLabel": "🤖 تفعيل التصنيف التلقائي الذكي بواسطة Gemini عند المزامنة والاستيراد",
+    "testGeminiBtn": "⚡ فحص اتصال الذكاء الاصطناعي",
+    "classifyLibraryBtn": "🏷️ تصنيف الفيديوهات غير المصنفة",
+    "googleClientIdLabel": "🔐 معرف عميل قوقل (Google OAuth Client ID)",
+    "googleClientIdPlaceholder": "أدخل معرف OAuth Client ID الخاص بك...",
+    "testGoogleClientBtn": "⚡ فحص معرف عميل قوقل",
+    "importSectionTitle": "📄 استيراد ملف CSV / نص يدوي",
+    "importSectionDesc": "قم بلصق محتوى ملف CSV الخاص بك أو اختر ملفاً من جهازك بالأسفل. يمكنك تحديث تصنيفات الفيديوهات الحالية فقط من الملف.",
+    "csvPlaylistNameLabel": "اسم قائمة التشغيل (يدوي)",
+    "csvPlaylistNamePlaceholder": "مثال: كورس تصميم",
+    "importTextareaPlaceholder": "الصق أسطر الـ CSV هنا...\nمثال: 1,أفضل طريقة للمذاكرة,,تعليم,دروس أونلاين,12:29,,https://www.youtube.com/...",
+    "overwriteCategoriesLabel": "🔄 استبدال التصنيفات الحالية بالتصنيفات المستوردة (حتى لو كانت مصنفة مسبقاً)",
+    "chooseCsvFile": "📂 اختر ملف CSV",
+    "saveImportBtn": "💾 معالجة وحفظ كقائمة جديدة",
+    "mergeCsvCategoriesBtn": "🏷️ دمج وتحديث التصنيفات فقط",
+    "resetDefaultBtn": "❌ إعادة ضبط الافتراضي",
+    "continueImportBtn": "متابعة التصنيف ➡️",
+    "cancelImportBtn": "إلغاء العملية 🛑",
+    "initialStatusMsg": "⏳ جاري الاتصال بالذكاء الاصطناعي...",
+    "dupModalTitle": "⚙️ إدارة النسخ المكررة للفيديو",
+    "closeBtn": "إغلاق ❌",
+    "bulkSelectedSuffix": "فيديوهات محددة",
+    "selectAllOnPage": "تحديد الكل بالصفحة",
+    "deselectAll": "إلغاء التحديد",
+    "moveToCategory": "نقل الفئة إلى:",
+    "changeSelectedCategory": "تغيير فئة المحدد",
+    "deleteSelected": "حذف المحدد 🗑️",
+    "closeBulkEdit": "إغلاق التعديل",
+    "watch": "مشاهدة",
+    "copyLinkTitle": "نسخ الرابط",
+    "addToFavorites": "إضافة للمفضلة",
+    "deleteVideoTitle": "حذف الفيديو",
+    "filterDuplicates": "تصفية المكررات",
+    "duplicateTag": "⚠️ مكرر",
+    "quickCatTitle": "تعديل الفئة سريعاً",
+    "emptyLibraryTitle": "مكتبتك فارغة حالياً",
+    "emptyLibraryDesc": "استورد قائمة تشغيل من يوتيوب أو ملف CSV لتبدأ في تنظيم مكتبتك.",
+    "emptyResultsTitle": "لا توجد نتائج مطابقة",
+    "emptyResultsDesc": "جرّب تعديل أو إزالة بعض خيارات البحث والتصفية الحالية.",
+    "importNowBtn": "📥 استيراد المكتبة الآن",
+    "clearAllFiltersBtn": "✖️ إزالة كل الفلاتر",
+    "toastPasteFirst": "برجاء لصق بعض البيانات أو اختيار ملف أولاً للبدء.",
+    "toastPasteCsvFirst": "برجاء لصق بيانات الـ CSV أو اختيار ملف أولاً.",
+    "toastClassifyCanceled": "تم إلغاء عملية التصنيف وحفظ التقدم.",
+    "toastLibraryCleared": "تم مسح وإفراغ القائمة بالكامل.",
+    "toastLinkCopied": "تم نسخ الرابط بنجاح.",
+    "toastDefaultReset": "تمت إعادة تهيئة البيانات الافتراضية بنجاح.",
+    "toastRemovedFav": "تمت الإزالة من المفضلة ⭐️",
+    "toastAddedFav": "تمت الإضافة إلى المفضلة ⭐️",
+    "toastCopyFailed": "فشل نسخ الرابط.",
+    "toastNoVideosToClear": "لا توجد فيديوهات بحاجة للمسح في هذه القائمة.",
+    "toastNoExportResults": "لا توجد نتائج حالية للتصدير.",
+    "toastNoVideosExtracted": "لم نتمكن من استخراج أي فيديوهات من المدخلات.",
+    "toastCsvReadFailed": "لم نتمكن من قراءة البيانات. تأكد من مطابقتها لصيغة CSV السليمة.",
+    "toastBulkEditEnabled": "ℹ️ تم تفعيل وضع التعديل الجماعي. حدد الفيديوهات عبر الخانات في زاوية كل فيديو.",
+    "toastDeletingCloudYoutube": "⏳ جاري الحذف سحابياً من يوتيوب...",
+    "toastDeletingCloudList": "⏳ جاري الحذف من قائمتك السحابية...",
+    "toastDeletedLocalOnly": "⚠️ تم الحذف محلياً فقط.",
+    "toastNoMatchingForUpdate": "⚠️ لم يتم العثور على فيديوهات مطابقة بحاجة لتحديث التصنيف أو التوقيت.",
+    "toastChoosePlaylistClear": "⚠️ يرجى اختيار قائمة تشغيل محددة أولاً لمسح تصنيفاتها.",
+    "toastChoosePlaylistRemove": "⚠️ يرجى اختيار قائمة تشغيل محددة من القائمة أولاً لإزالتها.",
+    "toastSelectOneVideo": "⚠️ يرجى تحديد فيديو واحد على الأقل أولاً.",
+    "toastSelectOneVideoOp": "⚠️ يرجى تحديد فيديو واحد على الأقل للعملية.",
+    "toastSignInForDurations": "⚠️ يرجى تسجيل الدخول بقوقل أولاً لتحديث التوقيتات سحابياً.",
+    "toastPlaylistReordered": "✅ تم إعادة ترتيب وتحديث القائمة بنجاح!",
+    "toastLibraryRestored": "✅ تم استرجاع مكتبتك بنجاح!",
+    "toastGoogleSignedIn": "✅ تم تسجيل الدخول بحساب قوقل وتفعيل المزامنة السحابية!",
+    "toastDupFilteredRemoved": "✅ تم تصفية وإزالة التكرار لهذا الفيديو بنجاح!",
+    "toastVideoDeletedCloudYoutube": "✅ تم حذف الفيديو سحابياً من يوتيوب!",
+    "toastVideoDeletedCloud": "✅ تم حذف الفيديو سحابياً!",
+    "toastSelectedVideosDeleted": "✅ تم حذف الفيديوهات المحددة بنجاح.",
+    "toastAllHaveDurations": "✅ جميع مقاطع الفيديو في مكتبتك تحتوي على توقيتات حقيقية بالفعل.",
+    "toastAllClassified": "✅ جميع مقاطع الفيديو مصنفة مسبقاً!",
+    "toastEnterClientIdFirst": "❌ يرجى إدخال معرف عميل Google Client ID أولاً في تبويب يوتيوب.",
+    "toastEnterGeminiKeyFirst": "❌ يرجى إدخال مفتاح Gemini أولاً لبدء التصنيف الذكي.",
+    "toastChoosePlaylistSync": "❌ يرجى اختيار قائمة تشغيل أولاً للمزامنة.",
+    "toastDeletedLocalOnlySignIn": "💡 تم الحذف محلياً فقط. (سجل الدخول أولاً للمزامنة الكاملة).",
+    "toastFileLoaded": "📂 تم تحميل محتوى الملف بنجاح. يمكنك الآن حفظه كقائمة جديدة أو الضغط على دمج وتحديث التصنيفات.",
+    "toastSignedOut": "🔐 تم تسجيل الخروج بنجاح.",
+    "toastCategoryChanged": "تم تغيير التصنيف إلى \"{cat}\" بنجاح.",
+    "toastBulkCategoryChanged": "✅ تم بنجاح تغيير فئة {count} فيديو إلى \"{cat}\".",
+    "toastImportSuccess": "تم استيراد {count} فيديو بنجاح تحت قائمة \"{name}\"!",
+    "toastPlaylistRemoved": "✅ تم إزالة قائمة \"{name}\" من التطبيق بنجاح.",
+    "toastCsvMerged": "✅ تم بنجاح دمج وتحديث بيانات {count} فيديو من ملف الـ CSV!",
+    "toastDurationsUpdated": "✅ تم جلب وتحديث التوقيتات لـ {count} فيديو بنجاح من يوتيوب!",
+    "toastCategoriesCleared": "✅ تم مسح تصنيفات {count} فيديو وإرجاعها إلى \"غ-مصنف\" بنجاح.",
+    "toastDurationsUpdateFailed": "❌ فشل تحديث التوقيتات: {msg}",
+    "toastSyncFailed": "❌ فشلت عملية المزامنة: {msg}",
+    "toastFetchingDurations": "🔄 جاري جلب التوقيتات لـ {count} فيديو في هذه القائمة...",
+    "toastClassifyingVideos": "🤖 جاري تصنيف ذكي لـ {count} فيديو غير مصنف...",
+    "confirmDeletePlaylist": "هل أنت متأكد من رغبتك في إزالة قائمة \"{name}\" وكافة الفيديوهات التابعة لها من التطبيق فقط؟\n(لن يتم حذف أي شيء من حسابك على يوتيوب)"
+  },
+  "en": {
+    "appTitle": "YouTube Video Library",
+    "signIn": "Sign in with Google",
+    "signOut": "Sign out",
+    "sync": "Sync",
+    "bulkEdit": "Bulk edit",
+    "tools": "Tools",
+    "updateDurations": "Update durations",
+    "importBtn": "Import",
+    "exportCsv": "Export to CSV",
+    "clearList": "Clear",
+    "statVideos": "Total videos",
+    "statChannels": "Channels",
+    "statCategories": "Categories",
+    "pillAll": "All",
+    "pillCategories": "Categories",
+    "pillCategoriesFavorites": "Categories: Favorites ⭐",
+    "pillCategoriesDuplicates": "Categories: Duplicates ⚠️",
+    "favoritesLabel": "Favorites ⭐️",
+    "duplicatesLabel": "Duplicates ⚠️",
+    "uncategorized": "Uncategorized",
+    "searchPlaceholder": "Search by title, channel or category...",
+    "viewList": "📝 List view",
+    "viewGrid": "📱 Grid view",
+    "viewToggleTitle": "Switch view style",
+    "filterCategory": "Category",
+    "filterChannel": "Channel",
+    "filterDuration": "Duration",
+    "filterClassification": "Classification status",
+    "filterPlaylist": "Playlist",
+    "filterSort": "Sort by",
+    "optAll": "All",
+    "durationShort": "Short (under 5 min)",
+    "durationMedium": "Medium (5–20 min)",
+    "durationLong": "Long (20 min – 1 hr)",
+    "durationVeryLong": "Podcasts & tutorials (over 1 hr)",
+    "classUnclassified": "Uncategorized videos",
+    "classClassified": "Categorized videos",
+    "clearPlaylistCats": "🧹 Reset",
+    "clearPlaylistCatsTitle": "Reset this playlist's categories to Uncategorized",
+    "deletePlaylist": "🗑️ Remove",
+    "deletePlaylistTitle": "Remove this playlist and its videos from the app only",
+    "sortPlaylistPos": "Original YouTube order ⏱️",
+    "sortIdAsc": "Default number",
+    "sortTitleAsc": "Title A–Z",
+    "sortTitleDesc": "Title Z–A",
+    "sortChannelAsc": "Channel name",
+    "sortCategoryAsc": "Category",
+    "sortDurationDesc": "Duration (longest)",
+    "sortDurationAsc": "Duration (shortest)",
+    "geminiKeyLabel": "🤖 Gemini API key",
+    "geminiKeyPlaceholder": "Enter your Gemini API key...",
+    "autoClassifyLabel": "🤖 Enable automatic AI classification with Gemini during sync and import",
+    "testGeminiBtn": "⚡ Test AI connection",
+    "classifyLibraryBtn": "🏷️ Classify uncategorized videos",
+    "googleClientIdLabel": "🔐 Google OAuth Client ID",
+    "googleClientIdPlaceholder": "Enter your OAuth Client ID...",
+    "testGoogleClientBtn": "⚡ Test Google client ID",
+    "importSectionTitle": "📄 Import CSV file / manual text",
+    "importSectionDesc": "Paste your CSV content or choose a file from your device below. You can also update existing videos' categories only from the file.",
+    "csvPlaylistNameLabel": "Playlist name (manual)",
+    "csvPlaylistNamePlaceholder": "Example: Design course",
+    "importTextareaPlaceholder": "Paste CSV rows here...\nExample: 1,Best way to study,,Education,Online lessons,12:29,,https://www.youtube.com/...",
+    "overwriteCategoriesLabel": "🔄 Overwrite existing categories with imported ones (even if already categorized)",
+    "chooseCsvFile": "📂 Choose CSV file",
+    "saveImportBtn": "💾 Process & save as new playlist",
+    "mergeCsvCategoriesBtn": "🏷️ Merge & update categories only",
+    "resetDefaultBtn": "❌ Reset to default",
+    "continueImportBtn": "Continue classifying ➡️",
+    "cancelImportBtn": "Cancel 🛑",
+    "initialStatusMsg": "⏳ Connecting to AI...",
+    "dupModalTitle": "⚙️ Manage duplicate video copies",
+    "closeBtn": "Close ❌",
+    "bulkSelectedSuffix": "videos selected",
+    "selectAllOnPage": "Select all on page",
+    "deselectAll": "Deselect all",
+    "moveToCategory": "Move category to:",
+    "changeSelectedCategory": "Change selected category",
+    "deleteSelected": "Delete selected 🗑️",
+    "closeBulkEdit": "Close bulk edit",
+    "watch": "Watch",
+    "copyLinkTitle": "Copy link",
+    "addToFavorites": "Add to favorites",
+    "deleteVideoTitle": "Delete video",
+    "filterDuplicates": "Filter duplicates",
+    "duplicateTag": "⚠️ Duplicate",
+    "quickCatTitle": "Quick edit category",
+    "emptyLibraryTitle": "Your library is empty",
+    "emptyLibraryDesc": "Import a YouTube playlist or a CSV file to start organizing your library.",
+    "emptyResultsTitle": "No matching results",
+    "emptyResultsDesc": "Try adjusting or clearing some of your current search and filter options.",
+    "importNowBtn": "📥 Import library now",
+    "clearAllFiltersBtn": "✖️ Clear all filters",
+    "toastPasteFirst": "Please paste some data or choose a file first to begin.",
+    "toastPasteCsvFirst": "Please paste CSV data or choose a file first.",
+    "toastClassifyCanceled": "Classification canceled and progress saved.",
+    "toastLibraryCleared": "The library has been completely cleared.",
+    "toastLinkCopied": "Link copied successfully.",
+    "toastDefaultReset": "Default data has been reset successfully.",
+    "toastRemovedFav": "Removed from favorites ⭐️",
+    "toastAddedFav": "Added to favorites ⭐️",
+    "toastCopyFailed": "Failed to copy the link.",
+    "toastNoVideosToClear": "No videos need clearing in this playlist.",
+    "toastNoExportResults": "There are no current results to export.",
+    "toastNoVideosExtracted": "We couldn't extract any videos from the input.",
+    "toastCsvReadFailed": "We couldn't read the data. Make sure it matches the correct CSV format.",
+    "toastBulkEditEnabled": "ℹ️ Bulk edit mode enabled. Select videos using the checkboxes on each card.",
+    "toastDeletingCloudYoutube": "⏳ Deleting from YouTube in the cloud...",
+    "toastDeletingCloudList": "⏳ Deleting from your cloud playlist...",
+    "toastDeletedLocalOnly": "⚠️ Deleted locally only.",
+    "toastNoMatchingForUpdate": "⚠️ No matching videos need a category or duration update.",
+    "toastChoosePlaylistClear": "⚠️ Please choose a specific playlist first to reset its categories.",
+    "toastChoosePlaylistRemove": "⚠️ Please choose a specific playlist from the list first to remove it.",
+    "toastSelectOneVideo": "⚠️ Please select at least one video first.",
+    "toastSelectOneVideoOp": "⚠️ Please select at least one video for this action.",
+    "toastSignInForDurations": "⚠️ Please sign in with Google first to update durations in the cloud.",
+    "toastPlaylistReordered": "✅ The playlist was reordered and updated successfully!",
+    "toastLibraryRestored": "✅ Your library was restored successfully!",
+    "toastGoogleSignedIn": "✅ Signed in with Google and cloud sync enabled!",
+    "toastDupFilteredRemoved": "✅ Duplicates for this video were filtered and removed successfully!",
+    "toastVideoDeletedCloudYoutube": "✅ The video was deleted from YouTube in the cloud!",
+    "toastVideoDeletedCloud": "✅ The video was deleted in the cloud!",
+    "toastSelectedVideosDeleted": "✅ Selected videos were deleted successfully.",
+    "toastAllHaveDurations": "✅ All videos in your library already have real durations.",
+    "toastAllClassified": "✅ All videos are already categorized!",
+    "toastEnterClientIdFirst": "❌ Please enter a Google Client ID first in the YouTube tab.",
+    "toastEnterGeminiKeyFirst": "❌ Please enter a Gemini key first to start AI classification.",
+    "toastChoosePlaylistSync": "❌ Please choose a playlist first to sync.",
+    "toastDeletedLocalOnlySignIn": "💡 Deleted locally only. (Sign in first for full sync).",
+    "toastFileLoaded": "📂 File content loaded successfully. You can now save it as a new playlist or merge & update categories.",
+    "toastSignedOut": "🔐 Signed out successfully.",
+    "toastCategoryChanged": "Category changed to \"{cat}\" successfully.",
+    "toastBulkCategoryChanged": "✅ Successfully changed the category of {count} video(s) to \"{cat}\".",
+    "toastImportSuccess": "Successfully imported {count} video(s) under the playlist \"{name}\"!",
+    "toastPlaylistRemoved": "✅ The playlist \"{name}\" was removed from the app successfully.",
+    "toastCsvMerged": "✅ Successfully merged and updated {count} video(s) from the CSV file!",
+    "toastDurationsUpdated": "✅ Successfully fetched and updated durations for {count} video(s) from YouTube!",
+    "toastCategoriesCleared": "✅ Cleared categories for {count} video(s) and reset them to \"Uncategorized\" successfully.",
+    "toastDurationsUpdateFailed": "❌ Failed to update durations: {msg}",
+    "toastSyncFailed": "❌ Sync failed: {msg}",
+    "toastFetchingDurations": "🔄 Fetching durations for {count} video(s) in this playlist...",
+    "toastClassifyingVideos": "🤖 AI-classifying {count} uncategorized video(s)...",
+    "confirmDeletePlaylist": "Are you sure you want to remove the playlist \"{name}\" and all its videos from the app only?\n(Nothing will be deleted from your YouTube account)"
+  }
+};
+
+    // إرجاع نص الترجمة المناسب، مع استبدال أي عناصر {param} بقيمها الفعلية إن وُجدت
+    function t(key, params) {
+      const dict = translations[currentLang] || translations.ar;
+      let str = (key in dict) ? dict[key] : (translations.ar[key] || key);
+      if (params) {
+        Object.keys(params).forEach(p => { str = str.split('{' + p + '}').join(params[p]); });
+      }
+      return str;
+    }
+
+    // اسم العرض لفئة ما: يُترجم فقط الاسم الخاص "غ-مصنف" (غير مصنف) كعنصر نظام،
+    // ويترك أي تصنيف حقيقي كتبه المستخدم كما هو دون ترجمة لأنه بيانات لا واجهة
+    function categoryLabel(cat) {
+      return cat === 'غ-مصنف' ? t('uncategorized') : cat;
+    }
+
+    // تحديث كل عناصر الواجهة الثابتة الموسومة بسمات data-i18n وفق اللغة الحالية (آمن الاستدعاء في أي وقت)
+    function applyStaticTranslations() {
+      document.documentElement.setAttribute('lang', currentLang === 'ar' ? 'ar' : 'en');
+      document.documentElement.setAttribute('dir', currentLang === 'ar' ? 'rtl' : 'ltr');
+
+      document.querySelectorAll('[data-i18n]').forEach(el => { el.textContent = t(el.getAttribute('data-i18n')); });
+      document.querySelectorAll('[data-i18n-ph]').forEach(el => { el.setAttribute('placeholder', t(el.getAttribute('data-i18n-ph'))); });
+      document.querySelectorAll('[data-i18n-title]').forEach(el => { el.setAttribute('title', t(el.getAttribute('data-i18n-title'))); });
+
+      const langBtn = document.getElementById('langToggleBtn');
+      if (langBtn) langBtn.textContent = currentLang === 'ar' ? 'EN' : 'AR';
+    }
+
+    // تحديث كامل يشمل أيضاً إعادة بناء العناصر الديناميكية (البطاقات/القوائم المنسدلة)؛
+    // يُستخدم فقط بعد جهوزية حالة التطبيق (أي عند تبديل اللغة وقت التشغيل من المستخدم)
+    function applyTranslations() {
+      applyStaticTranslations();
+      if (typeof updateLayoutUI === 'function') updateLayoutUI();
+      if (typeof updateMenuSelection === 'function') updateMenuSelection();
+      if (typeof populateDropdownFilters === 'function') populateDropdownFilters();
+      if (typeof renderCategoryMenu === 'function') renderCategoryMenu();
+      if (typeof renderGrid === 'function') renderGrid();
+    }
+
+    function setLanguage(lang) {
+      currentLang = (lang === 'en') ? 'en' : 'ar';
+      try { localStorage.setItem('appLang', currentLang); } catch (e) { /* تجاهل */ }
+      applyTranslations();
+    }
+
+    function toggleLanguage() {
+      setLanguage(currentLang === 'ar' ? 'en' : 'ar');
+    }
+
+    // قراءة اللغة المحفوظة وتطبيقها على العناصر الثابتة فوراً لتجنّب أي وميض بلغة خاطئة.
+    // (لا نستدعي applyTranslations الكاملة هنا لأن حالة التطبيق (allVideos وغيرها) لم تُجهّز بعد؛
+    // الدوال الديناميكية ستُستدعى بشكل طبيعي أثناء initApp() وهي ستقرأ currentLang الصحيحة فوراً)
+    (function initLangEarly() {
+      let saved = null;
+      try { saved = localStorage.getItem('appLang'); } catch (e) { /* تجاهل */ }
+      currentLang = (saved === 'en') ? 'en' : 'ar';
+      applyStaticTranslations();
+    })();
+
     // عينة افتراضية مبدئية فارغة لتبدأ المكتبة فارغة بالكامل
     const defaultData = [];
 
@@ -1192,6 +1649,10 @@
     const googleSignOutBtn = document.getElementById('googleSignOutBtn');
     const googleClientId = document.getElementById('googleClientId');
 
+    // زرّا تبديل المظهر (داكن/نهاري) واللغة (عربي/إنجليزي) في الرأس
+    const themeToggleBtn = document.getElementById('themeToggleBtn');
+    const langToggleBtn = document.getElementById('langToggleBtn');
+
     // لوحة الحالة الموحدة
     const globalImportStatusContainer = document.getElementById('globalImportStatusContainer');
     const globalImportStatus = document.getElementById('globalImportStatus');
@@ -1235,6 +1696,8 @@
 
       layoutToggleBtn.addEventListener('click', toggleLayout);
       bulkEditModeBtn.addEventListener('click', toggleBulkEditMode);
+      themeToggleBtn.addEventListener('click', toggleTheme);
+      langToggleBtn.addEventListener('click', toggleLanguage);
 
       toggleImportBtn.addEventListener('click', () => {
         importPanel.style.display = (importPanel.style.display === 'block') ? 'none' : 'block';
@@ -1281,6 +1744,12 @@
         if (headerSyncMenu && headerSyncBtn && !headerSyncBtn.contains(e.target) && !headerSyncMenu.contains(e.target)) {
           headerSyncMenu.classList.remove('show');
         }
+
+        const toolsMenu = document.getElementById('toolsDropdownMenu');
+        const toolsBtn = document.getElementById('toolsMenuBtn');
+        if (toolsMenu && toolsBtn && !toolsBtn.contains(e.target) && !toolsMenu.contains(e.target)) {
+          toolsMenu.classList.remove('show');
+        }
       });
     });
 
@@ -1290,6 +1759,21 @@
       const menu = document.getElementById('headerSyncDropdownMenu');
       if (menu) menu.classList.toggle('show');
     }
+
+    // دالة التحكم في فتح قائمة الأدوات المنسدلة (استيراد/تحديث التوقيتات/تصدير/مسح)
+    function toggleToolsDropdown(e) {
+      e.stopPropagation();
+      const menu = document.getElementById('toolsDropdownMenu');
+      if (menu) menu.classList.toggle('show');
+    }
+
+    // إغلاق قائمة الأدوات تلقائياً بعد اختيار أي إجراء منها
+    document.querySelectorAll('#toolsDropdownMenu .dropdown-menu-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const menu = document.getElementById('toolsDropdownMenu');
+        if (menu) menu.classList.remove('show');
+      });
+    });
 
     // دالة كتابة السجلات البرمجية
     function logToCloudConsole(msg) {
@@ -1388,8 +1872,8 @@
       const savedPlaylist = playlistFilter ? playlistFilter.value : '';
 
       // 2. تصفير وإعادة بناء الخيارات
-      categoryFilter.innerHTML = '<option value="">الكل</option><option value="favorites">المفضلة ⭐️</option>';
-      channelFilter.innerHTML = '<option value="">الكل</option>';
+      categoryFilter.innerHTML = '<option value="">' + t('optAll') + '</option><option value="favorites">' + t('favoritesLabel') + '</option>';
+      channelFilter.innerHTML = '<option value="">' + t('optAll') + '</option>';
       bulkCategorySelect.innerHTML = '';
 
       const allCats = [];
@@ -1407,19 +1891,19 @@
       categories.forEach(cat => {
         const opt = document.createElement('option');
         opt.value = cat;
-        opt.textContent = cat;
+        opt.textContent = categoryLabel(cat);
         categoryFilter.appendChild(opt);
 
         const optBulk = document.createElement('option');
         optBulk.value = cat;
-        optBulk.textContent = cat;
+        optBulk.textContent = categoryLabel(cat);
         bulkCategorySelect.appendChild(optBulk);
       });
 
       if (!categories.includes('غ-مصنف')) {
         const optUncat = document.createElement('option');
         optUncat.value = 'غ-مصنف';
-        optUncat.textContent = 'غ-مصنف';
+        optUncat.textContent = t('uncategorized');
         bulkCategorySelect.appendChild(optUncat);
       }
 
@@ -1431,7 +1915,7 @@
       });
 
       if (playlistFilter) {
-        playlistFilter.innerHTML = '<option value="">الكل</option>';
+        playlistFilter.innerHTML = '<option value="">' + t('optAll') + '</option>';
         const playlistNames = [...new Set(allVideos.map(v => v.parentPlaylistName).filter(Boolean))].sort();
         playlistNames.forEach(pName => {
           const opt = document.createElement('option');
@@ -1480,16 +1964,16 @@
       favItem.style.color = 'var(--gold-color)';
       favItem.dataset.category = 'favorites';
       if (selectedCategory === 'favorites') favItem.classList.add('active');
-      favItem.innerHTML = `<span>المفضلة ⭐️</span> <span class="category-badge">${favoriteIds.size}</span>`;
+      favItem.innerHTML = `<span>${t('favoritesLabel')}</span> <span class="category-badge">${favoriteIds.size}</span>`;
       favItem.addEventListener('click', () => selectCategoryFromMenu('favorites'));
       categoriesDropdownMenu.appendChild(favItem);
 
       const dupItem = document.createElement('li');
       dupItem.className = 'dropdown-item-cat';
-      dupItem.style.color = '#ff3333';
+      dupItem.style.color = 'var(--danger-color)';
       dupItem.dataset.category = 'duplicates_only';
       if (selectedCategory === 'duplicates_only') dupItem.classList.add('active');
-      dupItem.innerHTML = `<span>المكرر ⚠️</span> <span class="category-badge" style="background-color: #ff3333; color: #fff;">${totalDupsCount}</span>`;
+      dupItem.innerHTML = `<span>${t('duplicatesLabel')}</span> <span class="category-badge" style="background-color: var(--danger-color); color: #fff;">${totalDupsCount}</span>`;
       dupItem.addEventListener('click', () => selectCategoryFromMenu('duplicates_only'));
       categoriesDropdownMenu.appendChild(dupItem);
 
@@ -1498,7 +1982,7 @@
         item.className = 'dropdown-item-cat';
         item.dataset.category = cat;
         if (selectedCategory === cat) item.classList.add('active');
-        item.innerHTML = `<span>${cat}</span> <span class="category-badge" style="background-color:var(--bg-primary); padding:2px 8px; border-radius:10px; font-size:0.75rem;">${counts[cat]}</span>`;
+        item.innerHTML = `<span>${categoryLabel(cat)}</span> <span class="category-badge" style="background-color:var(--bg-primary); padding:2px 8px; border-radius:10px; font-size:0.75rem;">${counts[cat]}</span>`;
         item.addEventListener('click', () => selectCategoryFromMenu(cat));
         categoriesDropdownMenu.appendChild(item);
       });
@@ -1526,21 +2010,21 @@
         pillAllBtn.classList.add('active');
         pillCategoriesDropdownBtn.classList.remove('active');
         pillCategoriesDropdownBtn.classList.remove('active-gold');
-        pillCategoriesDropdownBtn.innerHTML = `التصنيفات <span class="arrow">▾</span>`;
+        pillCategoriesDropdownBtn.innerHTML = `${t('pillCategories')} <span class="arrow">▾</span>`;
       } else {
         pillAllBtn.classList.remove('active');
         if (selectedCategory === 'favorites') {
           pillCategoriesDropdownBtn.classList.remove('active');
           pillCategoriesDropdownBtn.classList.add('active-gold');
-          pillCategoriesDropdownBtn.innerHTML = `التصنيفات: المفضلة ⭐ <span class="arrow">▾</span>`;
+          pillCategoriesDropdownBtn.innerHTML = `${t('pillCategoriesFavorites')} <span class="arrow">▾</span>`;
         } else if (selectedCategory === 'duplicates_only') {
           pillCategoriesDropdownBtn.classList.add('active');
           pillCategoriesDropdownBtn.classList.remove('active-gold');
-          pillCategoriesDropdownBtn.innerHTML = `التصنيفات: المكرر ⚠️ <span class="arrow">▾</span>`;
+          pillCategoriesDropdownBtn.innerHTML = `${t('pillCategoriesDuplicates')} <span class="arrow">▾</span>`;
         } else {
           pillCategoriesDropdownBtn.classList.add('active');
           pillCategoriesDropdownBtn.classList.remove('active-gold');
-          pillCategoriesDropdownBtn.innerHTML = `التصنيفات: ${selectedCategory} <span class="arrow">▾</span>`;
+          pillCategoriesDropdownBtn.innerHTML = `${t('pillCategories')}: ${categoryLabel(selectedCategory)} <span class="arrow">▾</span>`;
         }
       }
       
@@ -1725,7 +2209,7 @@
     async function handleTextImport() {
       const text = importTextarea.value.trim();
       if (!text) {
-        showToast('برجاء لصق بعض البيانات أو اختيار ملف أولاً للبدء.');
+        showToast(t('toastPasteFirst'));
         return;
       }
 
@@ -1755,12 +2239,12 @@
         }
 
         initApp();
-        showToast(`تم استيراد ${parsed.length} فيديو بنجاح تحت قائمة "${playlistName}"!`);
+        showToast(t('toastImportSuccess', {count: parsed.length, name: playlistName}));
 
         await triggerSmartMetadataFetch(parsed, geminiKey);
       } else {
         initApp();
-        showToast('لم نتمكن من قراءة البيانات. تأكد من مطابقتها لصيغة CSV السليمة.');
+        showToast(t('toastCsvReadFailed'));
       }
     }
 
@@ -1768,13 +2252,13 @@
     async function handleMergeCategories() {
       const text = importTextarea.value.trim();
       if (!text) {
-        showToast('برجاء لصق بيانات الـ CSV أو اختيار ملف أولاً.');
+        showToast(t('toastPasteCsvFirst'));
         return;
       }
 
       const parsed = parseCSVData(text);
       if (parsed.length === 0) {
-        showToast('لم نتمكن من استخراج أي فيديوهات من المدخلات.');
+        showToast(t('toastNoVideosExtracted'));
         return;
       }
 
@@ -1820,9 +2304,9 @@
         saveLibraryAndBackup(allVideos);
         importTextarea.value = '';
         importPanel.style.display = 'none';
-        showToast(`✅ تم بنجاح دمج وتحديث بيانات ${updatedCount} فيديو من ملف الـ CSV!`);
+        showToast(t('toastCsvMerged', {count: updatedCount}));
       } else {
-        showToast('⚠️ لم يتم العثور على فيديوهات مطابقة بحاجة لتحديث التصنيف أو التوقيت.');
+        showToast(t('toastNoMatchingForUpdate'));
       }
     }
 
@@ -1830,14 +2314,14 @@
     async function updateDurationsFromApi() {
       const targets = allVideos.filter(v => v.duration === '00:00' || !v.duration);
       if (targets.length === 0) {
-        showToast('✅ جميع مقاطع الفيديو في مكتبتك تحتوي على توقيتات حقيقية بالفعل.');
+        showToast(t('toastAllHaveDurations'));
         return;
       }
 
       const token = getValidAccessToken();
 
       if (!token) {
-        showToast('⚠️ يرجى تسجيل الدخول بقوقل أولاً لتحديث التوقيتات سحابياً.');
+        showToast(t('toastSignInForDurations'));
         importPanel.style.display = 'block';
         return;
       }
@@ -1850,10 +2334,10 @@
 
         try {
           await fetchApiMetadataInBatches(targets, '');
-          showToast(`✅ تم جلب وتحديث التوقيتات لـ ${targets.length} فيديو بنجاح من يوتيوب!`);
+          showToast(t('toastDurationsUpdated', {count: targets.length}));
         } catch (e) {
           console.error(e);
-          showToast(`❌ فشل تحديث التوقيتات: ${e.message}`);
+          showToast(t('toastDurationsUpdateFailed', {msg: e.message}));
         } finally {
           globalImportStatusContainer.style.display = 'none';
         }
@@ -1865,7 +2349,7 @@
       const playlistFilter = document.getElementById('playlistFilter');
       const selectedPlaylist = playlistFilter ? playlistFilter.value : '';
       if (!selectedPlaylist) {
-        showToast('⚠️ يرجى اختيار قائمة تشغيل محددة أولاً لمسح تصنيفاتها.');
+        showToast(t('toastChoosePlaylistClear'));
         return;
       }
       if (confirm(`هل أنت متأكد من رغبتك في حذف كافة تصنيفات الفيديوهات التابعة لقائمة "${selectedPlaylist}" وإرجاعها إلى "غ-مصنف"؟`)) {
@@ -1878,9 +2362,9 @@
         });
         if (updatedCount > 0) {
           saveLibraryAndBackup(allVideos);
-          showToast(`✅ تم مسح تصنيفات ${updatedCount} فيديو وإرجاعها إلى "غ-مصنف" بنجاح.`);
+          showToast(t('toastCategoriesCleared', {count: updatedCount}));
         } else {
-          showToast('لا توجد فيديوهات بحاجة للمسح في هذه القائمة.');
+          showToast(t('toastNoVideosToClear'));
         }
       }
     }
@@ -1893,7 +2377,7 @@
       const reader = new FileReader();
       reader.onload = function(evt) {
         importTextarea.value = evt.target.result;
-        showToast('📂 تم تحميل محتوى الملف بنجاح. يمكنك الآن حفظه كقائمة جديدة أو الضغط على دمج وتحديث التصنيفات.');
+        showToast(t('toastFileLoaded'));
       };
       reader.readAsText(file, 'UTF-8');
     }
@@ -2016,7 +2500,7 @@
       const token = getValidAccessToken();
       
       if (!playlistId) {
-        showToast('❌ يرجى اختيار قائمة تشغيل أولاً للمزامنة.');
+        showToast(t('toastChoosePlaylistSync'));
         return;
       }
 
@@ -2075,7 +2559,7 @@
         });
 
         if (targetsForMetadata.length > 0) {
-          showToast(`🔄 جاري جلب التوقيتات لـ ${targetsForMetadata.length} فيديو في هذه القائمة...`);
+          showToast(t('toastFetchingDurations', {count: targetsForMetadata.length}));
           await fetchApiMetadataInBatches(targetsForMetadata, '');
         }
 
@@ -2085,16 +2569,16 @@
         if (targetsForClassification.length > 0 && autoClassifyEnabled) {
           const geminiKey = geminiApiKey.value.trim() || localStorage.getItem('user_gemini_api_key') || '';
           if (geminiKey) {
-            showToast(`🤖 جاري تصنيف ذكي لـ ${targetsForClassification.length} فيديو غير مصنف...`);
+            showToast(t('toastClassifyingVideos', {count: targetsForClassification.length}));
             await runGeminiClassification(targetsForClassification, geminiKey);
           }
         } else {
-          showToast('✅ تم إعادة ترتيب وتحديث القائمة بنجاح!');
+          showToast(t('toastPlaylistReordered'));
         }
 
       } catch (e) {
         console.error(e);
-        showToast(`❌ فشلت عملية المزامنة: ${e.message}`);
+        showToast(t('toastSyncFailed', {msg: e.message}));
       } finally {
         globalImportStatusContainer.style.display = 'none';
       }
@@ -2210,7 +2694,7 @@
       logToCloudConsole('🔘 تم البدء في طلب تصنيف يدوي للمكتبة.');
       const geminiKey = geminiApiKey.value.trim() || localStorage.getItem('user_gemini_api_key') || '';
       if (!geminiKey) {
-        showToast('❌ يرجى إدخال مفتاح Gemini أولاً لبدء التصنيف الذكي.');
+        showToast(t('toastEnterGeminiKeyFirst'));
         return;
       }
       
@@ -2222,7 +2706,7 @@
       });
 
       if (targets.length === 0) {
-        showToast('✅ جميع مقاطع الفيديو مصنفة مسبقاً!');
+        showToast(t('toastAllClassified'));
         return;
       }
 
@@ -2358,7 +2842,7 @@
         globalImportStatusContainer.style.display = 'none';
         importPanel.style.display = 'none';
       }, 3000);
-      showToast('تم إلغاء عملية التصنيف وحفظ التقدم.');
+      showToast(t('toastClassifyCanceled'));
     }
 
     // محلل نصوص مطور ومرن لتجاوز نصوص Markdown Code Blocks وغيرها
@@ -2445,7 +2929,7 @@ ${titles.map((t, idx) => `${idx + 1}. ${t}`).join('\n')}`;
       const key = geminiApiKey.value.trim();
       if (!key) {
         geminiTestStatus.textContent = '❌ يرجى إدخال مفتاح الـ API أولاً قبل الفحص.';
-        geminiTestStatus.style.color = '#ff3333';
+        geminiTestStatus.style.color = 'var(--danger-color)';
         return;
       }
 
@@ -2482,11 +2966,11 @@ ${titles.map((t, idx) => `${idx + 1}. ${t}`).join('\n')}`;
           const errData = await res.json();
           const errMsg = errData.error?.message || 'خطأ غير معروف.';
           geminiTestStatus.textContent = `❌ فشل الاتصال: ${errMsg}`;
-          geminiTestStatus.style.color = '#ff3333';
+          geminiTestStatus.style.color = 'var(--danger-color)';
         }
       } catch (e) {
         geminiTestStatus.textContent = '❌ فشل الاتصال. خطأ في الشبكة (تأكد من اتصال الـ VPN).';
-        geminiTestStatus.style.color = '#ff3333';
+        geminiTestStatus.style.color = 'var(--danger-color)';
       } finally {
         testGeminiBtn.disabled = false;
       }
@@ -2499,7 +2983,7 @@ ${titles.map((t, idx) => `${idx + 1}. ${t}`).join('\n')}`;
       
       if (!clientId) {
         testStatus.textContent = '❌ يرجى إدخال معرف عميل قوقل أولاً.';
-        testStatus.style.color = '#ff3333';
+        testStatus.style.color = 'var(--danger-color)';
         return;
       }
       
@@ -2513,7 +2997,7 @@ ${titles.map((t, idx) => `${idx + 1}. ${t}`).join('\n')}`;
         localStorage.setItem('user_google_client_id', clientId);
       } else {
         testStatus.textContent = '❌ المعرف غير مكتمل أو منقوص. يجب أن ينتهي بـ .apps.googleusercontent.com';
-        testStatus.style.color = '#ff3333';
+        testStatus.style.color = 'var(--danger-color)';
       }
     }
 
@@ -2521,7 +3005,7 @@ ${titles.map((t, idx) => `${idx + 1}. ${t}`).join('\n')}`;
       logToCloudConsole('🔘 تم الضغط على زر تسجيل دخول قوقل.');
       const clientId = googleClientId.value.trim() || localStorage.getItem('user_google_client_id') || '';
       if (!clientId) {
-        showToast('❌ يرجى إدخال معرف عميل Google Client ID أولاً في تبويب يوتيوب.');
+        showToast(t('toastEnterClientIdFirst'));
         importPanel.style.display = 'block';
         return;
       }
@@ -2541,7 +3025,7 @@ ${titles.map((t, idx) => `${idx + 1}. ${t}`).join('\n')}`;
       localStorage.removeItem('user_youtube_token_expires');
       localStorage.removeItem('user_google_drive_file_id');
       logToCloudConsole('🔐 تم تسجيل الخروج بنجاح وتم مسح التراخيص المؤقتة.');
-      showToast('🔐 تم تسجيل الخروج بنجاح.');
+      showToast(t('toastSignedOut'));
       updateAuthUI();
     }
 
@@ -2559,7 +3043,7 @@ ${titles.map((t, idx) => `${idx + 1}. ${t}`).join('\n')}`;
           localStorage.setItem('user_youtube_token_expires', expireTime);
           
           history.replaceState(null, "", window.location.pathname + window.location.search);
-          showToast('✅ تم تسجيل الدخول بحساب قوقل وتفعيل المزامنة السحابية!');
+          showToast(t('toastGoogleSignedIn'));
         }
       }
       
@@ -2687,7 +3171,7 @@ ${titles.map((t, idx) => `${idx + 1}. ${t}`).join('\n')}`;
                   localStorage.setItem('user_youtube_library', JSON.stringify(allVideos));
                   initApp();
                   logToCloudConsole('✅ تم استرجاع النسخة الاحتياطية بنجاح!');
-                  showToast('✅ تم استرجاع مكتبتك بنجاح!');
+                  showToast(t('toastLibraryRestored'));
                 }
               }
             }
@@ -2729,7 +3213,7 @@ ${titles.map((t, idx) => `${idx + 1}. ${t}`).join('\n')}`;
         listHtml += `
           <div style="display: flex; justify-content: space-between; align-items: center; background-color: var(--bg-primary); padding: 12px 18px; border-radius: 8px; border: 1px solid var(--bg-tertiary);">
             <span style="font-size: 0.9rem; font-weight: 700; color: var(--text-primary);">📁 القائمة: ${playlistName}</span>
-            <button class="btn btn-secondary" style="color: #ff3333; font-size: 0.75rem; padding: 4px 10px;" onclick="deleteSpecificVideoCopy(${v.id}, '${videoId}')">حذف من هذه القائمة 🗑️</button>
+            <button class="btn btn-secondary" style="color: var(--danger-color); font-size: 0.75rem; padding: 4px 10px;" onclick="deleteSpecificVideoCopy(${v.id}, '${videoId}')">حذف من هذه القائمة 🗑️</button>
           </div>
         `;
       });
@@ -2764,7 +3248,7 @@ ${titles.map((t, idx) => `${idx + 1}. ${t}`).join('\n')}`;
         const token = getValidAccessToken();
         if (token && video.playlistItemId) {
           try {
-            showToast('⏳ جاري الحذف سحابياً من يوتيوب...');
+            showToast(t('toastDeletingCloudYoutube'));
             const res = await fetch('https://www.googleapis.com/youtube/v3/playlistItems?id=' + video.playlistItemId, {
               method: 'DELETE',
               headers: {
@@ -2772,14 +3256,14 @@ ${titles.map((t, idx) => `${idx + 1}. ${t}`).join('\n')}`;
               }
             });
             if (res.status === 204) {
-              showToast('✅ تم حذف الفيديو سحابياً من يوتيوب!');
+              showToast(t('toastVideoDeletedCloudYoutube'));
             } else {
               console.error('Cloud delete failed', res.status);
-              showToast('⚠️ تم الحذف محلياً فقط.');
+              showToast(t('toastDeletedLocalOnly'));
             }
           } catch (err) {
             console.error('Cloud delete network error', err);
-            showToast('⚠️ تم الحذف محلياً فقط.');
+            showToast(t('toastDeletedLocalOnly'));
           }
         }
 
@@ -2791,7 +3275,7 @@ ${titles.map((t, idx) => `${idx + 1}. ${t}`).join('\n')}`;
         const remainingCopies = allVideos.filter(v => extractVideoID(v.url) === videoId);
         if (remainingCopies.length <= 1) {
           closeDuplicateModal();
-          showToast('✅ تم تصفية وإزالة التكرار لهذا الفيديو بنجاح!');
+          showToast(t('toastDupFilteredRemoved'));
         } else {
           openDuplicateModal(videoId);
         }
@@ -2827,10 +3311,10 @@ ${titles.map((t, idx) => `${idx + 1}. ${t}`).join('\n')}`;
     function updateLayoutUI() {
       if (currentLayout === 'list') {
         videosGrid.classList.add('list-layout');
-        layoutToggleBtn.textContent = '📱 عرض الشبكة';
+        layoutToggleBtn.innerHTML = `<span data-i18n="viewGrid">${t('viewGrid')}</span>`;
       } else {
         videosGrid.classList.remove('list-layout');
-        layoutToggleBtn.textContent = '📝 عرض القائمة';
+        layoutToggleBtn.innerHTML = `<span data-i18n="viewList">${t('viewList')}</span>`;
       }
     }
 
@@ -2842,7 +3326,7 @@ ${titles.map((t, idx) => `${idx + 1}. ${t}`).join('\n')}`;
       if (bulkEditActive) {
         bulkEditModeBtn.classList.add('active-gold');
         bulkMenuBar.style.display = 'flex';
-        showToast('ℹ️ تم تفعيل وضع التعديل الجماعي. حدد الفيديوهات عبر الخانات في زاوية كل فيديو.');
+        showToast(t('toastBulkEditEnabled'));
       } else {
         bulkEditModeBtn.classList.remove('active-gold');
         bulkMenuBar.style.display = 'none';
@@ -2889,7 +3373,7 @@ ${titles.map((t, idx) => `${idx + 1}. ${t}`).join('\n')}`;
 
     function applyBulkCategoryChange() {
       if (selectedVideosSet.size === 0) {
-        showToast('⚠️ يرجى تحديد فيديو واحد على الأقل أولاً.');
+        showToast(t('toastSelectOneVideo'));
         return;
       }
       const newCat = bulkCategorySelect.value;
@@ -2903,12 +3387,12 @@ ${titles.map((t, idx) => `${idx + 1}. ${t}`).join('\n')}`;
 
       saveLibraryAndBackup(allVideos);
       toggleBulkEditMode();
-      showToast('✅ تم بنجاح تغيير فئة ' + selectedVideosSet.size + ' فيديو إلى "' + newCat + '".');
+      showToast(t('toastBulkCategoryChanged', {count: selectedVideosSet.size, cat: newCat}));
     }
 
     function applyBulkDelete() {
       if (selectedVideosSet.size === 0) {
-        showToast('⚠️ يرجى تحديد فيديو واحد على الأقل للعملية.');
+        showToast(t('toastSelectOneVideoOp'));
         return;
       }
       if (confirm('هل أنت متأكد من رغبتك في حذف الـ ' + selectedVideosSet.size + ' فيديو المحددة نهائياً من المكتبة؟')) {
@@ -2918,7 +3402,7 @@ ${titles.map((t, idx) => `${idx + 1}. ${t}`).join('\n')}`;
         localStorage.setItem('user_youtube_favorites', JSON.stringify([...favoriteIds]));
         saveLibraryAndBackup(allVideos);
         toggleBulkEditMode();
-        showToast('✅ تم حذف الفيديوهات المحددة بنجاح.');
+        showToast(t('toastSelectedVideosDeleted'));
       }
     }
 
@@ -2927,17 +3411,17 @@ ${titles.map((t, idx) => `${idx + 1}. ${t}`).join('\n')}`;
       if (targetVideo) {
         targetVideo.category = newCategory;
         saveLibraryAndBackup(allVideos);
-        showToast('تم تغيير التصنيف إلى "' + newCategory + '" بنجاح.');
+        showToast(t('toastCategoryChanged', {cat: newCategory}));
       }
     }
 
     function toggleFavorite(id) {
       if (favoriteIds.has(id)) {
         favoriteIds.delete(id);
-        showToast('تمت الإزالة من المفضلة ⭐️');
+        showToast(t('toastRemovedFav'));
       } else {
         favoriteIds.add(id);
-        showToast('تمت الإضافة إلى المفضلة ⭐️');
+        showToast(t('toastAddedFav'));
       }
       localStorage.setItem('user_youtube_favorites', JSON.stringify([...favoriteIds]));
       initApp();
@@ -2951,7 +3435,7 @@ ${titles.map((t, idx) => `${idx + 1}. ${t}`).join('\n')}`;
         const token = getValidAccessToken();
         if (token && video.playlistItemId) {
           try {
-            showToast('⏳ جاري الحذف من قائمتك السحابية...');
+            showToast(t('toastDeletingCloudList'));
             const res = await fetch('https://www.googleapis.com/youtube/v3/playlistItems?id=' + video.playlistItemId, {
               method: 'DELETE',
               headers: {
@@ -2959,15 +3443,15 @@ ${titles.map((t, idx) => `${idx + 1}. ${t}`).join('\n')}`;
               }
             });
             if (res.status === 204) {
-              showToast('✅ تم حذف الفيديو سحابياً!');
+              showToast(t('toastVideoDeletedCloud'));
             } else {
-              showToast('⚠️ تم الحذف محلياً فقط.');
+              showToast(t('toastDeletedLocalOnly'));
             }
           } catch (err) {
-            showToast('⚠️ تم الحذف محلياً فقط.');
+            showToast(t('toastDeletedLocalOnly'));
           }
         } else if (video.playlistItemId) {
-          showToast('💡 تم الحذف محلياً فقط. (سجل الدخول أولاً للمزامنة الكاملة).');
+          showToast(t('toastDeletedLocalOnlySignIn'));
         }
 
         const filteredList = allVideos.filter(v => v.id !== id);
@@ -2982,7 +3466,7 @@ ${titles.map((t, idx) => `${idx + 1}. ${t}`).join('\n')}`;
         saveLibraryAndBackup([]);
         favoriteIds.clear();
         localStorage.setItem('user_youtube_favorites', JSON.stringify([]));
-        showToast('تم مسح وإفراغ القائمة بالكامل.');
+        showToast(t('toastLibraryCleared'));
       }
     }
 
@@ -2993,7 +3477,7 @@ ${titles.map((t, idx) => `${idx + 1}. ${t}`).join('\n')}`;
         localStorage.removeItem('user_google_drive_file_id');
         favoriteIds.clear();
         saveLibraryAndBackup([...defaultData]);
-        showToast('تمت إعادة تهيئة البيانات الافتراضية بنجاح.');
+        showToast(t('toastDefaultReset'));
       }
     }
 
@@ -3166,19 +3650,19 @@ ${titles.map((t, idx) => `${idx + 1}. ${t}`).join('\n')}`;
 
       const title = document.createElement('h3');
       title.className = 'empty-state-title';
-      title.textContent = isLibraryEmpty ? 'مكتبتك فارغة حالياً' : 'لا توجد نتائج مطابقة';
+      title.textContent = isLibraryEmpty ? t('emptyLibraryTitle') : t('emptyResultsTitle');
       wrap.appendChild(title);
 
       const desc = document.createElement('p');
       desc.className = 'empty-state-desc';
       desc.textContent = isLibraryEmpty
-        ? 'استورد قائمة تشغيل من يوتيوب أو ملف CSV لتبدأ في تنظيم مكتبتك.'
-        : 'جرّب تعديل أو إزالة بعض خيارات البحث والتصفية الحالية.';
+        ? t('emptyLibraryDesc')
+        : t('emptyResultsDesc');
       wrap.appendChild(desc);
 
       const actionBtn = document.createElement('button');
       actionBtn.className = isLibraryEmpty ? 'btn btn-primary' : 'btn btn-secondary';
-      actionBtn.textContent = isLibraryEmpty ? '📥 استيراد المكتبة الآن' : '✖️ إزالة كل الفلاتر';
+      actionBtn.textContent = isLibraryEmpty ? t('importNowBtn') : t('clearAllFiltersBtn');
       actionBtn.addEventListener('click', () => {
         if (isLibraryEmpty) {
           importPanel.style.display = 'block';
@@ -3280,7 +3764,7 @@ ${titles.map((t, idx) => `${idx + 1}. ${t}`).join('\n')}`;
       displayTags.forEach(tag => {
         const tagSpan = document.createElement('span');
         tagSpan.className = 'category-tag' + (tag === 'غ-مصنف' ? ' category-tag-unclassified' : '');
-        tagSpan.textContent = tag;
+        tagSpan.textContent = categoryLabel(tag);
         tagsWrap.appendChild(tagSpan);
       });
 
@@ -3291,8 +3775,8 @@ ${titles.map((t, idx) => `${idx + 1}. ${t}`).join('\n')}`;
         dupSpan.style.color = '#fff';
         dupSpan.style.borderColor = 'var(--accent-color)';
         dupSpan.style.cursor = 'pointer';
-        dupSpan.title = 'تصفية المكررات';
-        dupSpan.textContent = '⚠️ مكرر';
+        dupSpan.title = t('filterDuplicates');
+        dupSpan.textContent = t('duplicateTag');
         dupSpan.addEventListener('click', () => openDuplicateModal(vId));
         tagsWrap.appendChild(dupSpan);
       }
@@ -3300,19 +3784,19 @@ ${titles.map((t, idx) => `${idx + 1}. ${t}`).join('\n')}`;
 
       const catSelect = document.createElement('select');
       catSelect.className = 'quick-cat-select';
-      catSelect.title = 'تعديل الفئة سريعاً';
+      catSelect.title = t('quickCatTitle');
 
       const currentOpt = document.createElement('option');
       currentOpt.value = video.category;
       currentOpt.selected = true;
-      currentOpt.textContent = video.category;
+      currentOpt.textContent = categoryLabel(video.category);
       catSelect.appendChild(currentOpt);
 
       catList.forEach(c => {
         if (c !== video.category) {
           const opt = document.createElement('option');
           opt.value = c;
-          opt.textContent = c;
+          opt.textContent = categoryLabel(c);
           catSelect.appendChild(opt);
         }
       });
@@ -3340,13 +3824,13 @@ ${titles.map((t, idx) => `${idx + 1}. ${t}`).join('\n')}`;
 
       const watchBtn = document.createElement('button');
       watchBtn.className = 'btn btn-primary';
-      watchBtn.textContent = 'مشاهدة';
+      watchBtn.textContent = t('watch');
       watchBtn.addEventListener('click', () => openVideo(video.url));
       footer.appendChild(watchBtn);
 
       const copyBtn = document.createElement('button');
       copyBtn.className = 'btn btn-secondary icon-btn';
-      copyBtn.title = 'نسخ الرابط';
+      copyBtn.title = t('copyLinkTitle');
       copyBtn.textContent = '🔗';
       copyBtn.addEventListener('click', () => copyLink(video.url));
       footer.appendChild(copyBtn);
@@ -3354,7 +3838,7 @@ ${titles.map((t, idx) => `${idx + 1}. ${t}`).join('\n')}`;
       const favBtn = document.createElement('button');
       favBtn.className = 'btn btn-secondary icon-btn';
       favBtn.style.color = 'var(--gold-color)';
-      favBtn.title = 'إضافة للمفضلة';
+      favBtn.title = t('addToFavorites');
       favBtn.textContent = favIcon;
       favBtn.addEventListener('click', () => toggleFavorite(video.id));
       footer.appendChild(favBtn);
@@ -3362,7 +3846,7 @@ ${titles.map((t, idx) => `${idx + 1}. ${t}`).join('\n')}`;
       const delBtn = document.createElement('button');
       delBtn.className = 'btn btn-secondary icon-btn';
       delBtn.style.color = 'var(--danger-color)';
-      delBtn.title = 'حذف الفيديو';
+      delBtn.title = t('deleteVideoTitle');
       delBtn.textContent = '🗑️';
       delBtn.addEventListener('click', () => deleteVideo(video.id));
       footer.appendChild(delBtn);
@@ -3385,9 +3869,9 @@ ${titles.map((t, idx) => `${idx + 1}. ${t}`).join('\n')}`;
       tempInput.select();
       try {
         document.execCommand('copy');
-        showToast('تم نسخ الرابط بنجاح.');
+        showToast(t('toastLinkCopied'));
       } catch (err) {
-        showToast('فشل نسخ الرابط.');
+        showToast(t('toastCopyFailed'));
       }
       document.body.removeChild(tempInput);
     }
@@ -3436,7 +3920,7 @@ ${titles.map((t, idx) => `${idx + 1}. ${t}`).join('\n')}`;
 
     function exportToCSV() {
       if (filteredVideos.length === 0) {
-        showToast('لا توجد نتائج حالية للتصدير.');
+        showToast(t('toastNoExportResults'));
         return;
       }
 
@@ -3480,11 +3964,11 @@ ${titles.map((t, idx) => `${idx + 1}. ${t}`).join('\n')}`;
       const selectedPlaylist = playlistFilter ? playlistFilter.value : '';
       
       if (!selectedPlaylist) {
-        showToast('⚠️ يرجى اختيار قائمة تشغيل محددة من القائمة أولاً لإزالتها.');
+        showToast(t('toastChoosePlaylistRemove'));
         return;
       }
 
-      if (confirm(`هل أنت متأكد من رغبتك في إزالة قائمة "${selectedPlaylist}" وكافة الفيديوهات التابعة لها من التطبيق فقط؟\n(لن يتم حذف أي شيء من حسابك على يوتيوب)`)) {
+      if (confirm(t('confirmDeletePlaylist', {name: selectedPlaylist}))) {
         // تصفية الفيديوهات واستثناء فيديوهات القائمة المحددة
         const filteredList = allVideos.filter(v => v.parentPlaylistName !== selectedPlaylist);
         
@@ -3495,7 +3979,7 @@ ${titles.map((t, idx) => `${idx + 1}. ${t}`).join('\n')}`;
         playlistFilter.value = '';
         applyFiltersAndSort();
         
-        showToast(`✅ تم إزالة قائمة "${selectedPlaylist}" من التطبيق بنجاح.`);
+        showToast(t('toastPlaylistRemoved', {name: selectedPlaylist}));
       }
     }
 
@@ -3519,33 +4003,6 @@ ${titles.map((t, idx) => `${idx + 1}. ${t}`).join('\n')}`;
     window.triggerContinueImport = triggerContinueImport;
     window.triggerCancelImport = triggerCancelImport;
     window.toggleSyncDropdown = toggleSyncDropdown;
-// دالة حذف القائمة بالكامل محلياً من التطبيق فقط دون حذفها من يوتيوب
-    function deletePlaylistFromApp() {
-      const playlistFilter = document.getElementById('playlistFilter');
-      const selectedPlaylist = playlistFilter ? playlistFilter.value : '';
-      
-      if (!selectedPlaylist) {
-        showToast('⚠️ يرجى اختيار قائمة تشغيل محددة من القائمة أولاً لإزالتها.');
-        return;
-      }
-
-      if (confirm(`هل أنت متأكد من رغبتك في إزالة قائمة "${selectedPlaylist}" وكافة الفيديوهات التابعة لها من التطبيق فقط؟\n(لن يتم حذف أي شيء من حسابك على يوتيوب)`)) {
-        // تصفية الفيديوهات واستثناء فيديوهات القائمة المحددة
-        const filteredList = allVideos.filter(v => v.parentPlaylistName !== selectedPlaylist);
-        
-        // حفظ القائمة الجديدة المحدثة
-        saveLibraryAndBackup(filteredList);
-        
-        // إعادة تعيين الفلتر إلى الكل
-        playlistFilter.value = '';
-        applyFiltersAndSort();
-        
-        showToast(`✅ تم إزالة قائمة "${selectedPlaylist}" من التطبيق بنجاح.`);
-      }
-    }
-
-    // ربط الدالة بالنافذة العالمية
-    window.deletePlaylistFromApp = deletePlaylistFromApp;
   </script>
 </body>
 </html>
