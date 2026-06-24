@@ -3020,8 +3020,8 @@ If a video is about how things work, or explanation of mechanisms/science/physic
 Titles:
 ${titles.map((t, idx) => `${idx + 1}. ${t}`).join('\n')}`;
 
-      // استخدام محرك الفلاش المحسن لتسريع الأداء وتقليص النفقات
-      const url = `https://generativelanguage.googleapis.com/v1/models/gemini-3.5-flash:generateContent?key=${geminiKey}`;
+     // استخدام محرك الفلاش المحسن لتسريع الأداء وتقليص النفقات
+      const url = `https://generativelanguage.googleapis.com/v1/models/gemini-2.5-flash:generateContent?key=${geminiKey}`;
       
       try {
         const res = await fetch(url, {
@@ -3076,7 +3076,7 @@ ${titles.map((t, idx) => `${idx + 1}. ${t}`).join('\n')}`;
       geminiTestStatus.style.color = 'var(--gold-color)';
       testGeminiBtn.disabled = true;
 
-      const url = `https://generativelanguage.googleapis.com/v1/models/gemini-3.5-flash:generateContent?key=${key}`;
+      const url = `https://generativelanguage.googleapis.com/v1/models/gemini-2.5-flash:generateContent?key=${key}`;
       
       try {
         const res = await fetch(url, {
@@ -3094,7 +3094,7 @@ ${titles.map((t, idx) => `${idx + 1}. ${t}`).join('\n')}`;
         if (res.ok) {
           const data = await res.json();
           if (data.candidates && data.candidates[0].content.parts[0].text) {
-            geminiTestStatus.textContent = '✅ تم الاتصال بنجاح! طراز Gemini 3.5 Flash المطور يعمل بالكامل.';
+            geminiTestStatus.textContent = '✅ تم الاتصال بنجاح! طراز Gemini 2.5 Flash المطور يعمل بالكامل.';
             geminiTestStatus.style.color = '#33cc33';
             localStorage.setItem('user_gemini_api_key', key);
           } else {
