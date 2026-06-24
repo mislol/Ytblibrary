@@ -512,6 +512,14 @@
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
       gap: 15px;
+      
+      /* إعدادات الإطار الجمالية الجديدة */
+      background-color: var(--bg-primary); /* لون خلفية متباين للمربع */
+      border: 1px solid var(--bg-tertiary); /* حد رفيع وناعم */
+      border-radius: var(--border-radius-sm); /* زوايا دائرية متناسقة */
+      padding: 20px; /* تباعد داخلي مريح يمنع التصاق الحقول بالحواف */
+      margin-top: 15px; /* إبعاد الإطار عن الأزرار العلوية لمظهر أكثر ترتيباً */
+      box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.08); /* ظل داخلي خفيف لإعطاء لمسة جمالية وعمق للمربع */
     }
 
     .filter-group {
