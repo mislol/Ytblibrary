@@ -3012,7 +3012,41 @@
     }
 
     async function classifyTitlesWithGemini(titles, geminiKey) {
-      const categoriesList = ["دين", "تقنية", "برمجة", "ذكاء اصطناعي", "تسويق الكتروني", "اقتصاد ومال", "وثائقيات", "تاريخ وسياسة", "ألعاب وجيمنج", "صناعة محتوى وتصميم", "فلسفة وعلم نفس", "كيف تعمل الاشياء", "أعمال", "صحة", "علوم", "رياضة", "سفر", "ترفيه", "تعليم", "لياقة بدنية", "بودكاست", "طبخ", "افلام", "غ-مصنف"];
+      const categoriesList = [
+  "تعليم",
+  "ذكاء اصطناعي Ai",
+  "ألعاب",
+  "أخبار وسياسة",
+  "رياضة",
+  "لياقة بدنية",
+  "طب",
+  "موسيقى و أغاني",
+  "أناشيد",
+  "ترفيه",
+  "أفلام",
+  "أطفال",
+  "طبخ وطعام",
+  "سفر وسياحة",
+  "جمال وموضة و أمور نسائية",
+  "اقتصاد",
+  "تجارة الكترونية",
+  "تسويق",
+  "قصص",
+  "سيارات",
+  "علوم و كيف تعمل الأشياء",
+  "قرآن",
+  "دين",
+  "حرف ومشاريع DIY",
+  "إنتاجية و تطوير الذات",
+  "تعلم اللغات",
+  "مالية",
+  "برمجة",
+  "كهرباء",
+  "تعلم الإلكترونيات",
+  "تصميم و ديكور منازل",
+  "تربية الحيوانات",
+  "أخرى"
+];
       
       const prompt = `You are a professional video classifier. Categorize each of the following Arabic video titles into EXACTLY one of these Arabic categories: [${categoriesList.join(', ')}].
 Return the result ONLY as a raw JSON array of strings, in the exact same order as the inputs.
