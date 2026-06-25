@@ -3507,7 +3507,6 @@ ${titles.map((t, idx) => `${idx + 1}. ${t}`).join('\n')}`;
       if (bulkEditActive) {
         bulkEditModeBtn.classList.add('active-gold');
         bulkMenuBar.style.display = 'flex';
-        showToast(t('toastBulkEditEnabled'));
       } else {
         bulkEditModeBtn.classList.remove('active-gold');
         bulkMenuBar.style.display = 'none';
