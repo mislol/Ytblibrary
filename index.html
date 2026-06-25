@@ -1381,6 +1381,8 @@
     "viewGrid": "📱 عرض الشبكة",
     "viewToggleTitle": "تغيير نمط العرض",
     "toggleFilters": "⚙️ خيارات التصفية",
+    "createNewCategory": "➕ إنشاء...",
+    "promptNewCategory": "أدخل اسم التصنيف الجديد:",
     "filterCategory": "التصنيف",
     "filterChannel": "القناة",
     "filterDuration": "المدة الزمنية",
@@ -1526,6 +1528,8 @@
     "viewGrid": "📱 Grid view",
     "viewToggleTitle": "Switch view style",
     "toggleFilters": "⚙️ Filter Options",
+    "createNewCategory": "➕ Create...",
+    "promptNewCategory": "Enter new category name:",
     "filterCategory": "Category",
     "filterChannel": "Channel",
     "filterDuration": "Duration",
@@ -3928,12 +3932,20 @@ ${titles.map((t, idx) => `${idx + 1}. ${t}`).join('\n')}`;
       catSelect.className = 'quick-cat-select';
       catSelect.title = t('quickCatTitle');
 
+      // 1. إضافة خيار "إنشاء تصنيف جديد" في أعلى القائمة دائماً
+      const createOpt = document.createElement('option');
+      createOpt.value = '__CREATE_NEW__';
+      createOpt.textContent = t('createNewCategory');
+      catSelect.appendChild(createOpt);
+
+      // 2. إضافة التصنيف الحالي للفيديو
       const currentOpt = document.createElement('option');
       currentOpt.value = video.category;
       currentOpt.selected = true;
       currentOpt.textContent = categoryLabel(video.category);
       catSelect.appendChild(currentOpt);
 
+      // 3. إضافة بقية التصنيفات المتاحة في قاعدة البيانات
       catList.forEach(c => {
         if (c !== video.category) {
           const opt = document.createElement('option');
@@ -3942,7 +3954,21 @@ ${titles.map((t, idx) => `${idx + 1}. ${t}`).join('\n')}`;
           catSelect.appendChild(opt);
         }
       });
-      catSelect.addEventListener('change', (e) => changeVideoCategory(video.id, e.target.value));
+
+      // 4. تفعيل الاستجابة التفاعلية عند اختيار "إنشاء" أو تغيير التصنيف
+      catSelect.addEventListener('change', (e) => {
+        if (e.target.value === '__CREATE_NEW__') {
+          const newCat = prompt(t('promptNewCategory'));
+          if (newCat && newCat.trim()) {
+            changeVideoCategory(video.id, newCat.trim());
+          } else {
+            // في حال الإلغاء أو ترك الحقل فارغاً، نعيد تحديد الفئة الأصلية للفيديو
+            catSelect.value = video.category;
+          }
+        } else {
+          changeVideoCategory(video.id, e.target.value);
+        }
+      });
       metaRow.appendChild(catSelect);
       infoBlock.appendChild(metaRow);
 
