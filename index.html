@@ -1027,7 +1027,14 @@
       from { transform: translateX(120%); }
       to { transform: translateX(0); }
     }
+    /* تنسيق أزرار التراجع والإعادة في الحالة غير النشطة 👈 */
+    .btn-history:disabled {
+      opacity: 0.35;
+      cursor: not-allowed;
+      transform: none !important;
+    }
 
+    
     /* تنسيق زر العودة إلى الأعلى العائم */
     #backToTopBtn {
       position: fixed;
@@ -1073,6 +1080,9 @@
         <h1 data-i18n="appTitle">مكتبة مرئيات يوتيوب</h1>
       </div>
       <div class="header-actions">
+        <!-- أزرار التراجع والإعادة المضافة بجانب تبديل اللغة 👈 -->
+        <button id="undoBtn" class="btn btn-secondary btn-history" data-i18n-title="undoTitle" title="تراجع ↩️" onclick="undoAction()" disabled>↩️</button>
+        <button id="redoBtn" class="btn btn-secondary btn-history" data-i18n-title="redoTitle" title="إعادة ↪️" onclick="redoAction()" disabled>↪️</button>
         <button id="langToggleBtn" class="btn btn-secondary" title="Change language / تغيير اللغة">EN</button>
         <button id="themeToggleBtn" class="btn btn-secondary" title="تبديل المظهر الداكن / النهاري">🌙</button>
 
@@ -1421,6 +1431,10 @@
     "createNewCategory": "➕ إنشاء...",
     "promptNewCategory": "أدخل اسم التصنيف الجديد:",
     "backToTop": "العودة إلى الأعلى",
+    "undoTitle": "تراجع ↩️",
+    "redoTitle": "إعادة ↪️",
+    "toastUndoSuccess": "تم التراجع بنجاح ↩️",
+    "toastRedoSuccess": "تمت الإعادة بنجاح ↪️",
     "filterCategory": "التصنيف",
     "filterChannel": "القناة",
     "filterDuration": "المدة الزمنية",
@@ -1569,6 +1583,10 @@
     "createNewCategory": "➕ Create...",
     "promptNewCategory": "Enter new category name:",
     "backToTop": "Back to Top",
+    "undoTitle": "Undo ↩️",
+    "redoTitle": "Redo ↪️",
+    "toastUndoSuccess": "Undo successful ↩️",
+    "toastRedoSuccess": "Redo successful ↪️",
     "filterCategory": "Category",
     "filterChannel": "Channel",
     "filterDuration": "Duration",
@@ -1752,7 +1770,12 @@
 
     // عينة افتراضية مبدئية فارغة لتبدأ المكتبة فارغة بالكامل
     const defaultData = [];
-
+// مصفوفات التاريخ لحفظ عمليات التراجع والإعادة 👈
+    let undoStack = [];
+    let redoStack = [];
+    let allVideos = [];
+    let filteredVideos = [];
+    let favoriteIds = new Set();
     let allVideos = [];
     let filteredVideos = [];
     let favoriteIds = new Set();
@@ -3421,7 +3444,63 @@ ${titles.map((t, idx) => `${idx + 1}. ${t}`).join('\n')}`;
       }
     }
 
+    // دالة حفظ الحالة الحالية في الذاكرة قبل التعديل 👈
+    function saveToHistory() {
+      if (undoStack.length >= 25) {
+        undoStack.shift(); // الحفاظ على حد أقصى 25 عملية تراجع لتفادي امتلاء الذاكرة
+      }
+      undoStack.push(JSON.stringify(allVideos));
+      redoStack = []; // تصفير مصفوفة الإعادة عند حدوث أي إجراء جديد
+      updateHistoryButtonsUI();
+    }
+
+    // دالة تحديث حالة الأزرار (نشط / غير نشط) في الواجهة 👈
+    function updateHistoryButtonsUI() {
+      const undoBtn = document.getElementById('undoBtn');
+      const redoBtn = document.getElementById('redoBtn');
+      if (undoBtn) undoBtn.disabled = (undoStack.length === 0);
+      if (redoBtn) redoBtn.disabled = (redoStack.length === 0);
+    }
+
+    // دالة التراجع ↩️ 👈
+    function undoAction() {
+      if (undoStack.length === 0) return;
+      redoStack.push(JSON.stringify(allVideos));
+      const previousState = JSON.parse(undoStack.pop());
+      
+      allVideos = previousState;
+      localStorage.setItem('user_youtube_library', JSON.stringify(allVideos));
+      initApp();
+      updateHistoryButtonsUI();
+      
+      const token = getValidAccessToken();
+      if (token) saveBackupToGoogleDrive();
+      
+      showToast(t('toastUndoSuccess'));
+    }
+
+    // دالة الإعادة ↪️ 👈
+    function redoAction() {
+      if (redoStack.length === 0) return;
+      undoStack.push(JSON.stringify(allVideos));
+      const nextState = JSON.parse(redoStack.pop());
+      
+      allVideos = nextState;
+      localStorage.setItem('user_youtube_library', JSON.stringify(allVideos));
+      initApp();
+      updateHistoryButtonsUI();
+      
+      const token = getValidAccessToken();
+      if (token) saveBackupToGoogleDrive();
+      
+      showToast(t('toastRedoSuccess'));
+    }
+
+    // تعديل دالة الحفظ الرئيسية لتسجيل الحالات تلقائياً 👈
     function saveLibraryAndBackup(videosArray) {
+      // حفظ الحالة قبل تطبيق التعديل الجديد 👈
+      saveToHistory();
+
       allVideos = videosArray;
       localStorage.setItem('user_youtube_library', JSON.stringify(allVideos));
       initApp();
