@@ -1027,6 +1027,40 @@
       from { transform: translateX(120%); }
       to { transform: translateX(0); }
     }
+
+    /* تنسيق زر العودة إلى الأعلى العائم */
+    #backToTopBtn {
+      position: fixed;
+      bottom: 95px; /* مرتفع قليلاً لتفادي التداخل مع رسائل التنبيه بالأسفل */
+      right: 30px;
+      width: 46px;
+      height: 46px;
+      border-radius: 50%;
+      background-color: var(--accent-color);
+      color: #ffffff;
+      border: none;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.1rem;
+      box-shadow: var(--card-shadow);
+      z-index: 998; /* يظهر فوق المحتوى وتحت رسائل التنبيه */
+      opacity: 0;
+      visibility: hidden;
+      transition: opacity 0.3s ease, visibility 0.3s ease, transform 0.2s ease, background-color var(--transition-speed);
+    }
+
+    #backToTopBtn:hover {
+      background-color: var(--accent-hover);
+      transform: translateY(-3px); /* حركة خفيفة للأعلى عند التحويم */
+    }
+
+    /* فئة برمجية لإظهار الزر عند النزول لأسفل الصفحة */
+    #backToTopBtn.show-btn {
+      opacity: 1;
+      visibility: visible;
+    }
   </style>
 </head>
 <body>
@@ -1306,7 +1340,7 @@
   </div>
 
   
-  <!-- شريط التحكم بالتعديل الجماعي العائم المضاف -->
+ <!-- شريط التحكم بالتعديل الجماعي العائم المضاف -->
   <div class="bulk-action-bar" id="bulkMenuBar">
     <div class="bulk-info-side">
       <span style="font-size: 1.1rem;">⚙️ <strong id="bulkSelectedCount">0</strong> <span data-i18n="bulkSelectedSuffix">فيديوهات محددة</span></span>
@@ -1323,6 +1357,9 @@
       <button class="btn btn-secondary" style="font-size: 0.85rem;" onclick="toggleBulkEditMode()"><span data-i18n="closeBulkEdit">إغلاق التعديل</span></button>
     </div>
   </div>
+
+  <!-- زر العودة إلى الأعلى العائم والمترجم تلقائياً -->
+  <button id="backToTopBtn" data-i18n-title="backToTop" title="العودة إلى الأعلى">▲</button>
 
   <script>
     function applyTheme(theme) {
@@ -1383,6 +1420,7 @@
     "toggleFilters": "⚙️ خيارات التصفية",
     "createNewCategory": "➕ إنشاء...",
     "promptNewCategory": "أدخل اسم التصنيف الجديد:",
+    "backToTop": "العودة إلى الأعلى",
     "filterCategory": "التصنيف",
     "filterChannel": "القناة",
     "filterDuration": "المدة الزمنية",
@@ -1530,6 +1568,7 @@
     "toggleFilters": "⚙️ Filter Options",
     "createNewCategory": "➕ Create...",
     "promptNewCategory": "Enter new category name:",
+    "backToTop": "Back to Top",
     "filterCategory": "Category",
     "filterChannel": "Channel",
     "filterDuration": "Duration",
@@ -1881,6 +1920,27 @@
           toolsMenu.classList.remove('show');
         }
       });
+
+      // منطق عمل زر العودة إلى الأعلى العائم
+      const backToTopBtn = document.getElementById('backToTopBtn');
+      if (backToTopBtn) {
+        // مراقبة التمرير لإظهار أو إخفاء الزر
+        window.addEventListener('scroll', () => {
+          if (window.scrollY > 400) {
+            backToTopBtn.classList.add('show-btn');
+          } else {
+            backToTopBtn.classList.remove('show-btn');
+          }
+        });
+
+        // تنفيذ الصعود الانسيابي الناعم للأعلى عند الضغط
+        backToTopBtn.addEventListener('click', () => {
+          window.scrollTo({
+            top: 0,
+            behavior: 'smooth'
+          });
+        });
+      }
     });
 
     // دالة التحكم في فتح قائمة التحديث المنسدلة في الشريط العلوي
