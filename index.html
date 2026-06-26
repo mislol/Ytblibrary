@@ -3444,8 +3444,8 @@ ${titles.map((t, idx) => `${idx + 1}. ${t}`).join('\n')}`;
 
     // دالة حفظ الحالة الحالية في الذاكرة قبل التعديل 👈
     function saveToHistory() {
-      if (undoStack.length >= 25) {
-        undoStack.shift(); // الحفاظ على حد أقصى 25 عملية تراجع لتفادي امتلاء الذاكرة
+      if (undoStack.length >= 4) {
+        undoStack.shift(); // الحفاظ على حد أقصى 4 عملية تراجع لتفادي امتلاء الذاكرة
       }
       undoStack.push(JSON.stringify(allVideos));
       redoStack = []; // تصفير مصفوفة الإعادة عند حدوث أي إجراء جديد
