@@ -1224,9 +1224,14 @@
     </div>
   </section>
 
-  <!-- شريط الأزرار والحبات التفاعلي للتصنيفات -->
+<!-- شريط الأزرار والحبات للتصنيفات والاشتراكات المحدث 👈 -->
   <div class="category-selection-area">
     <button id="pillAllBtn" class="category-pill-btn active"><span data-i18n="pillAll">الكل</span> <span class="badge" id="pillAllBadge">0</span></button>
+    
+    <!-- زر خلاصة الاشتراكات المضاف (مخفي افتراضياً ويظهر للمسجلين) 👈 -->
+    <button id="pillSubscriptionsBtn" class="category-pill-btn" style="display: none; color: var(--green-color);"><span data-i18n="pillSubscriptions">🔔 خلاصة الاشتراكات</span></button>
+    
+    <div class="dropdown-category-container" style="position: relative; display: inline-block;">
     
     <div class="dropdown-category-container" style="position: relative; display: inline-block;">
       <button id="pillCategoriesDropdownBtn" class="category-pill-btn"><span data-i18n="pillCategories">التصنيفات</span> <span class="arrow">▾</span></button>
@@ -1435,6 +1440,7 @@
     "redoTitle": "إعادة ↪️",
     "toastUndoSuccess": "تم التراجع بنجاح ↩️",
     "toastRedoSuccess": "تمت الإعادة بنجاح ↪️",
+    "pillSubscriptions": "🔔 خلاصة الاشتراكات",
     "filterCategory": "التصنيف",
     "filterChannel": "القناة",
     "filterDuration": "المدة الزمنية",
@@ -1587,6 +1593,7 @@
     "redoTitle": "Redo ↪️",
     "toastUndoSuccess": "Undo successful ↩️",
     "toastRedoSuccess": "Redo successful ↪️",
+    "pillSubscriptions": "🔔 Subscriptions Feed",
     "filterCategory": "Category",
     "filterChannel": "Channel",
     "filterDuration": "Duration",
@@ -1941,6 +1948,14 @@
           toolsMenu.classList.remove('show');
         }
       });
+// تسجيل كود الضغط على زر خلاصة الاشتراكات 👈
+      const pillSubscriptionsBtn = document.getElementById('pillSubscriptionsBtn');
+      if (pillSubscriptionsBtn) {
+        pillSubscriptionsBtn.addEventListener('click', () => {
+          fetchSubscriptionsFeed();
+        });
+      }
+
 
       // منطق عمل زر العودة إلى الأعلى العائم
       const backToTopBtn = document.getElementById('backToTopBtn');
@@ -2592,7 +2607,112 @@
       };
       reader.readAsText(file, 'UTF-8');
     }
+// دالة جلب خلاصة آخر 50 فيديو من اشتراكاتك وترتيبها زمنياً وتنسيقها لتوافق واجهتك 👈
+    async function fetchSubscriptionsFeed() {
+      const token = getValidAccessToken();
+      if (!token) return;
 
+      renderSkeletons();
+      logToCloudConsole('🔔 جاري جلب خلاصة آخر الفيديوهات من قنوات اشتراكاتك...');
+
+      try {
+        // 1. جلب أول 15 قناة مشترك فيها المستخدم من خوادم يوتيوب
+        const subsUrl = 'https://www.googleapis.com/youtube/v3/subscriptions?part=snippet&mine=true&maxResults=15';
+        const subsRes = await fetch(subsUrl, {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        
+        if (!subsRes.ok) throw new Error('فشل جلب قائمة القنوات المشترك بها.');
+
+        const subsData = await subsRes.json();
+        if (!subsData.items || subsData.items.length === 0) {
+          logToCloudConsole('⚠️ لم يتم العثور على أي قنوات مشترك بها في هذا الحساب.');
+          initApp();
+          return;
+        }
+
+        logToCloudConsole(`📁 تم العثور على ${subsData.items.length} قناة مشترك بها. جاري استخراج آخر الفيديوهات بالتوازي لتقليص الكوتا السحابية...`);
+
+        // 2. استخدام خوارزمية جلب قائمة Uploads لكل قناة بالتوازي لتسريع العملية (تبديل UC بـ UU في المعرّف)
+        const promises = subsData.items.map(async (item) => {
+          const channelId = item.snippet.resourceId.channelId;
+          const uploadsPlaylistId = 'UU' + channelId.substring(2); // معادلة يوتيوب السريعة لتحويل القناة لقائمة المرفوعات 👈
+          const playlistItemsUrl = `https://www.googleapis.com/youtube/v3/playlistItems?part=snippet&playlistId=${uploadsPlaylistId}&maxResults=3`;
+
+          try {
+            const res = await fetch(playlistItemsUrl, {
+              headers: { 'Authorization': `Bearer ${token}` }
+            });
+            if (res.ok) {
+              const data = await res.json();
+              return data.items || [];
+            }
+          } catch (e) {
+            console.error(e);
+          }
+          return [];
+        });
+
+        const allChannelsItems = await Promise.all(promises);
+        
+        // تجميع وتنسيق الفيديوهات لتدعم العمل داخل واجهتك الحالية
+        let mergedVideos = [];
+        allChannelsItems.flat().forEach((item, index) => {
+          const snippet = item.snippet;
+          if (snippet && snippet.resourceId && snippet.resourceId.kind === 'youtube#video') {
+            const videoId = snippet.resourceId.videoId;
+            mergedVideos.push({
+              id: 'sub_' + videoId, // معرّف فريد مؤقت
+              title: snippet.title,
+              category: 'خلاصة الاشتراكات 🔔',
+              channel: snippet.channelTitle,
+              duration: '00:00', // قيمة افتراضية لحماية كوتا الاتصال السحابية من الاستهلاك المفرط
+              thumbnail: snippet.thumbnails?.high?.url || `https://img.youtube.com/vi/${videoId}/hqdefault.jpg`,
+              url: `https://www.youtube.com/watch?v=${videoId}`,
+              parentPlaylistId: 'subscriptions_feed',
+              parentPlaylistName: '🔔 خلاصة الاشتراكات',
+              position: index,
+              publishedAt: new Date(snippet.publishedAt).getTime() // الحقل الزمني للترتيب التنازلي المباشر
+            });
+          }
+        });
+
+        // 3. ترتيب الفيديوهات تنازلياً من الأحدث للأقدم واقتطاع أول 50 فيديو فقط
+        mergedVideos.sort((a, b) => b.publishedAt - a.publishedAt);
+        const finalFeed = mergedVideos.slice(0, 50);
+
+        if (finalFeed.length === 0) {
+          logToCloudConsole('⚠️ لم نجد أي فيديوهات مرفوعة مؤخراً في قنوات اشتراكاتك.');
+          initApp();
+          return;
+        }
+
+        logToCloudConsole(`✅ تم جلب وترتيب آخر ${finalFeed.length} فيديو من اشتراكاتك بنجاح!`);
+        
+        // عرض الفيديوهات داخل شبكة العرض
+        renderSubscriptionsFeedInGrid(finalFeed);
+
+      } catch (e) {
+        console.error(e);
+        logToCloudConsole(`❌ فشل جلب خلاصة الاشتراكات: ${e.message}`);
+        initApp();
+      }
+    }
+
+    // دالة عرض الفيديوهات المسترجعة في الواجهة الرئيسية محلياً 👈
+    function renderSubscriptionsFeedInGrid(feed) {
+      filteredVideos = feed;
+      currentPage = 1;
+      
+      // تحديث أزرار التنقل للتوضيح البصري بأننا في خلاصة الاشتراكات
+      document.querySelectorAll('.category-pill-btn').forEach(btn => btn.classList.remove('active', 'active-gold'));
+      const subBtn = document.getElementById('pillSubscriptionsBtn');
+      if (subBtn) subBtn.classList.add('active');
+
+      renderGrid();
+    }
+
+ 
     // جلب قوائم التشغيل الخاصة بحساب قوقل الشخصي
     async function fetchPersonalPlaylists(token) {
       logToCloudConsole('🌐 جاري الاتصال بقوقل لجلب قوائم التشغيل المتواجدة بحسابك...');
@@ -3323,18 +3443,22 @@ ${titles.map((t, idx) => `${idx + 1}. ${t}`).join('\n')}`;
       return null;
     }
 
+    // تحديث الواجهة والتحكم بظهور زر الاشتراكات السحابي 👈
     function updateAuthUI() {
       const token = getValidAccessToken();
       const syncDropdownGroup = document.getElementById('syncDropdownGroup');
-      
+      const pillSubscriptionsBtn = document.getElementById('pillSubscriptionsBtn'); // 👈
+
       if (token) {
         googleSignInBtn.style.display = 'none';
         googleSignOutBtn.style.display = 'inline-flex';
         if (syncDropdownGroup) syncDropdownGroup.style.display = 'inline-block';
+        if (pillSubscriptionsBtn) pillSubscriptionsBtn.style.display = 'inline-flex'; // إظهار زر خلاصة الاشتراكات 👈
       } else {
         googleSignInBtn.style.display = 'inline-flex';
         googleSignOutBtn.style.display = 'none';
         if (syncDropdownGroup) syncDropdownGroup.style.display = 'none';
+        if (pillSubscriptionsBtn) pillSubscriptionsBtn.style.display = 'none'; // إخفاء زر خلاصة الاشتراكات 👈
       }
     }
 
