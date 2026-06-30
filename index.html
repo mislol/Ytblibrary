@@ -2655,12 +2655,12 @@
 // مصفوفة الذاكرة المؤقتة لمنع إعادة الاتصال وتوفير الكوتا السحابية والسرعة الفورية 👈
     let cachedSubscriptionsFeed = null;
 
-    // دالة جلب وتصفية خلاصة الاشتراكات وتصنيفها بدقة للفيديوهات والشورتس 👈
+    // دالة جلب وتصفية خلاصة الاشتراكات وتصنيفها بدقة للفيديوهات والشورتس (محدثة لـ 100 فيديو) 👈
     async function fetchSubscriptionsFeed(targetType = 'videos') {
       const token = getValidAccessToken();
       if (!token) return;
 
-      // 1. إذا كانت خلاصة البيانات مخزنة مسبقاً، نقوم بتصفيتها وعرضها فوراً دون اتصال سحابي إضافي 👈
+      // 1. إذا كانت خلاصة البيانات مخزنة مسبقاً، نقوم بتصفيتها وعرضها فوراً دون اتصال سحابي إضافي
       if (cachedSubscriptionsFeed && cachedSubscriptionsFeed.length > 0) {
         renderFilteredSubscriptions(cachedSubscriptionsFeed, targetType);
         return;
@@ -2670,8 +2670,8 @@
       logToCloudConsole('🔔 جاري جلب قائمة الاشتراكات من حساب يوتيوب الخاص بك...');
 
       try {
-        // جلب أول 15 قناة مشترك فيها المستخدم من خوادم يوتيوب
-        const subsUrl = 'https://www.googleapis.com/youtube/v3/subscriptions?part=snippet&mine=true&maxResults=15';
+        // جلب أول 20 قناة مشترك فيها المستخدم من خوادم يوتيوب (تم التحديث من 15 إلى 20 قنوات) 👈
+        const subsUrl = 'https://www.googleapis.com/youtube/v3/subscriptions?part=snippet&mine=true&maxResults=20';
         const subsRes = await fetch(subsUrl, {
           headers: { 'Authorization': `Bearer ${token}` }
         });
@@ -2687,11 +2687,11 @@
 
         logToCloudConsole(`📁 تم العثور على ${subsData.items.length} قناة مشترك بها. جاري استخراج آخر الفيديوهات المرفوعة...`);
 
-        // جلب آخر 3 فيديوهات من قائمة المرفوعات لكل قناة بالتوازي لتقليص الكوتا
+        // جلب آخر 5 فيديوهات من المرفوعات لكل قناة بالتوازي (تم التحديث من 3 إلى 5 فيديوهات لكل قناة) 👈
         const promises = subsData.items.map(async (item) => {
           const channelId = item.snippet.resourceId.channelId;
           const uploadsPlaylistId = 'UU' + channelId.substring(2);
-          const playlistItemsUrl = `https://www.googleapis.com/youtube/v3/playlistItems?part=snippet&playlistId=${uploadsPlaylistId}&maxResults=3`;
+          const playlistItemsUrl = `https://www.googleapis.com/youtube/v3/playlistItems?part=snippet&playlistId=${uploadsPlaylistId}&maxResults=5`;
 
           try {
             const res = await fetch(playlistItemsUrl, {
@@ -2709,7 +2709,7 @@
 
         const allChannelsItems = await Promise.all(promises);
         
-        // تجميع الفيديوهات وتنسيقها الأولي واستخراج معرفاتها لطلب المدد الحقيقية
+        // تجميع الفيديوهات واستخراج معرفاتها
         let videoIds = [];
         let tempVideos = [];
         
@@ -2727,7 +2727,7 @@
               parentPlaylistId: 'subscriptions_feed',
               parentPlaylistName: '🔔 خلاصة الاشتراكات',
               publishedAt: new Date(snippet.publishedAt).getTime(),
-              duration: '00:00' // قيمة افتراضية سيتم تحديثها بالقيم الحقيقية
+              duration: '00:00'
             });
           }
         });
@@ -2738,30 +2738,42 @@
           return;
         }
 
-        // جلب المدد الزمنية الحقيقية لجميع الفيديوهات دفعة واحدة لفرز الشورتس وعرض التوقيت الفعلي 👈
-        logToCloudConsole(`⏳ جاري استدعاء تفاصيل الأوقات الفعلية لـ ${tempVideos.length} فيديو في طلب جماعي واحد...`);
-        const videoDetailsUrl = `https://www.googleapis.com/youtube/v3/videos?part=contentDetails&id=${videoIds.join(',')}`;
-        const detailsRes = await fetch(videoDetailsUrl, {
-          headers: { 'Authorization': `Bearer ${token}` }
-        });
+        // تقسيم طلب المدد الزمنية إلى دفعات (كل دفعة 50 معرّف كحد أقصى تماشياً مع قوانين قوقل الصارمة) 👈
+        logToCloudConsole(`⏳ جاري استدعاء تفاصيل الأوقات لـ ${tempVideos.length} فيديو على دفعات متتالية...`);
+        const batches = [];
+        for (let i = 0; i < videoIds.length; i += 50) {
+          batches.push(videoIds.slice(i, i + 50));
+        }
 
-        if (detailsRes.ok) {
-          const detailsData = await detailsRes.json();
-          if (detailsData.items) {
-            detailsData.items.forEach(detailItem => {
-              const targetVid = tempVideos.find(v => extractVideoID(v.url) === detailItem.id);
-              if (targetVid && detailItem.contentDetails) {
-                // تحديث المدة الزمنية الحقيقية للفيديو بدقة (لتظهر الأوقات الفعلية على الكروت)
-                targetVid.duration = parseISO8601Duration(detailItem.contentDetails.duration);
-              }
+        // إرسال الطلبات لكل دفعة ودمج النتائج
+        for (let b = 0; b < batches.length; b++) {
+          const batchIds = batches[b].join(',');
+          const videoDetailsUrl = `https://www.googleapis.com/youtube/v3/videos?part=contentDetails&id=${batchIds}`;
+          
+          try {
+            const detailsRes = await fetch(videoDetailsUrl, {
+              headers: { 'Authorization': `Bearer ${token}` }
             });
+            if (detailsRes.ok) {
+              const detailsData = await detailsRes.json();
+              if (detailsData.items) {
+                detailsData.items.forEach(detailItem => {
+                  const targetVid = tempVideos.find(v => extractVideoID(v.url) === detailItem.id);
+                  if (targetVid && detailItem.contentDetails) {
+                    targetVid.duration = parseISO8601Duration(detailItem.contentDetails.duration);
+                  }
+                });
+              }
+            }
+          } catch (err) {
+            console.error('Error fetching video details batch', b, err);
           }
         }
 
         // ترتيب الفيديوهات تنازلياً من الأحدث للأقدم
         tempVideos.sort((a, b) => b.publishedAt - a.publishedAt);
         
-        // حفظ القائمة الكاملة مع الأوقات في الذاكرة المؤقتة لمنع استهلاك كوتا إضافية 👈
+        // حفظ القائمة الكاملة مع الأوقات في الذاكرة المؤقتة لمنع استهلاك كوتا إضافية
         cachedSubscriptionsFeed = tempVideos;
 
         // تصفية وعرض النوع المطلوب
@@ -2786,7 +2798,8 @@
         logToCloudConsole(`📹 تم فرز وعرض آخر ${result.length} فيديو طويل من اشتراكاتك.`);
       }
 
-      filteredVideos = result.slice(0, 50);
+      // تصفية وعرض أول 100 عنصر فقط من النتائج المصفاة (تم التحديث لتتوافق مع صفحتين) 👈
+      filteredVideos = result.slice(0, 100);
       currentPage = 1;
 
       // إزالة تحديد الأزرار الأخرى في الواجهة
