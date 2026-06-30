@@ -2809,7 +2809,7 @@
           batches.push(videoIds.slice(i, i + 50));
         }
 
-        // إرسال الطلبات لكل دفعة ودمج النتائج
+        // إرسال الطلبات لكل دفعة ودمج النتائج وتحديث الأرشيف التراكمي فوراً 👈
         for (let b = 0; b < batches.length; b++) {
           const batchIds = batches[b].join(',');
           const videoDetailsUrl = `https://www.googleapis.com/youtube/v3/videos?part=contentDetails&id=${batchIds}`;
@@ -2824,7 +2824,16 @@
                 detailsData.items.forEach(detailItem => {
                   const targetVid = tempVideos.find(v => extractVideoID(v.url) === detailItem.id);
                   if (targetVid && detailItem.contentDetails) {
-                    targetVid.duration = parseISO8601Duration(detailItem.contentDetails.duration);
+                    const realDuration = parseISO8601Duration(detailItem.contentDetails.duration);
+                    
+                    // 1. تحديث المدة في القائمة المؤقتة للشاشة الحالية
+                    targetVid.duration = realDuration;
+                    
+                    // 2. تحديث المدة وحفظها بشكل دائم في قاعدة بيانات الأرشيف 👈
+                    const vId = detailItem.id;
+                    if (subscriptionsDb[vId]) {
+                      subscriptionsDb[vId].duration = realDuration;
+                    }
                   }
                 });
               }
@@ -2833,6 +2842,9 @@
             console.error('Error fetching video details batch', b, err);
           }
         }
+
+        // حفظ التحديثات والمدد الزمنية المكتشفة نهائياً في المتصفح 👈
+        localStorage.setItem('user_youtube_subscriptions_db', JSON.stringify(subscriptionsDb));
 
         // ترتيب الفيديوهات تنازلياً من الأحدث للأقدم
         tempVideos.sort((a, b) => b.publishedAt - a.publishedAt);
