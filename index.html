@@ -1236,6 +1236,8 @@
       <ul id="subscriptionsDropdownMenu" class="categories-dropdown-menu" style="inset-inline-start: 0; min-width: 180px; z-index: 151;">
         <li class="dropdown-item-cat" id="subOptVideos"><span>📹 فيديوهات</span></li>
         <li class="dropdown-item-cat" id="subOptShorts"><span>📱 شورتس</span></li>
+        <!-- خيار أرشيف الاشتراكات التراكمي المضاف 👈 -->
+        <li class="dropdown-item-cat" id="subOptArchive"><span>📚 أرشيف الاشتراكات</span></li>
       </ul>
     </div>
     
@@ -1926,7 +1928,52 @@
       resetDefaultBtn.addEventListener('click', resetToDefault);
 
       testGeminiBtn.addEventListener('click', testGeminiConnection);
+      testGeminiBtn.addEventListener('click', testGeminiConnection);
 
+      // تفعيل عمل القائمة المنسدلة الجديدة للاشتراكات وخياراتها الثلاثة محلياً وسحابياً 👈
+      const pillSubscriptionsDropdownBtn = document.getElementById('pillSubscriptionsDropdownBtn');
+      const subscriptionsDropdownMenu = document.getElementById('subscriptionsDropdownMenu');
+      
+      if (pillSubscriptionsDropdownBtn && subscriptionsDropdownMenu) {
+        pillSubscriptionsDropdownBtn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          // إغلاق قائمة التصنيفات الأخرى لو كانت مفتوحة لمنع تداخل القوائم
+          const catMenu = document.getElementById('categoriesDropdownMenu');
+          if (catMenu) catMenu.classList.remove('show');
+          
+          subscriptionsDropdownMenu.classList.toggle('show');
+        });
+      }
+
+      // خيار فيديوهات طويلة 📹 👈
+      const subOptVideos = document.getElementById('subOptVideos');
+      if (subOptVideos) {
+        subOptVideos.addEventListener('click', () => {
+          if (subscriptionsDropdownMenu) subscriptionsDropdownMenu.classList.remove('show');
+          fetchSubscriptionsFeed('videos');
+        });
+      }
+
+      // خيار شورتس 📱 👈
+      const subOptShorts = document.getElementById('subOptShorts');
+      if (subOptShorts) {
+        subOptShorts.addEventListener('click', () => {
+          if (subscriptionsDropdownMenu) subscriptionsDropdownMenu.classList.remove('show');
+          fetchSubscriptionsFeed('shorts');
+        });
+      }
+
+      // خيار أرشيف الاشتراكات التراكمي المضاف 👈
+      const subOptArchive = document.getElementById('subOptArchive');
+      if (subOptArchive) {
+        subOptArchive.addEventListener('click', () => {
+          if (subscriptionsDropdownMenu) subscriptionsDropdownMenu.classList.remove('show');
+          showSubscriptionsArchive(); // استعراض الأرشيف محلياً التراكمي 👈
+        });
+      }
+
+      // حفظ تفضيلات المستخدم لصندوق الخيار جيميناي تلقائياً 👈
+      enableAutoClassifyCheck.addEventListener('change', (e) => {
       // حفظ تفضيلات المستخدم لصندوق الخيار جيميناي تلقائياً
       enableAutoClassifyCheck.addEventListener('change', (e) => {
         localStorage.setItem('user_enable_auto_classify', e.target.checked);
@@ -2836,6 +2883,57 @@
         logToCloudConsole(`❌ فشل جلب خلاصة الاشتراكات: ${e.message}`);
         initApp();
       }
+    }
+
+    // دالة استعراض أرشيف الاشتراكات التراكمي والتاريخي محلياً بنظام الترقيم السريع (0 كوتا) 👈
+    function showSubscriptionsArchive() {
+      renderSkeletons();
+      
+      setTimeout(() => {
+        // تحويل قاعدة بيانات الاشتراكات التراكمية من كائن (Object) إلى مصفوفة (Array) 👈
+        const archiveList = Object.keys(subscriptionsDb).map(vId => {
+          return {
+            id: 'sub_' + vId,
+            title: subscriptionsDb[vId].title,
+            channel: subscriptionsDb[vId].channel,
+            thumbnail: subscriptionsDb[vId].thumbnail,
+            url: subscriptionsDb[vId].url,
+            parentPlaylistId: subscriptionsDb[vId].parentPlaylistId,
+            parentPlaylistName: subscriptionsDb[vId].parentPlaylistName,
+            publishedAt: subscriptionsDb[vId].publishedAt,
+            duration: subscriptionsDb[vId].duration,
+            category: subscriptionsDb[vId].category
+          };
+        });
+
+        if (archiveList.length === 0) {
+          logToCloudConsole('⚠️ أرشيف الاشتراكات فارغ حالياً. تصفح التبويبات الأخرى ليتم حفظها تلقائياً.');
+          initApp();
+          return;
+        }
+
+        // ترتيب الأرشيف التاريخي تنازلياً من الأحدث للأقدم 👈
+        archiveList.sort((a, b) => b.publishedAt - a.publishedAt);
+
+        // تفعيل حالة العرض للأرشيف لتشغيل الفلاتر والبحث والترتيب داخله محلياً وبدون بطء 👈
+        activeView = 'archive';
+        filteredVideos = archiveList;
+        currentPage = 1;
+
+        // تحديث تلوين الأزرار والعناوين في واجهتك
+        document.querySelectorAll('.category-pill-btn').forEach(btn => btn.classList.remove('active', 'active-gold'));
+        const subDropdownBtn = document.getElementById('pillSubscriptionsDropdownBtn');
+        const subDropdownLabel = document.getElementById('subDropdownLabel');
+        if (subDropdownBtn) subDropdownBtn.classList.add('active');
+        if (subDropdownLabel) subDropdownLabel.textContent = '🔔 أرشيف الاشتراكات';
+
+        // إظهار زر تصنيف الأرشيف الذهبي 👈
+        const classifySubsBtn = document.getElementById('classifySubscriptionsBtn');
+        if (classifySubsBtn) classifySubsBtn.style.display = 'inline-flex';
+
+        logToCloudConsole(`📚 تم بنجاح تحميل واستعراض أرشيف الاشتراكات التاريخي ويحتوي على ${archiveList.length} فيديو تراكمي.`);
+        renderGrid();
+      }, 300);
     }
 
     // دالة تصفية وفصل الفيديوهات عن الشورتس مع تحديث عناوين الزر المنسدل تلقائياً 👈
@@ -4278,11 +4376,30 @@ ${titles.map((t, idx) => `${idx + 1}. ${t}`).join('\n')}`;
 
       const dupCountsForFilter = getDuplicateCounts();
 
-      // 1. تحديد مصدر الفيديوهات للبحث (المكتبة، الاشتراكات، أو الشورتس) تلقائياً بحسب التبويب المفتوح 👈
+      // 1. تحديد مصدر الفيديوهات للبحث (المكتبة، الاشتراكات، الشورتس، أو الأرشيف التراكمي) تلقائياً 👈
       let sourceList = allVideos;
       if (activeView === 'subscriptions' || activeView === 'shorts') {
         sourceList = cachedSubscriptionsFeed || [];
+      } else if (activeView === 'archive') {
+        // بناء مصفوفة الأرشيف التراكمي محلياً وفلترتها بالكامل 👈
+        sourceList = Object.keys(subscriptionsDb).map(vId => {
+          return {
+            id: 'sub_' + vId,
+            title: subscriptionsDb[vId].title,
+            channel: subscriptionsDb[vId].channel,
+            thumbnail: subscriptionsDb[vId].thumbnail,
+            url: subscriptionsDb[vId].url,
+            parentPlaylistId: subscriptionsDb[vId].parentPlaylistId,
+            parentPlaylistName: subscriptionsDb[vId].parentPlaylistName,
+            publishedAt: subscriptionsDb[vId].publishedAt,
+            duration: subscriptionsDb[vId].duration,
+            category: subscriptionsDb[vId].category
+          };
+        });
+        // ترتيب الأرشيف تنازلياً
+        sourceList.sort((a, b) => b.publishedAt - a.publishedAt);
       }
+      
 
       // 2. البحث المرن المحدث والموجه للمصدر الصحيح
       filteredVideos = sourceList.filter(v => {
