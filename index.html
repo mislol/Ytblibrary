@@ -1229,8 +1229,9 @@
     <button id="pillAllBtn" class="category-pill-btn active"><span data-i18n="pillAll">الكل</span> <span class="badge" id="pillAllBadge">0</span></button>
     
     <!-- زر خلاصة الاشتراكات المضاف (مخفي افتراضياً ويظهر للمسجلين) 👈 -->
-    <button id="pillSubscriptionsBtn" class="category-pill-btn" style="display: none; color: var(--green-color);"><span data-i18n="pillSubscriptions">🔔 اشتراكات </span></button>
-    
+    <button id="pillSubscriptionsBtn" class="category-pill-btn" style="display: none; color: var(--green-color);"><span data-i18n="pillSubscriptions">🔔 اشتراكات</span></button>
+    <!-- زر شورتس الجديد والمفصول برمجياً عن الفيديوهات العادية 👈 -->
+    <button id="pillShortsBtn" class="category-pill-btn" style="display: none; color: var(--gold-color);"><span data-i18n="pillShorts">📱 شورتس</span></button>
     
     <div class="dropdown-category-container" style="position: relative; display: inline-block;">
       <button id="pillCategoriesDropdownBtn" class="category-pill-btn"><span data-i18n="pillCategories">التصنيفات</span> <span class="arrow">▾</span></button>
@@ -1439,7 +1440,8 @@
     "redoTitle": "إعادة ↪️",
     "toastUndoSuccess": "تم التراجع بنجاح ↩️",
     "toastRedoSuccess": "تمت الإعادة بنجاح ↪️",
-    "pillSubscriptions": "🔔 اشتراكات", // 👈 تم تقصير الاسم ليتناسب مع الهواتف
+    "pillSubscriptions": "🔔 اشتراكات",
+    "pillShorts": "📱 شورتس", // 👈 الترجمة المضافة لزر الشورتس
     "filterCategory": "التصنيف",
     "filterChannel": "القناة",
     "filterDuration": "المدة الزمنية",
@@ -1593,6 +1595,7 @@
     "toastUndoSuccess": "Undo successful ↩️",
     "toastRedoSuccess": "Redo successful ↪️",
     "pillSubscriptions": "🔔 Subs",
+    "pillShorts": "📱 Shorts", // 👈 الترجمة المضافة بالإنجليزية
     "filterCategory": "Category",
     "filterChannel": "Channel",
     "filterDuration": "Duration",
@@ -1947,11 +1950,19 @@
           toolsMenu.classList.remove('show');
         }
       });
-// تسجيل كود الضغط على زر خلاصة الاشتراكات 👈
+// تسجيل كود الضغط على زر خلاصة الاشتراكات (لجلب الفيديوهات الطويلة فقط) 👈
       const pillSubscriptionsBtn = document.getElementById('pillSubscriptionsBtn');
       if (pillSubscriptionsBtn) {
         pillSubscriptionsBtn.addEventListener('click', () => {
-          fetchSubscriptionsFeed();
+          fetchSubscriptionsFeed('videos'); // تصفية الفيديوهات الطويلة 👈
+        });
+      }
+
+      // تسجيل كود الضغط على زر شورتس المضاف (لجلب الشورتس فقط فرياً) 👈
+      const pillShortsBtn = document.getElementById('pillShortsBtn');
+      if (pillShortsBtn) {
+        pillShortsBtn.addEventListener('click', () => {
+          fetchSubscriptionsFeed('shorts'); // تصفية الشورتس 👈
         });
       }
 
@@ -2606,16 +2617,25 @@
       };
       reader.readAsText(file, 'UTF-8');
     }
-// دالة جلب خلاصة آخر 50 فيديو من اشتراكاتك وترتيبها زمنياً وتنسيقها لتوافق واجهتك 👈
-    async function fetchSubscriptionsFeed() {
+// مصفوفة الذاكرة المؤقتة لمنع إعادة الاتصال وتوفير الكوتا السحابية والسرعة الفورية 👈
+    let cachedSubscriptionsFeed = null;
+
+    // دالة جلب وتصفية خلاصة الاشتراكات وتصنيفها بدقة للفيديوهات والشورتس 👈
+    async function fetchSubscriptionsFeed(targetType = 'videos') {
       const token = getValidAccessToken();
       if (!token) return;
 
+      // 1. إذا كانت خلاصة البيانات مخزنة مسبقاً، نقوم بتصفيتها وعرضها فوراً دون اتصال سحابي إضافي 👈
+      if (cachedSubscriptionsFeed && cachedSubscriptionsFeed.length > 0) {
+        renderFilteredSubscriptions(cachedSubscriptionsFeed, targetType);
+        return;
+      }
+
       renderSkeletons();
-      logToCloudConsole('🔔 جاري جلب خلاصة آخر الفيديوهات من قنوات اشتراكاتك...');
+      logToCloudConsole('🔔 جاري جلب قائمة الاشتراكات من حساب يوتيوب الخاص بك...');
 
       try {
-        // 1. جلب أول 15 قناة مشترك فيها المستخدم من خوادم يوتيوب
+        // جلب أول 15 قناة مشترك فيها المستخدم من خوادم يوتيوب
         const subsUrl = 'https://www.googleapis.com/youtube/v3/subscriptions?part=snippet&mine=true&maxResults=15';
         const subsRes = await fetch(subsUrl, {
           headers: { 'Authorization': `Bearer ${token}` }
@@ -2630,12 +2650,12 @@
           return;
         }
 
-        logToCloudConsole(`📁 تم العثور على ${subsData.items.length} قناة مشترك بها. جاري استخراج آخر الفيديوهات بالتوازي لتقليص الكوتا السحابية...`);
+        logToCloudConsole(`📁 تم العثور على ${subsData.items.length} قناة مشترك بها. جاري استخراج آخر الفيديوهات المرفوعة...`);
 
-        // 2. استخدام خوارزمية جلب قائمة Uploads لكل قناة بالتوازي لتسريع العملية (تبديل UC بـ UU في المعرّف)
+        // جلب آخر 3 فيديوهات من قائمة المرفوعات لكل قناة بالتوازي لتقليص الكوتا
         const promises = subsData.items.map(async (item) => {
           const channelId = item.snippet.resourceId.channelId;
-          const uploadsPlaylistId = 'UU' + channelId.substring(2); // معادلة يوتيوب السريعة لتحويل القناة لقائمة المرفوعات 👈
+          const uploadsPlaylistId = 'UU' + channelId.substring(2);
           const playlistItemsUrl = `https://www.googleapis.com/youtube/v3/playlistItems?part=snippet&playlistId=${uploadsPlaylistId}&maxResults=3`;
 
           try {
@@ -2654,42 +2674,63 @@
 
         const allChannelsItems = await Promise.all(promises);
         
-        // تجميع وتنسيق الفيديوهات لتدعم العمل داخل واجهتك الحالية
-        let mergedVideos = [];
-        allChannelsItems.flat().forEach((item, index) => {
+        // تجميع الفيديوهات وتنسيقها الأولي واستخراج معرفاتها لطلب المدد الحقيقية
+        let videoIds = [];
+        let tempVideos = [];
+        
+        allChannelsItems.flat().forEach(item => {
           const snippet = item.snippet;
           if (snippet && snippet.resourceId && snippet.resourceId.kind === 'youtube#video') {
             const videoId = snippet.resourceId.videoId;
-            mergedVideos.push({
-              id: 'sub_' + videoId, // معرّف فريد مؤقت
+            videoIds.push(videoId);
+            tempVideos.push({
+              id: 'sub_' + videoId,
               title: snippet.title,
-              category: 'خلاصة الاشتراكات 🔔',
               channel: snippet.channelTitle,
-              duration: '00:00', // قيمة افتراضية لحماية كوتا الاتصال السحابية من الاستهلاك المفرط
               thumbnail: snippet.thumbnails?.high?.url || `https://img.youtube.com/vi/${videoId}/hqdefault.jpg`,
               url: `https://www.youtube.com/watch?v=${videoId}`,
               parentPlaylistId: 'subscriptions_feed',
               parentPlaylistName: '🔔 خلاصة الاشتراكات',
-              position: index,
-              publishedAt: new Date(snippet.publishedAt).getTime() // الحقل الزمني للترتيب التنازلي المباشر
+              publishedAt: new Date(snippet.publishedAt).getTime(),
+              duration: '00:00' // قيمة افتراضية سيتم تحديثها بالقيم الحقيقية
             });
           }
         });
 
-        // 3. ترتيب الفيديوهات تنازلياً من الأحدث للأقدم واقتطاع أول 50 فيديو فقط
-        mergedVideos.sort((a, b) => b.publishedAt - a.publishedAt);
-        const finalFeed = mergedVideos.slice(0, 50);
-
-        if (finalFeed.length === 0) {
+        if (tempVideos.length === 0) {
           logToCloudConsole('⚠️ لم نجد أي فيديوهات مرفوعة مؤخراً في قنوات اشتراكاتك.');
           initApp();
           return;
         }
 
-        logToCloudConsole(`✅ تم جلب وترتيب آخر ${finalFeed.length} فيديو من اشتراكاتك بنجاح!`);
+        // جلب المدد الزمنية الحقيقية لجميع الفيديوهات دفعة واحدة لفرز الشورتس وعرض التوقيت الفعلي 👈
+        logToCloudConsole(`⏳ جاري استدعاء تفاصيل الأوقات الفعلية لـ ${tempVideos.length} فيديو في طلب جماعي واحد...`);
+        const videoDetailsUrl = `https://www.googleapis.com/youtube/v3/videos?part=contentDetails&id=${videoIds.join(',')}`;
+        const detailsRes = await fetch(videoDetailsUrl, {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+
+        if (detailsRes.ok) {
+          const detailsData = await detailsRes.json();
+          if (detailsData.items) {
+            detailsData.items.forEach(detailItem => {
+              const targetVid = tempVideos.find(v => extractVideoID(v.url) === detailItem.id);
+              if (targetVid && detailItem.contentDetails) {
+                // تحديث المدة الزمنية الحقيقية للفيديو بدقة (لتظهر الأوقات الفعلية على الكروت)
+                targetVid.duration = parseISO8601Duration(detailItem.contentDetails.duration);
+              }
+            });
+          }
+        }
+
+        // ترتيب الفيديوهات تنازلياً من الأحدث للأقدم
+        tempVideos.sort((a, b) => b.publishedAt - a.publishedAt);
         
-        // عرض الفيديوهات داخل شبكة العرض
-        renderSubscriptionsFeedInGrid(finalFeed);
+        // حفظ القائمة الكاملة مع الأوقات في الذاكرة المؤقتة لمنع استهلاك كوتا إضافية 👈
+        cachedSubscriptionsFeed = tempVideos;
+
+        // تصفية وعرض النوع المطلوب
+        renderFilteredSubscriptions(cachedSubscriptionsFeed, targetType);
 
       } catch (e) {
         console.error(e);
@@ -2698,19 +2739,37 @@
       }
     }
 
-    // دالة عرض الفيديوهات المسترجعة في الواجهة الرئيسية محلياً 👈
-    function renderSubscriptionsFeedInGrid(feed) {
-      filteredVideos = feed;
-      currentPage = 1;
+    // دالة تصفية وفصل الفيديوهات عن مقاطع شورتس محلياً وعرضها 👈
+    function renderFilteredSubscriptions(feedList, targetType) {
+      let result = [];
       
-      // تحديث أزرار التنقل للتوضيح البصري بأننا في خلاصة الاشتراكات
+      if (targetType === 'shorts') {
+        // الشورتس (Shorts): هي الفيديوهات التي تبلغ مدتها دقيقة واحدة (60 ثانية) أو أقل 👈
+        result = feedList.filter(v => parseDuration(v.duration) <= 60);
+        logToCloudConsole(`📱 تم فرز وعرض آخر ${result.length} مقطع شورتس (Shorts) من اشتراكاتك.`);
+      } else {
+        // الفيديوهات العادية: هي الفيديوهات الطويلة التي تبلغ مدتها أكثر من دقيقة 👈
+        result = feedList.filter(v => parseDuration(v.duration) > 60);
+        logToCloudConsole(`📹 تم فرز وعرض آخر ${result.length} فيديو طويل من اشتراكاتك.`);
+      }
+
+      // تصفية وعرض أول 50 عنصر فقط من النتائج المصفاة
+      filteredVideos = result.slice(0, 50);
+      currentPage = 1;
+
+      // تلوين الأزرار الحالية لتوضيح الفئة المفتوحة بنقرة عين
       document.querySelectorAll('.category-pill-btn').forEach(btn => btn.classList.remove('active', 'active-gold'));
-      const subBtn = document.getElementById('pillSubscriptionsBtn');
-      if (subBtn) subBtn.classList.add('active');
+      
+      if (targetType === 'shorts') {
+        const shortsBtn = document.getElementById('pillShortsBtn');
+        if (shortsBtn) shortsBtn.classList.add('active');
+      } else {
+        const subBtn = document.getElementById('pillSubscriptionsBtn');
+        if (subBtn) subBtn.classList.add('active');
+      }
 
       renderGrid();
     }
-
  
     // جلب قوائم التشغيل الخاصة بحساب قوقل الشخصي
     async function fetchPersonalPlaylists(token) {
@@ -3398,10 +3457,12 @@ ${titles.map((t, idx) => `${idx + 1}. ${t}`).join('\n')}`;
       window.location.href = authUrl;
     }
 
+    // تسجيل الخروج وتنظيف الذاكرة المؤقتة للاشتراكات تلقائياً 👈
     function handleGoogleSignOut() {
       localStorage.removeItem('user_youtube_access_token');
       localStorage.removeItem('user_youtube_token_expires');
       localStorage.removeItem('user_google_drive_file_id');
+      cachedSubscriptionsFeed = null; // تفريغ ذاكرة الاشتراكات المؤقتة تماماً 👈
       logToCloudConsole('🔐 تم تسجيل الخروج بنجاح وتم مسح التراخيص المؤقتة.');
       showToast(t('toastSignedOut'));
       updateAuthUI();
@@ -3442,22 +3503,25 @@ ${titles.map((t, idx) => `${idx + 1}. ${t}`).join('\n')}`;
       return null;
     }
 
-    // تحديث الواجهة والتحكم بظهور زر الاشتراكات السحابي 👈
+   // تحديث الواجهة والتحكم بظهور زر الاشتراكات والشوروتس سحابياً 👈
     function updateAuthUI() {
       const token = getValidAccessToken();
       const syncDropdownGroup = document.getElementById('syncDropdownGroup');
-      const pillSubscriptionsBtn = document.getElementById('pillSubscriptionsBtn'); // 👈
+      const pillSubscriptionsBtn = document.getElementById('pillSubscriptionsBtn');
+      const pillShortsBtn = document.getElementById('pillShortsBtn'); // 👈
 
       if (token) {
         googleSignInBtn.style.display = 'none';
         googleSignOutBtn.style.display = 'inline-flex';
         if (syncDropdownGroup) syncDropdownGroup.style.display = 'inline-block';
-        if (pillSubscriptionsBtn) pillSubscriptionsBtn.style.display = 'inline-flex'; // إظهار زر خلاصة الاشتراكات 👈
+        if (pillSubscriptionsBtn) pillSubscriptionsBtn.style.display = 'inline-flex';
+        if (pillShortsBtn) pillShortsBtn.style.display = 'inline-flex'; // إظهار زر شورتس المضاف 👈
       } else {
         googleSignInBtn.style.display = 'inline-flex';
         googleSignOutBtn.style.display = 'none';
         if (syncDropdownGroup) syncDropdownGroup.style.display = 'none';
-        if (pillSubscriptionsBtn) pillSubscriptionsBtn.style.display = 'none'; // إخفاء زر خلاصة الاشتراكات 👈
+        if (pillSubscriptionsBtn) pillSubscriptionsBtn.style.display = 'none';
+        if (pillShortsBtn) pillShortsBtn.style.display = 'none'; // إخفاء زر شورتس المضاف 👈
       }
     }
 
