@@ -1258,8 +1258,13 @@
             <span class="search-icon">🔍</span>
           </div>
           
-          <!-- الأزرار مجمعة بالأسفل بجانب بعضها -->
+          <!-- حاوية الأزرار بالأسفل لتنظيمها بجانب بعضها المحدثة 👈 -->
           <div class="search-buttons-row">
+            <!-- زر تصنيف الاشتراكات ذكياً المضاف حديثاً (يظهر فقط مع تبويب الاشتراكات) 👈 -->
+            <button id="classifySubscriptionsBtn" class="btn btn-gold" style="display: none;" onclick="classifySubscriptionsOnDemand()">
+              <span>🏷️ تصنيف الاشتراكات ذكياً</span>
+            </button>
+
             <button id="filterToggleBtn" class="btn btn-secondary" title="إظهار / إخفاء الفلاتر">
               <span data-i18n="toggleFilters">⚙️ خيارات التصفية</span>
             </button>
@@ -1267,8 +1272,6 @@
               <span data-i18n="viewList">📝 عرض القائمة</span>
             </button>
           </div>
-        </div>
-        </div>
         
         <!-- تم إضافة id وفئة hidden-filters لإخفائها افتراضياً -->
         <div class="filters-row hidden-filters" id="filtersRow">
@@ -1785,10 +1788,13 @@
 
     // عينة افتراضية مبدئية فارغة لتبدأ المكتبة فارغة بالكامل
     const defaultData = [];
-// مصفوفات التاريخ لحفظ عمليات التراجع والإعادة 👈
+// مصفوفات التاريخ لحفظ عمليات التراجع والإعادة
     let undoStack = [];
     let redoStack = [];
-    
+
+    // قاعدة بيانات مستقلة لحفظ تصنيفات الاشتراكات بشكل دائم ومنع ضياعها 👈
+    let subscriptionsDb = {};
+
     let allVideos = [];
     let filteredVideos = [];
     let favoriteIds = new Set();
@@ -1884,6 +1890,9 @@
         selectedCategory = e.target.value;
         updateMenuSelection();
         applyFiltersAndSort(); 
+      // إخفاء زر تصنيف الاشتراكات عند اختيار تصنيف عادي للمكتبة 👈
+        const classifySubsBtn = document.getElementById('classifySubscriptionsBtn');
+        if (classifySubsBtn) classifySubsBtn.style.display = 'none';
       });
       channelFilter.addEventListener('change', () => { currentPage = 1; applyFiltersAndSort(); });
       sortSelect.addEventListener('change', () => { applyFiltersAndSort(); });
@@ -2080,6 +2089,14 @@
         } catch(e) {
           favoriteIds = new Set();
         }
+      }
+
+      // استعادة تصنيفات الاشتراكات المحفوظة مسبقاً عند تشغيل التطبيق 👈
+      try {
+        const storedSubs = localStorage.getItem('user_youtube_subscriptions_db');
+        if (storedSubs) subscriptionsDb = JSON.parse(storedSubs);
+      } catch(e) {
+        subscriptionsDb = {};
       }
 
       const storedLayout = localStorage.getItem('user_youtube_layout');
@@ -2282,6 +2299,9 @@
         const subDropdownBtn = document.getElementById('pillSubscriptionsDropdownBtn');
         if (subDropdownLabel) subDropdownLabel.textContent = '🔔 اشتراكات';
         if (subDropdownBtn) subDropdownBtn.classList.remove('active');
+      // إخفاء زر تصنيف الاشتراكات عند الخروج من تبويب الاشتراكات 👈
+        const classifySubsBtn = document.getElementById('classifySubscriptionsBtn');
+        if (classifySubsBtn) classifySubsBtn.style.display = 'none';
       } else {
         pillAllBtn.classList.remove('active');
         if (selectedCategory === 'favorites') {
@@ -2652,10 +2672,10 @@
       };
       reader.readAsText(file, 'UTF-8');
     }
-// مصفوفة الذاكرة المؤقتة لمنع إعادة الاتصال وتوفير الكوتا السحابية والسرعة الفورية 👈
+// مصفوفة الذاكرة المؤقتة لمنع إعادة الاتصال وتوفير الكوتا السحابية والسرعة الفورية
     let cachedSubscriptionsFeed = null;
 
-    // دالة جلب وتصفية خلاصة الاشتراكات وتصنيفها بدقة للفيديوهات والشورتس (محدثة لـ 100 فيديو) 👈
+    // دالة جلب وتصفية خلاصة الاشتراكات وتصنيفها بدقة للفيديوهات والشورتس (مصححة ومحدثة) 👈
     async function fetchSubscriptionsFeed(targetType = 'videos') {
       const token = getValidAccessToken();
       if (!token) return;
@@ -2670,7 +2690,7 @@
       logToCloudConsole('🔔 جاري جلب قائمة الاشتراكات من حساب يوتيوب الخاص بك...');
 
       try {
-        // جلب أول 20 قناة مشترك فيها المستخدم من خوادم يوتيوب (تم التحديث من 15 إلى 20 قنوات) 👈
+        // جلب أول 20 قناة مشترك فيها المستخدم من خوادم يوتيوب
         const subsUrl = 'https://www.googleapis.com/youtube/v3/subscriptions?part=snippet&mine=true&maxResults=20';
         const subsRes = await fetch(subsUrl, {
           headers: { 'Authorization': `Bearer ${token}` }
@@ -2687,7 +2707,7 @@
 
         logToCloudConsole(`📁 تم العثور على ${subsData.items.length} قناة مشترك بها. جاري استخراج آخر الفيديوهات المرفوعة...`);
 
-        // جلب آخر 5 فيديوهات من المرفوعات لكل قناة بالتوازي (تم التحديث من 3 إلى 5 فيديوهات لكل قناة) 👈
+        // جلب آخر 5 فيديوهات من المرفوعات لكل قناة بالتوازي
         const promises = subsData.items.map(async (item) => {
           const channelId = item.snippet.resourceId.channelId;
           const uploadsPlaylistId = 'UU' + channelId.substring(2);
@@ -2709,28 +2729,53 @@
 
         const allChannelsItems = await Promise.all(promises);
         
-        // تجميع الفيديوهات واستخراج معرفاتها
-        let videoIds = [];
-        let tempVideos = [];
+        // تعريف وتأمين المتغيرات بشكل سليم لمنع خطأ ReferenceError 👈
+        let videoIds = []; // 👈 تم استرجاع تعريف مصفوفة المعرفات هنا بنجاح
+        let tempVideos = []; // 👈 تم استرجاع تعريف مصفوفة الفيديوهات هنا بنجاح
         
         allChannelsItems.flat().forEach(item => {
           const snippet = item.snippet;
           if (snippet && snippet.resourceId && snippet.resourceId.kind === 'youtube#video') {
-            const videoId = snippet.resourceId.videoId;
-            videoIds.push(videoId);
+            const vId = snippet.resourceId.videoId;
+            videoIds.push(vId); // 👈 إضافة المعرف للمصفوفة بنجاح وبدون أي أخطاء
+            
+            let finalCategory = 'غ-مصنف'; // افتراضي
+
+            // إذا كان هذا الفيديو مصنفاً ومحفوظاً مسبقاً في قاعدة البيانات، نسترجع تصنيفه فوراً
+            if (subscriptionsDb[vId]) {
+              finalCategory = subscriptionsDb[vId].category || 'غ-مصنف';
+            } else {
+              // إذا كان فيديو جديد، نقوم بإنشاء سجل فارغ له في قاعدة البيانات
+              subscriptionsDb[vId] = {
+                category: 'غ-مصنف',
+                title: snippet.title,
+                channel: snippet.channelTitle,
+                thumbnail: snippet.thumbnails?.high?.url || `https://img.youtube.com/vi/${vId}/hqdefault.jpg`,
+                url: `https://www.youtube.com/watch?v=${vId}`,
+                parentPlaylistId: 'subscriptions_feed',
+                parentPlaylistName: '🔔 خلاصة الاشتراكات',
+                publishedAt: new Date(snippet.publishedAt).getTime(),
+                duration: '00:00'
+              };
+            }
+
             tempVideos.push({
-              id: 'sub_' + videoId,
+              id: 'sub_' + vId,
               title: snippet.title,
               channel: snippet.channelTitle,
-              thumbnail: snippet.thumbnails?.high?.url || `https://img.youtube.com/vi/${videoId}/hqdefault.jpg`,
-              url: `https://www.youtube.com/watch?v=${videoId}`,
+              thumbnail: snippet.thumbnails?.high?.url || `https://img.youtube.com/vi/${vId}/hqdefault.jpg`,
+              url: `https://www.youtube.com/watch?v=${vId}`,
               parentPlaylistId: 'subscriptions_feed',
               parentPlaylistName: '🔔 خلاصة الاشتراكات',
               publishedAt: new Date(snippet.publishedAt).getTime(),
-              duration: '00:00'
+              duration: '00:00',
+              category: finalCategory
             });
           }
         });
+
+        // حفظ السجلات الجديدة تلقائياً في قاعدة البيانات الدائمة
+        localStorage.setItem('user_youtube_subscriptions_db', JSON.stringify(subscriptionsDb));
 
         if (tempVideos.length === 0) {
           logToCloudConsole('⚠️ لم نجد أي فيديوهات مرفوعة مؤخراً في قنوات اشتراكاتك.');
@@ -2738,7 +2783,7 @@
           return;
         }
 
-        // تقسيم طلب المدد الزمنية إلى دفعات (كل دفعة 50 معرّف كحد أقصى تماشياً مع قوانين قوقل الصارمة) 👈
+        // تقسيم طلب المدد الزمنية إلى دفعات (كل دفعة 50 معرّف كحد أقصى تماشياً مع قوانين قوقل الصارمة)
         logToCloudConsole(`⏳ جاري استدعاء تفاصيل الأوقات لـ ${tempVideos.length} فيديو على دفعات متتالية...`);
         const batches = [];
         for (let i = 0; i < videoIds.length; i += 50) {
@@ -2813,12 +2858,93 @@
         if (subDropdownLabel) subDropdownLabel.textContent = '🔔 اشتراكات: شورتس'; // تحديث النص للشورتس 👈
       } else {
         if (subDropdownBtn) subDropdownBtn.classList.add('active');
-        if (subDropdownLabel) subDropdownLabel.textContent = '🔔 اشتراكات: فيديوهات'; // تحديث النص للفيديوهات 👈
+        if (subDropdownLabel) subDropdownLabel.textContent = '🔔 اشتراكات: فيديوهات';
       }
+
+      // إظهار الزر الذهبي الجديد عند عرض خلاصة الاشتراكات أو الشورتس 👈
+      const classifySubsBtn = document.getElementById('classifySubscriptionsBtn');
+      if (classifySubsBtn) classifySubsBtn.style.display = 'inline-flex';
 
       renderGrid();
     }
- 
+ // دالة تصنيف فيديوهات الاشتراكات الجديدة والترقية التدريجية ذكياً بـ Gemini وحفظها بشكل دائم 👈
+    async function classifySubscriptionsOnDemand() {
+      const geminiKey = geminiApiKey.value.trim() || localStorage.getItem('user_gemini_api_key') || '';
+      if (!geminiKey) {
+        showToast(t('toastEnterGeminiKeyFirst'));
+        return;
+      }
+
+      // تصفية الفيديوهات المعروضة حالياً والتي لا تزال غير مصنفة ("غ-مصنف") 👈
+      const targets = filteredVideos.filter(v => !v.category || v.category === 'غ-مصنف' || v.category.includes('غ-مصنف'));
+      
+      if (targets.length === 0) {
+        showToast('✅ جميع فيديوهات الاشتراكات المعروضة حالياً مصنفة مسبقاً!');
+        return;
+      }
+
+      globalImportStatusContainer.style.display = 'flex';
+      cancelImportBtn.style.display = 'inline-flex';
+      continueImportBtn.style.display = 'none';
+      updateProgressBar(0);
+
+      logToCloudConsole(`🤖 جاري البدء في تصنيف تدريجي لـ ${targets.length} فيديو اشتراكات جديد غير مصنف...`);
+      
+      const batches = [];
+      const batchSize = 50;
+      for (let i = 0; i < targets.length; i += batchSize) {
+        batches.push(targets.slice(i, i + batchSize));
+      }
+
+      isImportAborted = false;
+
+      for (let b = 0; b < batches.length; b++) {
+        if (isImportAborted) {
+          logToCloudConsole('❌ تم إلغاء عملية تصنيف الاشتراكات وحفظ التعديلات المكتملة.');
+          globalImportStatusContainer.style.display = 'none';
+          return;
+        }
+
+        const batch = batches[b];
+        const titles = batch.map(v => v.title);
+        globalImportStatus.textContent = `جاري تصنيف الدفعة ${b + 1} من أصل ${batches.length}...`;
+        
+        try {
+          const categories = await classifyTitlesWithGemini(titles, geminiKey);
+          if (categories && categories.length === batch.length) {
+            batch.forEach((video, idx) => {
+              const vId = extractVideoID(video.url);
+              const newCategoryValue = categories[idx];
+              
+              // 1. تحديث الكرت المعروض حالياً في الواجهة
+              video.category = newCategoryValue;
+              
+              // 2. تحديث السجل وحفظه بشكل دائم في قاعدة البيانات
+              if (subscriptionsDb[vId]) {
+                subscriptionsDb[vId].category = newCategoryValue;
+              }
+              
+              // 3. تحديث الكرت المخزن بالـ Session Cache لتفادي إعادة الجلب
+              const cachedMatch = cachedSubscriptionsFeed.find(cv => extractVideoID(cv.url) === vId);
+              if (cachedMatch) cachedMatch.category = newCategoryValue;
+            });
+
+            // حفظ التحديثات في التخزين الدائم للمتصفح 👈
+            localStorage.setItem('user_youtube_subscriptions_db', JSON.stringify(subscriptionsDb));
+          }
+        } catch (err) {
+          console.error(err);
+          logToCloudConsole(`❌ خطأ أثناء تصنيف الدفعة ${b + 1}: ${err.message}`);
+        }
+
+        const percent = Math.round(((b + 1) / batches.length) * 100);
+        updateProgressBar(percent);
+      }
+
+      globalImportStatusContainer.style.display = 'none';
+      showToast('✅ تم بنجاح تصنيف أحدث فيديوهات الاشتراكات وحفظها بشكل دائم!');
+      renderGrid();
+    }
     // جلب قوائم التشغيل الخاصة بحساب قوقل الشخصي
     async function fetchPersonalPlaylists(token) {
       logToCloudConsole('🌐 جاري الاتصال بقوقل لجلب قوائم التشغيل المتواجدة بحسابك...');
@@ -3692,18 +3818,88 @@ ${titles.map((t, idx) => `${idx + 1}. ${t}`).join('\n')}`;
       if (redoBtn) redoBtn.disabled = (redoStack.length === 0);
     }
 
-    // دالة التراجع ↩️ 👈
+    // دالة قوية تتواصل مع يوتيوب سحابياً لإعادة إدراج الفيديو المحذوف بنجاح 👈
+    async function restoreVideoToCloud(video, token) {
+      if (!token || !video || !video.parentPlaylistId || video.parentPlaylistId.startsWith('manual_')) return;
+
+      logToCloudConsole(`🔄 جاري محاولة إعادة إضافة الفيديو "${video.title}" سحابياً إلى قائمة يوتيوب...`);
+      showToast(t('toastRestoringToCloud') || '⏳ جاري إعادة إضافة الفيديو ليوتيوب سحابياً...');
+
+      const url = 'https://www.googleapis.com/youtube/v3/playlistItems?part=snippet';
+      const body = {
+        snippet: {
+          playlistId: video.parentPlaylistId,
+          resourceId: {
+            kind: 'youtube#video',
+            videoId: extractVideoID(video.url)
+          }
+        }
+      };
+
+      // الحفاظ على الترتيب الأصلي للفيديو في القائمة إن وُجد
+      if (video.position !== undefined) {
+        body.snippet.position = video.position;
+      }
+
+      try {
+        const res = await fetch(url, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(body)
+        });
+
+        if (res.ok) {
+          const data = await res.json();
+          // تحديث معرّف العنصر السحابي الجديد لتتمكن من حذفه مرة أخرى مستقبلاً بنجاح
+          video.playlistItemId = data.id;
+          
+          // حفظ التغيير محلياً مع المعرف السحابي الجديد
+          localStorage.setItem('user_youtube_library', JSON.stringify(allVideos));
+          
+          logToCloudConsole(`✅ تم إعادة إضافة الفيديو "${video.title}" سحابياً بنجاح!`);
+          showToast(t('toastRestoreToCloudSuccess') || '✅ تم إعادة الفيديو سحابياً ليوتيوب بنجاح!');
+          initApp();
+        } else {
+          const errData = await res.json();
+          logToCloudConsole(`❌ فشل إعادة إضافة الفيديو سحابياً: ${errData.error?.message || 'خطأ غير معروف'}`);
+        }
+      } catch (err) {
+        console.error('Cloud restore network error', err);
+        logToCloudConsole(`❌ خطأ شبكة أثناء الإعادة السحابية: ${err.message}`);
+      }
+    }
+
+    // دالة التراجع المحدثة والمزامنة سحابياً مع يوتيوب 👈
     function undoAction() {
       if (undoStack.length === 0) return;
       redoStack.push(JSON.stringify(allVideos));
       const previousState = JSON.parse(undoStack.pop());
       
+      const token = getValidAccessToken();
+      
+      // كشف المقاطع التي كانت محذوفة ومزامنتها سحابياً مع يوتيوب قبل الحفظ 👈
+      if (token) {
+        const currentIds = new Set(allVideos.map(v => v.id));
+        // تصفية الفيديوهات التي ستعود الآن وكانت محذوفة سابقاً
+        const restoredVideos = previousState.filter(v => !currentIds.has(v.id));
+        
+        restoredVideos.forEach(video => {
+          // إذا كان الفيديو ينتمي لقائمة يوتيوب سحابية نشطة
+          if (video.parentPlaylistId && !video.parentPlaylistId.startsWith('manual_')) {
+            // استدعاء إعادة الإضافة سحابياً فوراً
+            restoreVideoToCloud(video, token);
+          }
+        });
+      }
+
       allVideos = previousState;
       localStorage.setItem('user_youtube_library', JSON.stringify(allVideos));
       initApp();
       updateHistoryButtonsUI();
       
-      const token = getValidAccessToken();
       if (token) saveBackupToGoogleDrive();
       
       showToast(t('toastUndoSuccess'));
