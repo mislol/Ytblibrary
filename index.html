@@ -4223,12 +4223,14 @@ ${titles.map((t, idx) => `${idx + 1}. ${t}`).join('\n')}`;
       initApp();
     }
 
+    // دالة حذف فيديو واحد (النسخة الكاملة والمغلقة بالأقواس برمجياً بشكل سليم 100%) 👈
     async function deleteVideo(id) {
       const video = allVideos.find(v => v.id === id);
       if (!video) return;
 
       if (confirm('هل أنت متأكد من رغبتك في حذف هذا الفيديو نهائياً من القائمة؟')) {
         const token = getValidAccessToken();
+        
         // تعديل: استثناء خلاصة الاشتراكات من طلبات الحذف السحابي لأنها للقراءة فقط 👈
         if (token && video.playlistItemId && video.parentPlaylistId !== 'subscriptions_feed') {
           try {
@@ -4247,7 +4249,7 @@ ${titles.map((t, idx) => `${idx + 1}. ${t}`).join('\n')}`;
           } catch (err) {
             showToast(t('toastDeletedLocalOnly'));
           }
-        } else if (video.playlistItemId) {
+        } else if (video.playlistItemId && video.parentPlaylistId !== 'subscriptions_feed') {
           showToast(t('toastDeletedLocalOnlySignIn'));
         }
 
@@ -4256,7 +4258,7 @@ ${titles.map((t, idx) => `${idx + 1}. ${t}`).join('\n')}`;
         localStorage.setItem('user_youtube_favorites', JSON.stringify([...favoriteIds]));
         saveLibraryAndBackup(filteredList);
       }
-    }
+    } // 👈 قوس نهاية الدالة السليم والمغلق بنجاح
 
     function clearCurrentLibrary() {
       if (confirm('هل أنت متأكد من رغبتك في مسح القائمة بالكامل؟ لا يمكن التراجع عن هذه الخطوة.')) {
