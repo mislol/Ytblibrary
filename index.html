@@ -1792,8 +1792,11 @@
     let undoStack = [];
     let redoStack = [];
 
-    // قاعدة بيانات مستقلة لحفظ تصنيفات الاشتراكات بشكل دائم ومنع ضياعها 👈
+    // قاعدة بيانات مستقلة لحفظ تصنيفات الاشتراكات بشكل دائم ومنع ضياعها
     let subscriptionsDb = {};
+
+    // متغير لتحديد التبويب النشط حالياً لتوجيه محرك البحث والفلاتر تلقائياً 👈
+    let activeView = 'library'; // القيم الممكنة: 'library' أو 'subscriptions' أو 'shorts'
 
     let allVideos = [];
     let filteredVideos = [];
@@ -1932,6 +1935,10 @@
       pillAllBtn.addEventListener('click', () => {
         selectedCategory = '';
         currentPage = 1;
+        
+        // إعادة توجيه البحث للمكتبة 👈
+        activeView = 'library';
+
         updateMenuSelection();
         applyFiltersAndSort();
       });
@@ -2833,6 +2840,9 @@
 
     // دالة تصفية وفصل الفيديوهات عن الشورتس مع تحديث عناوين الزر المنسدل تلقائياً 👈
     function renderFilteredSubscriptions(feedList, targetType) {
+      // تحديد التبويب النشط لتوجيه محرك البحث تلقائياً 👈
+      activeView = (targetType === 'shorts') ? 'shorts' : 'subscriptions';
+
       let result = [];
       
       if (targetType === 'shorts') {
@@ -4268,8 +4278,22 @@ ${titles.map((t, idx) => `${idx + 1}. ${t}`).join('\n')}`;
 
       const dupCountsForFilter = getDuplicateCounts();
 
-      // البحث المرن المحدث
-      filteredVideos = allVideos.filter(v => {
+      // 1. تحديد مصدر الفيديوهات للبحث (المكتبة، الاشتراكات، أو الشورتس) تلقائياً بحسب التبويب المفتوح 👈
+      let sourceList = allVideos;
+      if (activeView === 'subscriptions' || activeView === 'shorts') {
+        sourceList = cachedSubscriptionsFeed || [];
+      }
+
+      // 2. البحث المرن المحدث والموجه للمصدر الصحيح
+      filteredVideos = sourceList.filter(v => {
+        // تصفية إضافية مخصصة للتحكم بحدود الشورتس والفيديوهات الطويلة في واجهة الاشتراكات 👈
+        if (activeView === 'shorts') {
+          const secs = parseDuration(v.duration);
+          if (secs > 60) return false;
+        } else if (activeView === 'subscriptions') {
+          const secs = parseDuration(v.duration);
+          if (secs <= 60) return false;
+        }
         let matchesSearch = true;
         if (query) {
           // تقسيم استعلام البحث ليدعم البحث بمرونة أكبر (فصل الكلمات ومطابقتها بشكل غير مترابط)
@@ -4438,6 +4462,9 @@ ${titles.map((t, idx) => `${idx + 1}. ${t}`).join('\n')}`;
 
     // إعادة كل عناصر التصفية والبحث إلى حالتها الافتراضية دفعة واحدة
     function resetAllFilters() {
+      // إعادة توجيه محرك البحث للبحث داخل المكتبة الافتراضية 👈
+      activeView = 'library';
+
       searchInput.value = '';
       channelFilter.value = '';
       const durationEl = document.getElementById('durationFilter');
