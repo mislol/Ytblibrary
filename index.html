@@ -3819,8 +3819,10 @@ ${titles.map((t, idx) => `${idx + 1}. ${t}`).join('\n')}`;
     }
 
     // دالة قوية تتواصل مع يوتيوب سحابياً لإعادة إدراج الفيديو المحذوف بنجاح 👈
+    // دالة قوية تتواصل مع يوتيوب سحابياً لإعادة إدراج الفيديو المحذوف بنجاح (محدثة ومصححة) 👈
     async function restoreVideoToCloud(video, token) {
-      if (!token || !video || !video.parentPlaylistId || video.parentPlaylistId.startsWith('manual_')) return;
+      // تعديل: استثناء خلاصة الاشتراكات سحابياً لأنها للقراءة فقط ولا يمكن الكتابة عليها 👈
+      if (!token || !video || !video.parentPlaylistId || video.parentPlaylistId.startsWith('manual_') || video.parentPlaylistId === 'subscriptions_feed') return;
 
       logToCloudConsole(`🔄 جاري محاولة إعادة إضافة الفيديو "${video.title}" سحابياً إلى قائمة يوتيوب...`);
       showToast(t('toastRestoringToCloud') || '⏳ جاري إعادة إضافة الفيديو ليوتيوب سحابياً...');
@@ -3834,6 +3836,44 @@ ${titles.map((t, idx) => `${idx + 1}. ${t}`).join('\n')}`;
             videoId: extractVideoID(video.url)
           }
         }
+      };
+
+      if (video.position !== undefined) {
+        body.snippet.position = video.position;
+      }
+
+      try {
+        const res = await fetch(url, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(body)
+        });
+
+        if (res.ok) {
+          const data = await res.json();
+          // تحديث معرّف العنصر السحابي الجديد لتتمكن من حذفه مرة أخرى مستقبلاً بنجاح
+          video.playlistItemId = data.id;
+          
+          localStorage.setItem('user_youtube_library', JSON.stringify(allVideos));
+          
+          logToCloudConsole(`✅ تم إعادة إضافة الفيديو "${video.title}" سحابياً بنجاح!`);
+          showToast(t('toastRestoreToCloudSuccess') || '✅ تم إعادة الفيديو سحابياً ليوتيوب بنجاح!');
+          initApp();
+        } else {
+          // تعديل: جلب وطباعة رسالة الخطأ الدقيقة لتسهيل فحص ومعرفة سبب الرفض السحابي 👈
+          const errData = await res.json();
+          const errMsg = errData.error?.message || 'خطأ غير معروف';
+          logToCloudConsole(`❌ فشل إعادة إضافة الفيديو سحابياً: ${errMsg}`);
+          showToast(`❌ فشل الإعادة السحابية: ${errMsg}`);
+        }
+      } catch (err) {
+        console.error('Cloud restore network error', err);
+        logToCloudConsole(`❌ خطأ شبكة أثناء الإعادة السحابية: ${err.message}`);
+      }
+    }
       };
 
       // الحفاظ على الترتيب الأصلي للفيديو في القائمة إن وُجد
@@ -3887,9 +3927,8 @@ ${titles.map((t, idx) => `${idx + 1}. ${t}`).join('\n')}`;
         const restoredVideos = previousState.filter(v => !currentIds.has(v.id));
         
         restoredVideos.forEach(video => {
-          // إذا كان الفيديو ينتمي لقائمة يوتيوب سحابية نشطة
-          if (video.parentPlaylistId && !video.parentPlaylistId.startsWith('manual_')) {
-            // استدعاء إعادة الإضافة سحابياً فوراً
+          // تعديل: استثناء خلاصة الاشتراكات من استدعاء الإعادة السحابية لتفادي أخطاء الرفض السحابية 👈
+          if (video.parentPlaylistId && !video.parentPlaylistId.startsWith('manual_') && video.parentPlaylistId !== 'subscriptions_feed') {
             restoreVideoToCloud(video, token);
           }
         });
@@ -4135,17 +4174,30 @@ ${titles.map((t, idx) => `${idx + 1}. ${t}`).join('\n')}`;
       showToast(t('toastBulkCategoryChanged', {count: selectedVideosSet.size, cat: newCat}));
     }
 
+    // دالة الحذف الجماعي (المعدلة برمجياً لحفظ التاريخ قبل التعديل لتدعم التراجع السليم) 👈
     function applyBulkDelete() {
       if (selectedVideosSet.size === 0) {
         showToast(t('toastSelectOneVideoOp'));
         return;
       }
       if (confirm('هل أنت متأكد من رغبتك في حذف الـ ' + selectedVideosSet.size + ' فيديو المحددة نهائياً من المكتبة؟')) {
+        // حفظ الحالة التاريخية الكاملة في الذاكرة قبل تصفية المصفوفة 👈
+        saveToHistory();
+
         allVideos = allVideos.filter(v => !selectedVideosSet.has(v.id));
         selectedVideosSet.forEach(id => favoriteIds.delete(id));
         
         localStorage.setItem('user_youtube_favorites', JSON.stringify([...favoriteIds]));
-        saveLibraryAndBackup(allVideos);
+        
+        // الحفظ المباشر وتحديث الواجهة لمنع تكرار استدعاء saveToHistory بشكل خاطئ 👈
+        localStorage.setItem('user_youtube_library', JSON.stringify(allVideos));
+        initApp();
+        
+        const token = getValidAccessToken();
+        if (token) {
+          saveBackupToGoogleDrive();
+        }
+
         toggleBulkEditMode();
         showToast(t('toastSelectedVideosDeleted'));
       }
@@ -4178,7 +4230,8 @@ ${titles.map((t, idx) => `${idx + 1}. ${t}`).join('\n')}`;
 
       if (confirm('هل أنت متأكد من رغبتك في حذف هذا الفيديو نهائياً من القائمة؟')) {
         const token = getValidAccessToken();
-        if (token && video.playlistItemId) {
+        // تعديل: استثناء خلاصة الاشتراكات من طلبات الحذف السحابي لأنها للقراءة فقط 👈
+        if (token && video.playlistItemId && video.parentPlaylistId !== 'subscriptions_feed') {
           try {
             showToast(t('toastDeletingCloudList'));
             const res = await fetch('https://www.googleapis.com/youtube/v3/playlistItems?id=' + video.playlistItemId, {
