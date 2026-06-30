@@ -1228,10 +1228,16 @@
   <div class="category-selection-area">
     <button id="pillAllBtn" class="category-pill-btn active"><span data-i18n="pillAll">الكل</span> <span class="badge" id="pillAllBadge">0</span></button>
     
-    <!-- زر خلاصة الاشتراكات المضاف (مخفي افتراضياً ويظهر للمسجلين) 👈 -->
-    <button id="pillSubscriptionsBtn" class="category-pill-btn" style="display: none; color: var(--green-color);"><span data-i18n="pillSubscriptions">🔔 اشتراكات</span></button>
-    <!-- زر شورتس الجديد والمفصول برمجياً عن الفيديوهات العادية 👈 -->
-    <button id="pillShortsBtn" class="category-pill-btn" style="display: none; color: var(--gold-color);"><span data-i18n="pillShorts">📱 شورتس</span></button>
+    <!-- حاوية القائمة المنسدلة الجديدة لفرز الاشتراكات (مخفية افتراضياً وتظهر للمسجلين) 👈 -->
+    <div class="dropdown-category-container" id="subscriptionsDropdownContainer" style="position: relative; display: none;">
+      <button id="pillSubscriptionsDropdownBtn" class="category-pill-btn" style="color: var(--green-color);">
+        <span id="subDropdownLabel">🔔 اشتراكات</span> <span class="arrow">▾</span>
+      </button>
+      <ul id="subscriptionsDropdownMenu" class="categories-dropdown-menu" style="inset-inline-start: 0; min-width: 180px; z-index: 151;">
+        <li class="dropdown-item-cat" id="subOptVideos"><span>📹 فيديوهات</span></li>
+        <li class="dropdown-item-cat" id="subOptShorts"><span>📱 شورتس</span></li>
+      </ul>
+    </div>
     
     <div class="dropdown-category-container" style="position: relative; display: inline-block;">
       <button id="pillCategoriesDropdownBtn" class="category-pill-btn"><span data-i18n="pillCategories">التصنيفات</span> <span class="arrow">▾</span></button>
@@ -1926,7 +1932,7 @@
         categoriesDropdownMenu.classList.toggle('show');
       });
 
-      // إغلاق أي قائمة منسدلة مفتوحة عند النقر على الشاشة في مكان خارجي
+      // إغلاق أي قائمة منسدلة مفتوحة عند النقر على الشاشة في مكان خارجي 👈
       document.addEventListener('click', (e) => {
         if (!pillCategoriesDropdownBtn.contains(e.target) && !categoriesDropdownMenu.contains(e.target)) {
           categoriesDropdownMenu.classList.remove('show');
@@ -1949,23 +1955,46 @@
         if (toolsMenu && toolsBtn && !toolsBtn.contains(e.target) && !toolsMenu.contains(e.target)) {
           toolsMenu.classList.remove('show');
         }
+
+        // إغلاق قائمة الاشتراكات الجديدة تلقائياً عند النقر في الخارج 👈
+        const subMenu = document.getElementById('subscriptionsDropdownMenu');
+        const subBtn = document.getElementById('pillSubscriptionsDropdownBtn');
+        if (subMenu && subBtn && !subBtn.contains(e.target) && !subMenu.contains(e.target)) {
+          subMenu.classList.remove('show');
+        }
       });
-// تسجيل كود الضغط على زر خلاصة الاشتراكات (لجلب الفيديوهات الطويلة فقط) 👈
-      const pillSubscriptionsBtn = document.getElementById('pillSubscriptionsBtn');
-      if (pillSubscriptionsBtn) {
-        pillSubscriptionsBtn.addEventListener('click', () => {
-          fetchSubscriptionsFeed('videos'); // تصفية الفيديوهات الطويلة 👈
+// تفعيل عمل القائمة المنسدلة الجديدة للاشتراكات سحابياً 👈
+      const pillSubscriptionsDropdownBtn = document.getElementById('pillSubscriptionsDropdownBtn');
+      const subscriptionsDropdownMenu = document.getElementById('subscriptionsDropdownMenu');
+      
+      if (pillSubscriptionsDropdownBtn && subscriptionsDropdownMenu) {
+        pillSubscriptionsDropdownBtn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          // إغلاق قائمة التصنيفات الأخرى لو كانت مفتوحة لمنع تداخل القوائم
+          const catMenu = document.getElementById('categoriesDropdownMenu');
+          if (catMenu) catMenu.classList.remove('show');
+          
+          subscriptionsDropdownMenu.classList.toggle('show');
         });
       }
 
-      // تسجيل كود الضغط على زر شورتس المضاف (لجلب الشورتس فقط فرياً) 👈
-      const pillShortsBtn = document.getElementById('pillShortsBtn');
-      if (pillShortsBtn) {
-        pillShortsBtn.addEventListener('click', () => {
-          fetchSubscriptionsFeed('shorts'); // تصفية الشورتس 👈
+      // خيار فيديوهات طويلة 📹 👈
+      const subOptVideos = document.getElementById('subOptVideos');
+      if (subOptVideos) {
+        subOptVideos.addEventListener('click', () => {
+          if (subscriptionsDropdownMenu) subscriptionsDropdownMenu.classList.remove('show');
+          fetchSubscriptionsFeed('videos');
         });
       }
 
+      // خيار شورتس 📱 👈
+      const subOptShorts = document.getElementById('subOptShorts');
+      if (subOptShorts) {
+        subOptShorts.addEventListener('click', () => {
+          if (subscriptionsDropdownMenu) subscriptionsDropdownMenu.classList.remove('show');
+          fetchSubscriptionsFeed('shorts');
+        });
+      }
 
       // منطق عمل زر العودة إلى الأعلى العائم
       const backToTopBtn = document.getElementById('backToTopBtn');
@@ -2247,6 +2276,12 @@
         pillCategoriesDropdownBtn.classList.remove('active');
         pillCategoriesDropdownBtn.classList.remove('active-gold');
         pillCategoriesDropdownBtn.innerHTML = `${t('pillCategories')} <span class="arrow">▾</span>`;
+        
+        // إعادة تسمية عنوان القائمة المنسدلة للاشتراكات إلى الافتراضي وإلغاء نشاطه البصري 👈
+        const subDropdownLabel = document.getElementById('subDropdownLabel');
+        const subDropdownBtn = document.getElementById('pillSubscriptionsDropdownBtn');
+        if (subDropdownLabel) subDropdownLabel.textContent = '🔔 اشتراكات';
+        if (subDropdownBtn) subDropdownBtn.classList.remove('active');
       } else {
         pillAllBtn.classList.remove('active');
         if (selectedCategory === 'favorites') {
@@ -2739,33 +2774,33 @@
       }
     }
 
-    // دالة تصفية وفصل الفيديوهات عن مقاطع شورتس محلياً وعرضها 👈
+    // دالة تصفية وفصل الفيديوهات عن الشورتس مع تحديث عناوين الزر المنسدل تلقائياً 👈
     function renderFilteredSubscriptions(feedList, targetType) {
       let result = [];
       
       if (targetType === 'shorts') {
-        // الشورتس (Shorts): هي الفيديوهات التي تبلغ مدتها دقيقة واحدة (60 ثانية) أو أقل 👈
         result = feedList.filter(v => parseDuration(v.duration) <= 60);
         logToCloudConsole(`📱 تم فرز وعرض آخر ${result.length} مقطع شورتس (Shorts) من اشتراكاتك.`);
       } else {
-        // الفيديوهات العادية: هي الفيديوهات الطويلة التي تبلغ مدتها أكثر من دقيقة 👈
         result = feedList.filter(v => parseDuration(v.duration) > 60);
         logToCloudConsole(`📹 تم فرز وعرض آخر ${result.length} فيديو طويل من اشتراكاتك.`);
       }
 
-      // تصفية وعرض أول 50 عنصر فقط من النتائج المصفاة
       filteredVideos = result.slice(0, 50);
       currentPage = 1;
 
-      // تلوين الأزرار الحالية لتوضيح الفئة المفتوحة بنقرة عين
+      // إزالة تحديد الأزرار الأخرى في الواجهة
       document.querySelectorAll('.category-pill-btn').forEach(btn => btn.classList.remove('active', 'active-gold'));
       
+      const subDropdownBtn = document.getElementById('pillSubscriptionsDropdownBtn');
+      const subDropdownLabel = document.getElementById('subDropdownLabel');
+      
       if (targetType === 'shorts') {
-        const shortsBtn = document.getElementById('pillShortsBtn');
-        if (shortsBtn) shortsBtn.classList.add('active');
+        if (subDropdownBtn) subDropdownBtn.classList.add('active');
+        if (subDropdownLabel) subDropdownLabel.textContent = '🔔 اشتراكات: شورتس'; // تحديث النص للشورتس 👈
       } else {
-        const subBtn = document.getElementById('pillSubscriptionsBtn');
-        if (subBtn) subBtn.classList.add('active');
+        if (subDropdownBtn) subDropdownBtn.classList.add('active');
+        if (subDropdownLabel) subDropdownLabel.textContent = '🔔 اشتراكات: فيديوهات'; // تحديث النص للفيديوهات 👈
       }
 
       renderGrid();
@@ -3503,25 +3538,22 @@ ${titles.map((t, idx) => `${idx + 1}. ${t}`).join('\n')}`;
       return null;
     }
 
-   // تحديث الواجهة والتحكم بظهور زر الاشتراكات والشوروتس سحابياً 👈
+  // تحديث الواجهة والتحكم بظهور حاوية الاشتراكات المنسدلة سحابياً 👈
     function updateAuthUI() {
       const token = getValidAccessToken();
       const syncDropdownGroup = document.getElementById('syncDropdownGroup');
-      const pillSubscriptionsBtn = document.getElementById('pillSubscriptionsBtn');
-      const pillShortsBtn = document.getElementById('pillShortsBtn'); // 👈
+      const subscriptionsDropdownContainer = document.getElementById('subscriptionsDropdownContainer'); // 👈
 
       if (token) {
         googleSignInBtn.style.display = 'none';
         googleSignOutBtn.style.display = 'inline-flex';
         if (syncDropdownGroup) syncDropdownGroup.style.display = 'inline-block';
-        if (pillSubscriptionsBtn) pillSubscriptionsBtn.style.display = 'inline-flex';
-        if (pillShortsBtn) pillShortsBtn.style.display = 'inline-flex'; // إظهار زر شورتس المضاف 👈
+        if (subscriptionsDropdownContainer) subscriptionsDropdownContainer.style.display = 'inline-block'; // إظهار حاوية الاشتراكات المنسدلة 👈
       } else {
         googleSignInBtn.style.display = 'inline-flex';
         googleSignOutBtn.style.display = 'none';
         if (syncDropdownGroup) syncDropdownGroup.style.display = 'none';
-        if (pillSubscriptionsBtn) pillSubscriptionsBtn.style.display = 'none';
-        if (pillShortsBtn) pillShortsBtn.style.display = 'none'; // إخفاء زر شورتس المضاف 👈
+        if (subscriptionsDropdownContainer) subscriptionsDropdownContainer.style.display = 'none'; // إخفاء حاوية الاشتراكات المنسدلة 👈
       }
     }
 
