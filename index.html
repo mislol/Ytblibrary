@@ -68,9 +68,15 @@
       padding: 0;
     }
 
+    html, body {
+      overflow-x: hidden; /* يمنع التمدد الجانبي تماماً ويحمي حواف الشاشة من القص 👈 */
+    }
+
     html {
       scroll-behavior: smooth;
     }
+
+    /* إظهار حلقة تركيز واضحة عند التنقل لوحة المفاتيح فقط... */
 
     /* إظهار حلقة تركيز واضحة عند التنقل بلوحة المفاتيح فقط (بدون التأثير على وضوح النقر بالماوس) */
     a:focus-visible, button:focus-visible, input:focus-visible,
@@ -1091,7 +1097,7 @@
       position: fixed;
       bottom: 0;
       left: 0;
-      right: 0;
+      width: 100%; /* جعل شريط التنقل يتطابق بدقة مع العرض الفعلي للشاشة 👈 */
       height: 65px;
       background-color: var(--bg-secondary);
       border-top: 1px solid var(--bg-tertiary);
@@ -1100,6 +1106,8 @@
       align-items: center;
       z-index: 990;
       box-shadow: 0 -4px 18px rgba(0, 0, 0, 0.18);
+      padding: 0 10px; /* تباعد داخلي جانبي خفيف لحماية الأيقونات الجانبية من القص 👈 */
+      box-sizing: border-box; /* لضمان حساب العرض بدقة داخل حيز الشاشة دون زيادة 👈 */
     }
 
     .bottom-nav-item {
