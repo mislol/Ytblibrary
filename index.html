@@ -1884,7 +1884,7 @@
     const statTotalChannels = document.getElementById('statTotalChannels');
     const statTotalCategories = document.getElementById('statTotalCategories');
 
-    // تشغيل وإعداد واجهة التحكم عند تحميل المستند
+    // تشغيل وإعداد واجهة التحكم عند تحميل المستند (مصحح ومغلق 100%) 👈
     window.addEventListener('DOMContentLoaded', () => {
       checkOAuthHash();
       loadLibraryData();
@@ -1895,7 +1895,7 @@
         selectedCategory = e.target.value;
         updateMenuSelection();
         applyFiltersAndSort(); 
-      // إخفاء زر تصنيف الاشتراكات عند اختيار تصنيف عادي للمكتبة 👈
+        // إخفاء زر تصنيف الاشتراكات عند اختيار تصنيف عادي للمكتبة 👈
         const classifySubsBtn = document.getElementById('classifySubscriptionsBtn');
         if (classifySubsBtn) classifySubsBtn.style.display = 'none';
       });
@@ -1927,7 +1927,6 @@
       csvFileInput.addEventListener('change', handleFileImport);
       resetDefaultBtn.addEventListener('click', resetToDefault);
 
-      testGeminiBtn.addEventListener('click', testGeminiConnection);
       testGeminiBtn.addEventListener('click', testGeminiConnection);
 
       // تفعيل عمل القائمة المنسدلة الجديدة للاشتراكات وخياراتها الثلاثة محلياً وسحابياً 👈
@@ -1973,8 +1972,6 @@
       }
 
       // حفظ تفضيلات المستخدم لصندوق الخيار جيميناي تلقائياً 👈
-      enableAutoClassifyCheck.addEventListener('change', (e) => {
-      // حفظ تفضيلات المستخدم لصندوق الخيار جيميناي تلقائياً
       enableAutoClassifyCheck.addEventListener('change', (e) => {
         localStorage.setItem('user_enable_auto_classify', e.target.checked);
       });
@@ -2026,40 +2023,8 @@
           subMenu.classList.remove('show');
         }
       });
-// تفعيل عمل القائمة المنسدلة الجديدة للاشتراكات سحابياً 👈
-      const pillSubscriptionsDropdownBtn = document.getElementById('pillSubscriptionsDropdownBtn');
-      const subscriptionsDropdownMenu = document.getElementById('subscriptionsDropdownMenu');
-      
-      if (pillSubscriptionsDropdownBtn && subscriptionsDropdownMenu) {
-        pillSubscriptionsDropdownBtn.addEventListener('click', (e) => {
-          e.stopPropagation();
-          // إغلاق قائمة التصنيفات الأخرى لو كانت مفتوحة لمنع تداخل القوائم
-          const catMenu = document.getElementById('categoriesDropdownMenu');
-          if (catMenu) catMenu.classList.remove('show');
-          
-          subscriptionsDropdownMenu.classList.toggle('show');
-        });
-      }
 
-      // خيار فيديوهات طويلة 📹 👈
-      const subOptVideos = document.getElementById('subOptVideos');
-      if (subOptVideos) {
-        subOptVideos.addEventListener('click', () => {
-          if (subscriptionsDropdownMenu) subscriptionsDropdownMenu.classList.remove('show');
-          fetchSubscriptionsFeed('videos');
-        });
-      }
-
-      // خيار شورتس 📱 👈
-      const subOptShorts = document.getElementById('subOptShorts');
-      if (subOptShorts) {
-        subOptShorts.addEventListener('click', () => {
-          if (subscriptionsDropdownMenu) subscriptionsDropdownMenu.classList.remove('show');
-          fetchSubscriptionsFeed('shorts');
-        });
-      }
-
-      // منطق عمل زر العودة إلى الأعلى العائم
+      // منطق عمل زر العودة إلى الأعلى العائم 👈
       const backToTopBtn = document.getElementById('backToTopBtn');
       if (backToTopBtn) {
         // مراقبة التمرير لإظهار أو إخفاء الزر
@@ -2079,7 +2044,7 @@
           });
         });
       }
-    });
+    }); // 👈 قوس نهاية الحدث المغلق بشكل سليم 100% وبدون تكرار
 
     // دالة التحكم في فتح قائمة التحديث المنسدلة في الشريط العلوي
     function toggleSyncDropdown(e) {
