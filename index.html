@@ -1068,12 +1068,12 @@
       opacity: 1;
       visibility: visible;
     }
-    /* شارة الشورتس الحمراء العائمة والمميزة على الصورة المصغرة 👈 */
+    /* شارة الشورتس الحمراء العائمة والمميزة على الصورة المصغرة */
     .shorts-badge {
       position: absolute;
       top: 8px;
-      right: 8px; /* تظهر في الزاوية العلوية المقابلة للتوقيت */
-      background-color: #ff0000; /* اللون الأحمر الرسمي للشورتس */
+      right: 8px;
+      background-color: #ff0000;
       color: #ffffff;
       padding: 2px 8px;
       border-radius: 4px;
@@ -1084,6 +1084,77 @@
       align-items: center;
       gap: 4px;
       z-index: 5;
+    }
+
+    /* شريط التنقل السفلي المطور للهواتف الذكية 👈 */
+    .bottom-nav {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      height: 65px;
+      background-color: var(--bg-secondary);
+      border-top: 1px solid var(--bg-tertiary);
+      display: none; /* مخفي افتراضياً في الكمبيوتر ويظهر في الهواتف */
+      justify-content: space-around;
+      align-items: center;
+      z-index: 990;
+      box-shadow: 0 -4px 18px rgba(0, 0, 0, 0.18);
+    }
+
+    .bottom-nav-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 3px;
+      background: none;
+      border: none;
+      color: var(--text-secondary);
+      font-family: 'Cairo', sans-serif;
+      font-size: 0.72rem;
+      font-weight: 700;
+      cursor: pointer;
+      flex-grow: 1;
+      height: 100%;
+      transition: color var(--transition-speed);
+    }
+
+    .bottom-nav-item .nav-icon {
+      font-size: 1.25rem;
+      transition: transform var(--transition-speed);
+    }
+
+    .bottom-nav-item:hover, .bottom-nav-item.active {
+      color: var(--accent-color);
+    }
+
+    .bottom-nav-item.active .nav-icon {
+      transform: scale(1.15); /* تضخيم خفيف للأيقونة النشطة */
+    }
+
+    /* كود التجاوب الاحترافي الخاص بالهواتف (شاشات <= 768px) 👈 */
+    @media (max-width: 768px) {
+      body {
+        padding-bottom: 85px !important; /* زيادة التباعد السفلي للمحتوى لكي لا يختبئ تحت الشريط */
+      }
+      .bottom-nav {
+        display: flex; /* إظهار شريط التنقل السفلي */
+      }
+      /* إخفاء الأزرار العلوية المكررة من الهيدر لتنظيف الواجهة تماماً */
+      #toggleImportBtn, #toolsMenuBtn {
+        display: none !important;
+      }
+      /* رفع العناصر العائمة والتفاعلية لتطفو فوق شريط التنقل ومنع تصادمها */
+      #backToTopBtn {
+        bottom: 140px !important;
+      }
+      .global-status-container {
+        bottom: 80px !important;
+      }
+      .bulk-action-bar {
+        bottom: 65px !important;
+      }
     }
   </style>
 </head>
@@ -1401,6 +1472,26 @@
     </div>
   </div>
 
+  <!-- شريط التنقل السفلي المطور للهواتف الذكية (4 تبويبات مريحة للإبهام) 👈 -->
+  <nav class="bottom-nav">
+    <button class="bottom-nav-item active" id="navLibraryBtn" onclick="switchNavTab('library')">
+      <span class="nav-icon">📺</span>
+      <span data-i18n="navLibrary">المكتبة</span>
+    </button>
+    <button class="bottom-nav-item" id="navSubsBtn" onclick="switchNavTab('subscriptions')">
+      <span class="nav-icon">🔔</span>
+      <span data-i18n="navSubs">الاشتراكات</span>
+    </button>
+    <button class="bottom-nav-item" id="navFavsBtn" onclick="switchNavTab('favorites')">
+      <span class="nav-icon">⭐</span>
+      <span data-i18n="navFavorites">المفضلة</span>
+    </button>
+    <button class="bottom-nav-item" id="navToolsBtn" onclick="switchNavTab('tools')">
+      <span class="nav-icon">🛠️</span>
+      <span data-i18n="navTools">أدوات</span>
+    </button>
+  </nav>
+
   <!-- زر العودة إلى الأعلى العائم والمترجم تلقائياً -->
   <button id="backToTopBtn" data-i18n-title="backToTop" title="العودة إلى الأعلى">▲</button>
 
@@ -1469,7 +1560,11 @@
     "toastUndoSuccess": "تم التراجع بنجاح ↩️",
     "toastRedoSuccess": "تمت الإعادة بنجاح ↪️",
     "pillSubscriptions": "🔔 اشتراكات",
-    "pillShorts": "📱 شورتس", // 👈 الترجمة المضافة لزر الشورتس
+    "pillShorts": "📱 شورتس",
+    "navLibrary": "المكتبة",
+    "navSubs": "الاشتراكات",
+    "navFavorites": "المفضلة",
+    "navTools": "أدوات",// 👈 الترجمة المضافة لزر الشورتس
     "filterCategory": "التصنيف",
     "filterChannel": "القناة",
     "filterDuration": "المدة الزمنية",
@@ -1623,7 +1718,11 @@
     "toastUndoSuccess": "Undo successful ↩️",
     "toastRedoSuccess": "Redo successful ↪️",
     "pillSubscriptions": "🔔 Subs",
-    "pillShorts": "📱 Shorts", // 👈 الترجمة المضافة بالإنجليزية
+    "pillShorts": "📱 Shorts",
+    "navLibrary": "Library",
+    "navSubs": "Subs",
+    "navFavorites": "Favorites",
+    "navTools": "Tools",الترجمة المضافة بالإنجليزية
     "filterCategory": "Category",
     "filterChannel": "Channel",
     "filterDuration": "Duration",
@@ -1997,8 +2096,12 @@
         selectedCategory = '';
         currentPage = 1;
         
-        // إعادة توجيه البحث للمكتبة 👈
         activeView = 'library';
+
+        // تزامن تلوين زر المكتبة في شريط التنقل السفلي 👈
+        document.querySelectorAll('.bottom-nav-item').forEach(btn => btn.classList.remove('active'));
+        const navLib = document.getElementById('navLibraryBtn');
+        if (navLib) navLib.classList.add('active');
 
         updateMenuSelection();
         applyFiltersAndSort();
@@ -2909,23 +3012,28 @@
         // ترتيب الأرشيف التاريخي تنازلياً من الأحدث للأقدم 👈
         archiveList.sort((a, b) => b.publishedAt - a.publishedAt);
 
-        // تفعيل حالة العرض للأرشيف لتشغيل الفلاتر والبحث والترتيب داخله محلياً وبدون بطء 👈
+        // تفعيل حالة العرض للأرشيف ليتم تفعيل البحث والفلترة داخله أيضاً 👈
         activeView = 'archive';
         filteredVideos = archiveList;
         currentPage = 1;
 
-        // تحديث تلوين الأزرار والعناوين في واجهتك
+        // تحديث تلوين الأزرار والترجمة
         document.querySelectorAll('.category-pill-btn').forEach(btn => btn.classList.remove('active', 'active-gold'));
         const subDropdownBtn = document.getElementById('pillSubscriptionsDropdownBtn');
         const subDropdownLabel = document.getElementById('subDropdownLabel');
         if (subDropdownBtn) subDropdownBtn.classList.add('active');
         if (subDropdownLabel) subDropdownLabel.textContent = '🔔 أرشيف الاشتراكات';
 
-        // إظهار زر تصنيف الأرشيف الذهبي 👈
+        // تنشيط إضاءة تبويب الاشتراكات في شريط التنقل السفلي تلقائياً عند عرض الأرشيف 👈
+        document.querySelectorAll('.bottom-nav-item').forEach(btn => btn.classList.remove('active'));
+        const navSubs = document.getElementById('navSubsBtn');
+        if (navSubs) navSubs.classList.add('active');
+
+        // إظهار زر تصنيف الأرشيف الجديد 👈
         const classifySubsBtn = document.getElementById('classifySubscriptionsBtn');
         if (classifySubsBtn) classifySubsBtn.style.display = 'inline-flex';
 
-        logToCloudConsole(`📚 تم بنجاح تحميل واستعراض أرشيف الاشتراكات التاريخي ويحتوي على ${archiveList.length} فيديو تراكمي.`);
+        logToCloudConsole(`📚 تم استعراض أرشيف الاشتراكات التاريخي ويحتوي على ${archiveList.length} فيديو تم حفظها وتصنيفها مسبقاً.`);
         renderGrid();
       }, 300);
     }
@@ -2957,11 +3065,16 @@
       
       if (targetType === 'shorts') {
         if (subDropdownBtn) subDropdownBtn.classList.add('active');
-        if (subDropdownLabel) subDropdownLabel.textContent = '🔔 اشتراكات: شورتس'; // تحديث النص للشورتس 👈
+        if (subDropdownLabel) subDropdownLabel.textContent = '🔔 اشتراكات: شورتس';
       } else {
         if (subDropdownBtn) subDropdownBtn.classList.add('active');
         if (subDropdownLabel) subDropdownLabel.textContent = '🔔 اشتراكات: فيديوهات';
       }
+
+      // تنشيط إضاءة تبويب الاشتراكات في شريط التنقل السفلي تلقائياً 👈
+      document.querySelectorAll('.bottom-nav-item').forEach(btn => btn.classList.remove('active'));
+      const navSubs = document.getElementById('navSubsBtn');
+      if (navSubs) navSubs.classList.add('active');
 
       // إظهار الزر الذهبي الجديد عند عرض خلاصة الاشتراكات أو الشورتس 👈
       const classifySubsBtn = document.getElementById('classifySubscriptionsBtn');
@@ -3047,6 +3160,51 @@
       showToast('✅ تم بنجاح تصنيف أحدث فيديوهات الاشتراكات وحفظها بشكل دائم!');
       renderGrid();
     }
+    // دالة المعالجة والتوجيه لتبويبات شريط التنقل السفلي المطور للهواتف 👈
+    function switchNavTab(tabName) {
+      // 1. إيقاف تلوين وتنشيط بقية أزرار شريط التنقل السفلي
+      document.querySelectorAll('.bottom-nav-item').forEach(btn => btn.classList.remove('active'));
+      
+      // 2. إغلاق لوحة الاستيراد والأدوات كحالة افتراضية نظيفة
+      importPanel.style.display = 'none';
+
+      // 3. توجيه الحالة وعرض الصفحة المناسبة تلقائياً 👈
+      if (tabName === 'library') {
+        const btn = document.getElementById('navLibraryBtn');
+        if (btn) btn.classList.add('active');
+        
+        activeView = 'library';
+        selectedCategory = '';
+        updateMenuSelection();
+        applyFiltersAndSort();
+      } 
+      else if (tabName === 'subscriptions') {
+        const btn = document.getElementById('navSubsBtn');
+        if (btn) btn.classList.add('active');
+        
+        // فتح الفيديوهات الطويلة في الاشتراكات كخيار افتراضي ذكي
+        fetchSubscriptionsFeed('videos');
+      } 
+      else if (tabName === 'favorites') {
+        const btn = document.getElementById('navFavsBtn');
+        if (btn) btn.classList.add('active');
+        
+        activeView = 'library';
+        selectedCategory = 'favorites';
+        updateMenuSelection();
+        applyFiltersAndSort();
+      } 
+      else if (tabName === 'tools') {
+        const btn = document.getElementById('navToolsBtn');
+        if (btn) btn.classList.add('active');
+        
+        // فتح لوحة الاستيراد والأدوات والانتقال البصري المريح إليها فوراً 👈
+        importPanel.style.display = 'block';
+        importPanel.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    }
+
+    
     // جلب قوائم التشغيل الخاصة بحساب قوقل الشخصي
     async function fetchPersonalPlaylists(token) {
       logToCloudConsole('🌐 جاري الاتصال بقوقل لجلب قوائم التشغيل المتواجدة بحسابك...');
