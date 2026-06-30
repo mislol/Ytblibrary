@@ -4381,7 +4381,6 @@ ${titles.map((t, idx) => `${idx + 1}. ${t}`).join('\n')}`;
       if (activeView === 'subscriptions' || activeView === 'shorts') {
         sourceList = cachedSubscriptionsFeed || [];
       } else if (activeView === 'archive') {
-        // بناء مصفوفة الأرشيف التراكمي محلياً وفلترتها بالكامل 👈
         sourceList = Object.keys(subscriptionsDb).map(vId => {
           return {
             id: 'sub_' + vId,
@@ -4396,10 +4395,8 @@ ${titles.map((t, idx) => `${idx + 1}. ${t}`).join('\n')}`;
             category: subscriptionsDb[vId].category
           };
         });
-        // ترتيب الأرشيف تنازلياً
         sourceList.sort((a, b) => b.publishedAt - a.publishedAt);
       }
-      
 
       // 2. البحث المرن المحدث والموجه للمصدر الصحيح
       filteredVideos = sourceList.filter(v => {
@@ -4411,6 +4408,7 @@ ${titles.map((t, idx) => `${idx + 1}. ${t}`).join('\n')}`;
           const secs = parseDuration(v.duration);
           if (secs <= 60) return false;
         }
+
         let matchesSearch = true;
         if (query) {
           // تقسيم استعلام البحث ليدعم البحث بمرونة أكبر (فصل الكلمات ومطابقتها بشكل غير مترابط)
@@ -4487,7 +4485,7 @@ ${titles.map((t, idx) => `${idx + 1}. ${t}`).join('\n')}`;
       });
 
       renderGrid();
-    }
+    } // 👈 تم قفل الدالة بشكل كامل وصحيح بنسبة 100% الآن
 
     function parseDuration(dur) {
       if (!dur) return 0;
