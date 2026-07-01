@@ -5005,13 +5005,7 @@ ${titles.map((t, idx) => `${idx + 1}. ${t}`).join('\n')}`;
       // -- أزرار الإجراءات --
       const footer = document.createElement('div');
       footer.className = 'card-footer';
-
-      const watchBtn = document.createElement('button');
-      watchBtn.className = 'btn btn-primary';
-      watchBtn.textContent = t('watch');
-      watchBtn.addEventListener('click', () => openVideo(video.url));
-      footer.appendChild(watchBtn);
-
+      
       const copyBtn = document.createElement('button');
       copyBtn.className = 'btn btn-secondary icon-btn';
       copyBtn.title = t('copyLinkTitle');
