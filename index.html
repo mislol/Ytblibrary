@@ -1195,7 +1195,37 @@
     padding: 1px 6px !important;
     font-size: 0.7rem !important;
   }
+      /* 1. تمديد شبكة الفيديوهات لتلتصق بحواف الهاتف تماماً وتجاوز الفراغ الجانبي للصفحة */
+  .videos-grid:not(.list-layout) {
+    margin-left: -15px !important;
+    margin-right: -15px !important;
+    width: calc(100% + 30px) !important;
+    gap: 0 !important; /* إلغاء الفراغات الافتراضية واستبدالها بفاصل سفلي يوتيوبي */
+  }
+
+  /* 2. جعل كرت الفيديو يملأ عرض الشاشة بالكامل بدون حواف دائرية أو ظلال جانبية */
+  .videos-grid:not(.list-layout) .video-card {
+    border-radius: 0 !important;
+    border: none !important;
+    box-shadow: none !important; /* إزالة الظلال الجانبية لمظهر مسطح أنيق */
+    background-color: var(--bg-secondary) !important;
+    
+    /* وضع فاصل سفلي سميك وناعم بلون الخلفية الثالثية لمطابقة الفواصل الرسمية لليوتيوب */
+    border-bottom: 8px solid var(--bg-tertiary) !important;
+    margin-bottom: 0 !important;
+  }
+
+  /* 3. إلغاء تقويس حواف الصورة المصغرة لتلتصق بأطراف الجوال */
+  .videos-grid:not(.list-layout) .thumbnail-area {
+    border-radius: 0 !important;
+  }
+
+  /* 4. إبقاء النصوص والأزرار بالأسفل محميّة من الالتصاق الجانبي */
+  .videos-grid:not(.list-layout) .card-body {
+    padding: 12px 15px 15px !important; /* هامش داخلي يمنع التصاق العنوان بالتجويف الخارجي للهاتف */
+  }
 }
+
   </style>
 </head>
 <body>
