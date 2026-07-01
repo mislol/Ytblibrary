@@ -1179,6 +1179,20 @@
         top: calc(100% + 6px) !important;
       }
     }
+    @media (max-width: 768px) {
+  /* تصغير حجم الأزرار لجعلها متلائمة مع عرض الهاتف */
+  .category-selection-area .category-pill-btn {
+    padding: 6px 12px !important; /* تقليل الحشوة الداخلية */
+    font-size: 0.75rem !important; /* تصغير حجم الخط قليلاً */
+    gap: 4px !important; /* تقليل المسافة بين الأيقونة والنص */
+  }
+
+  /* تصغير شارات الأرقام داخل الأزرار */
+  .category-selection-area .badge {
+    padding: 1px 6px !important;
+    font-size: 0.7rem !important;
+  }
+}
   </style>
 </head>
 <body>
