@@ -611,15 +611,15 @@
       transition: all 0.3s ease-in-out;
     }
 
-    .video-card {
+   .video-card {
       background-color: var(--bg-secondary);
       border-radius: var(--border-radius);
       border: 1px solid var(--bg-tertiary);
       overflow: visible !important;
-      box-shadow: var(--card-shadow);
+      position: relative;
+      z-index: 1; /* 👈 سطر إضافي لضمان وجود طبقة مرجعية افتراضية للكرت */
       display: flex;
       flex-direction: column;
-      position: relative;
       transition: transform var(--transition-speed), box-shadow var(--transition-speed);
     }
 
@@ -5105,20 +5105,32 @@ ${titles.map((t, idx) => `${idx + 1}. ${t}`).join('\n')}`;
       titleRow.appendChild(dropdown);
       infoBlock.appendChild(titleRow);
 
-      // التحكم التفاعلي بفتح وإغلاق المنسدلة مع منع تداخل القوائم الأخرى
-      menuBtn.addEventListener('click', (e) => {
-        e.stopPropagation();
-        document.querySelectorAll('.card-menu-dropdown').forEach(d => {
-          if (d !== dropdown) d.style.display = 'none';
-        });
-        const isHidden = dropdown.style.display === 'none' || dropdown.style.display === '';
-        dropdown.style.display = isHidden ? 'flex' : 'none';
-      });
+   // التحكم التفاعلي بفتح القائمة المنسدلة مع رفع الكرت النشط للأعلى لمنع تداخل الطبقات
+          menuBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            
+            // 1. إغلاق كل القوائم المفتوحة الأخرى وإرجاع طبقات كروتها للوضع الافتراضي
+            document.querySelectorAll('.card-menu-dropdown').forEach(d => {
+              if (d !== dropdown) {
+                d.style.display = 'none';
+                const parentCard = d.closest('.video-card');
+                if (parentCard) parentCard.style.zIndex = '1';
+              }
+            });
 
-      // إغلاق المنسدلة تلقائياً عند النقر في أي مكان فارغ بالخارج
-      document.addEventListener('click', () => {
-        dropdown.style.display = 'none';
-      });
+            // 2. فتح القائمة الحالية ورفع طبقة الكرت الخاص بها ليكون في المقدمة دائماً
+            const isHidden = dropdown.style.display === 'none' || dropdown.style.display === '';
+            dropdown.style.display = isHidden ? 'flex' : 'none';
+            
+            // رفع مستوى الكرت الحالي لـ 110 ليعلو فوق الكرت التالي وصورته
+            card.style.zIndex = isHidden ? '110' : '1';
+          });
+
+          // إغلاق المنسدلة عند النقر بالخارج وإرجاع الكرت لطبقته الطبيعية
+          document.addEventListener('click', () => {
+            dropdown.style.display = 'none';
+            card.style.zIndex = '1';
+          });
 
       const channelP = document.createElement('p');
       channelP.className = 'channel-name';
