@@ -5064,8 +5064,7 @@ ${titles.map((t, idx) => `${idx + 1}. ${t}`).join('\n')}`;
       // 2. خيار المفضلة داخل المنسدلة
       const favItem = document.createElement('button');
       favItem.className = 'dropdown-menu-btn';
-      const isFav = favoriteIds.has(video.id);
-      const favIcon = isFav ? '★' : '☆';
+      
       favItem.innerHTML = `<span style="color: var(--gold-color);">${favIcon}</span> <span data-i18n="addToFavorites">${t('addToFavorites')}</span>`;
       favItem.addEventListener('click', (e) => {
         e.stopPropagation(); // منع النقر من فتح الفيديو
