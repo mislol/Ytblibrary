@@ -1166,32 +1166,33 @@
     }
 
     /* أضف هذا الكود هنا */
-    /* تصغير حجم الأزرار وتعديل تنسيقها لتلائم شاشات الهواتف بدقة */
-@media (max-width: 768px) {
-  .category-selection-area {
-    padding: 0 10px !important;
-    gap: 5px !important; /* تقليل الفراغ بين الأزرار */
-  }
-
-  .category-selection-area .category-pill-btn,
-  .category-selection-area .dropdown-category-container .category-pill-btn {
-    padding: 6px 12px !important; /* تصغير الهوامش الداخلية */
+    @media (max-width: 768px) {
+      .category-selection-area .dropdown-category-container {
+        position: static !important;
+      }
+      .category-selection-area .categories-dropdown-menu {
+        left: 15px !important;
+        right: 15px !important;
+        width: auto !important;
+        min-width: 0 !important;
+        max-width: calc(100vw - 30px) !important;
+        top: calc(100% + 6px) !important;
+      }
+    }
+    @media (max-width: 768px) {
+  /* تصغير حجم الأزرار لجعلها متلائمة مع عرض الهاتف */
+  .category-selection-area .category-pill-btn {
+    padding: 6px 12px !important; /* تقليل الحشوة الداخلية */
     font-size: 0.75rem !important; /* تصغير حجم الخط قليلاً */
-    height: 32px !important; /* تقليل ارتفاع الزر */
+    gap: 4px !important; /* تقليل المسافة بين الأيقونة والنص */
   }
 
-  /* تصغير أيقونة السهم داخل الأزرار */
-  .category-selection-area .arrow {
-    font-size: 0.7rem !important;
-  }
-  
-  /* تصغير شارة الأرقام (Badge) لتناسب حجم الزر الجديد */
+  /* تصغير شارات الأرقام داخل الأزرار */
   .category-selection-area .badge {
     padding: 1px 6px !important;
     font-size: 0.7rem !important;
   }
 }
-    
   </style>
 </head>
 <body>
