@@ -1164,6 +1164,21 @@
         bottom: 65px !important;
       }
     }
+
+    /* أضف هذا الكود هنا */
+    @media (max-width: 768px) {
+      .category-selection-area .dropdown-category-container {
+        position: static !important;
+      }
+      .category-selection-area .categories-dropdown-menu {
+        left: 15px !important;
+        right: 15px !important;
+        width: auto !important;
+        min-width: 0 !important;
+        max-width: calc(100vw - 30px) !important;
+        top: calc(100% + 6px) !important;
+      }
+    }
   </style>
 </head>
 <body>
@@ -1330,10 +1345,10 @@
         <span id="subDropdownLabel">🔔 اشتراكات</span> <span class="arrow">▾</span>
       </button>
       <ul id="subscriptionsDropdownMenu" class="categories-dropdown-menu" style="inset-inline-start: 0; min-width: 180px; z-index: 151;">
-        <li class="dropdown-item-cat" id="subOptVideos"><span>📹 فيديوهات</span></li>
-        <li class="dropdown-item-cat" id="subOptShorts"><span>📱 شورتس</span></li>
+        <li class="dropdown-item-cat" id="subOptVideos"><span data-i18n="subOptVideos">📹 فيديوهات</span></li>
+        <li class="dropdown-item-cat" id="subOptShorts"><span data-i18n="subOptShorts">📱 شورتس</span></li>
         <!-- خيار أرشيف الاشتراكات التراكمي المضاف 👈 -->
-        <li class="dropdown-item-cat" id="subOptArchive"><span>📚 أرشيف الاشتراكات</span></li>
+        <li class="dropdown-item-cat" id="subOptArchive"><span data-i18n="subOptArchive">📚 أرشيف الاشتراكات</span></li>
       </ul>
     </div>
     
@@ -1569,6 +1584,9 @@
     "toastRedoSuccess": "تمت الإعادة بنجاح ↪️",
     "pillSubscriptions": "🔔 اشتراكات",
     "pillShorts": "📱 شورتس",
+    "subOptVideos": "📹 فيديوهات",
+    "subOptShorts": "📱 شورتس",
+    "subOptArchive": "📚 أرشيف الاشتراكات",
     "navLibrary": "المكتبة",
     "navSubs": "الاشتراكات",
     "navFavorites": "المفضلة",
@@ -1727,6 +1745,9 @@
     "toastRedoSuccess": "Redo successful ↪️",
     "pillSubscriptions": "🔔 Subs",
     "pillShorts": "📱 Shorts",
+    "subOptVideos": "📹 Videos",
+    "subOptShorts": "📱 Shorts",
+    "subOptArchive": "📚 Subs Archive",
     "navLibrary": "Library",
     "navSubs": "Subs",
     "navFavorites": "Favorites",
@@ -2444,7 +2465,7 @@
         // إعادة تسمية عنوان القائمة المنسدلة للاشتراكات إلى الافتراضي وإلغاء نشاطه البصري 👈
         const subDropdownLabel = document.getElementById('subDropdownLabel');
         const subDropdownBtn = document.getElementById('pillSubscriptionsDropdownBtn');
-        if (subDropdownLabel) subDropdownLabel.textContent = '🔔 اشتراكات';
+        if (subDropdownLabel) subDropdownLabel.textContent = t('pillSubscriptions');
         if (subDropdownBtn) subDropdownBtn.classList.remove('active');
       // إخفاء زر تصنيف الاشتراكات عند الخروج من تبويب الاشتراكات 👈
         const classifySubsBtn = document.getElementById('classifySubscriptionsBtn');
@@ -3030,7 +3051,7 @@
         const subDropdownBtn = document.getElementById('pillSubscriptionsDropdownBtn');
         const subDropdownLabel = document.getElementById('subDropdownLabel');
         if (subDropdownBtn) subDropdownBtn.classList.add('active');
-        if (subDropdownLabel) subDropdownLabel.textContent = '🔔 أرشيف الاشتراكات';
+        if (subDropdownLabel) subDropdownLabel.textContent = `${t('pillSubscriptions')}: ${t('subOptArchive')}`;
 
         // تنشيط إضاءة تبويب الاشتراكات في شريط التنقل السفلي تلقائياً عند عرض الأرشيف 👈
         document.querySelectorAll('.bottom-nav-item').forEach(btn => btn.classList.remove('active'));
@@ -3073,10 +3094,10 @@
       
       if (targetType === 'shorts') {
         if (subDropdownBtn) subDropdownBtn.classList.add('active');
-        if (subDropdownLabel) subDropdownLabel.textContent = '🔔 اشتراكات: شورتس';
+        if (subDropdownLabel) subDropdownLabel.textContent = `${t('pillSubscriptions')}: ${t('subOptShorts')}`;
       } else {
         if (subDropdownBtn) subDropdownBtn.classList.add('active');
-        if (subDropdownLabel) subDropdownLabel.textContent = '🔔 اشتراكات: فيديوهات';
+        if (subDropdownLabel) subDropdownLabel.textContent = `${t('pillSubscriptions')}: ${t('subOptVideos')}`;
       }
 
       // تنشيط إضاءة تبويب الاشتراكات في شريط التنقل السفلي تلقائياً 👈
