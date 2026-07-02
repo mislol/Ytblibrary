@@ -4764,7 +4764,6 @@ ${titles.map((t, idx) => `${idx + 1}. ${t}`).join('\n')}`;
     }
 
     function applyFiltersAndSort() {
-      renderSubGroupsPills();
       const query = searchInput.value.trim().toLowerCase();
       const chanVal = channelFilter.value;
       const durationVal = document.getElementById('durationFilter').value;
@@ -4906,6 +4905,7 @@ ${titles.map((t, idx) => `${idx + 1}. ${t}`).join('\n')}`;
     }
 
     function renderGrid() {
+      renderSubGroupsPills();
       videosGrid.innerHTML = '';
 
       if (filteredVideos.length === 0) {
