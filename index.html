@@ -4203,9 +4203,9 @@ ${titles.map((t, idx) => `${idx + 1}. ${t}`).join('\n')}`;
       if (token) {
         fetchPersonalPlaylists(token);
         loadBackupFromGoogleDrive(token);
+        fetchAllCloudSubscribedChannels(); // جلب قائمة قنواتك السحابية بالكامل لتصنيف المجموعات 👈
       }
       updateAuthUI();
-    }
 
     function getValidAccessToken() {
       const token = localStorage.getItem('user_youtube_access_token');
@@ -4239,13 +4239,22 @@ ${titles.map((t, idx) => `${idx + 1}. ${t}`).join('\n')}`;
       const token = getValidAccessToken();
       if (!token) return;
 
-      logToCloudConsole('💾 جاري محاولة رفع نسخة احتياطية من مكتبتك سحابياً إلى Google Drive...');
+      logToCloudConsole('💾 جاري محاولة رفع نسخة احتياطية موحدة سحابياً إلى Google Drive...');
       
       const fileId = localStorage.getItem('user_google_drive_file_id');
       const boundary = 'xxxxxxxxxx';
       const metadata = {
         name: 'yt_library_db.json',
         mimeType: 'application/json'
+      };
+
+      // تشكيل حزمة النسخ الاحتياطي الموحد (مزامنة كاملة للمجلدات والمفضلة) 👈
+      const backupPayload = {
+        version: 2.0,
+        library: allVideos,
+        groups: subscriptionGroups,
+        favorites: [...favoriteIds],
+        subscriptionsDb: subscriptionsDb
       };
       
       if (fileId) {
@@ -4257,21 +4266,21 @@ ${titles.map((t, idx) => `${idx + 1}. ${t}`).join('\n')}`;
               'Authorization': `Bearer ${token}`,
               'Content-Type': 'application/json'
             },
-            body: JSON.stringify(allVideos)
+            body: JSON.stringify(backupPayload)
           });
           if (res.ok) {
-            logToCloudConsole('✅ تم تحديث نسخة Google Drive بنجاح!');
+            logToCloudConsole('✅ تم مزامنة مكتبتك ومجلداتك بنجاح على Google Drive!');
           } else {
             const err = await res.json();
-            logToCloudConsole(`❌ فشل التحديث السحابي: ${err.error?.message || 'غير معروف'}`);
+            logToCloudConsole(`❌ فشل المزامنة السحابية: ${err.error?.message || 'غير معروف'}`);
           }
         } catch (e) {
           console.error(e);
-          logToCloudConsole(`❌ خطأ شبكة أثناء التحديث: ${e.message}`);
+          logToCloudConsole(`❌ خطأ شبكة أثناء المزامنة: ${e.message}`);
         }
       } else {
         const url = `https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart`;
-        const body = `--${boundary}\r\nContent-Type: application/json; charset=UTF-8\r\n\r\n${JSON.stringify(metadata)}\r\n--${boundary}\r\nContent-Type: application/json\r\n\r\n${JSON.stringify(allVideos)}\r\n--${boundary}--`;
+        const body = `--${boundary}\r\nContent-Type: application/json; charset=UTF-8\r\n\r\n${JSON.stringify(metadata)}\r\n--${boundary}\r\nContent-Type: application/json\r\n\r\n${JSON.stringify(backupPayload)}\r\n--${boundary}--`;
         
         try {
           const res = await fetch(url, {
@@ -4285,10 +4294,10 @@ ${titles.map((t, idx) => `${idx + 1}. ${t}`).join('\n')}`;
           if (res.ok) {
             const data = await res.json();
             localStorage.setItem('user_google_drive_file_id', data.id);
-            logToCloudConsole('✅ تم إنشاء وحفظ نسخة سحابية جديدة بنجاح!');
+            logToCloudConsole('✅ تم إنشاء وحفظ أول نسخة سحابية موحدة بنجاح!');
           } else {
             const err = await res.json();
-            logToCloudConsole(`❌ فشل إنشاء ملف النسخة الاحتياطية: ${err.error?.message || 'غير معروف'}`);
+            logToCloudConsole(`❌ فشل إنشاء ملف النسخة الاحتياطية الموحدة: ${err.error?.message || 'غير معروف'}`);
           }
         } catch (e) {
           console.error(e);
@@ -4320,13 +4329,34 @@ ${titles.map((t, idx) => `${idx + 1}. ${t}`).join('\n')}`;
               }
             });
             if (contentRes.ok) {
-              const backupVideos = await contentRes.json();
-              if (Array.isArray(backupVideos) && backupVideos.length > 0) {
-                if (confirm(`تم العثور على نسخة احتياطية سحابية في Google Drive تحتوي على ${backupVideos.length} video. هل تود استرجاعها الآن؟`)) {
-                  allVideos = backupVideos;
+              const backupData = await contentRes.json();
+              
+              // دعم قراءة الصيغة القديمة (مصفوفة فيديوهات فقط) والصيغة الموحدة الجديدة (فيديوهات ومجلدات ومفضلة)
+              if (Array.isArray(backupData) && backupData.length > 0) {
+                if (confirm(`تم العثور على نسخة احتياطية سحابية قديمة تحتوي على ${backupData.length} فيديو. هل تود استرجاعها الآن؟`)) {
+                  allVideos = backupData;
                   localStorage.setItem('user_youtube_library', JSON.stringify(allVideos));
                   initApp();
-                  logToCloudConsole('✅ تم استرجاع النسخة الاحتياطية بنجاح!');
+                  logToCloudConsole('✅ تم استرجاع مكتبة الفيديوهات السابقة بنجاح!');
+                  showToast(t('toastLibraryRestored'));
+                }
+              } else if (backupData && backupData.library) {
+                // استرجاع الصيغة الموحدة الشاملة 👈
+                const count = backupData.library.length;
+                if (confirm(`تم العثور على نسخة سحابية موحدة تحتوي على ${count} فيديو ومجلداتك المخصصة. هل تود مزامنة هذا الجهاز معها الآن؟`)) {
+                  allVideos = backupData.library || [];
+                  subscriptionGroups = backupData.groups || {};
+                  favoriteIds = new Set(backupData.favorites || []);
+                  subscriptionsDb = backupData.subscriptionsDb || {};
+
+                  // حفظ البيانات بالكامل محلياً على المتصفح الجديد فوراً 👈
+                  localStorage.setItem('user_youtube_library', JSON.stringify(allVideos));
+                  localStorage.setItem('user_youtube_subscriptions_db', JSON.stringify(subscriptionsDb));
+                  localStorage.setItem('user_subscription_groups', JSON.stringify(subscriptionGroups));
+                  localStorage.setItem('user_youtube_favorites', JSON.stringify([...favoriteIds]));
+
+                  initApp();
+                  logToCloudConsole('✅ تم بنجاح تفعيل التزامن السحابي الموحد (الفيديوهات + المجلدات + المفضلة)!');
                   showToast(t('toastLibraryRestored'));
                 }
               }
@@ -5493,14 +5523,67 @@ function onSubGroupSelectChange() {
 }
 
 // استخراج كافة القنوات الفريدة المسجلة محلياً في الأرشيف وخلاصة الاشتراكات وقنوات المكتبة بالكامل (الـ 3495 قناة)
+// استخراج كافة القنوات الفريدة المسجلة محلياً وفي السحابة بالكامل
 function getUniqueSubscribedChannels() {
   const archiveChannels = Object.values(subscriptionsDb).map(v => v.channel).filter(Boolean);
   const tempChannels = (cachedSubscriptionsFeed || []).map(v => v.channel).filter(Boolean);
-  // دمج قنوات المكتبة الرئيسية الـ 3495 قناة لتمكين تصنيف أي قناة متواجدة لديك 👈
   const libraryChannels = allVideos.map(v => v.channel).filter(Boolean);
   
-  return [...new Set([...archiveChannels, ...tempChannels, ...libraryChannels])].sort();
+  // استدعاء قنوات يوتيوب السحابية المخزنة 👈
+  const cloudChannels = JSON.parse(localStorage.getItem('user_subscribed_channels_list') || '[]');
+  
+  return [...new Set([...archiveChannels, ...tempChannels, ...libraryChannels, ...cloudChannels])].sort();
 }
+
+// دالة جلب كافة قنوات اشتراكات يوتيوب من حسابك بالكامل (حتى 250 قناة عبر صفحات متتالية)
+async function fetchAllCloudSubscribedChannels() {
+  const token = getValidAccessToken();
+  if (!token) return;
+
+  logToCloudConsole('⏳ جاري تحديث كافة قنوات اشتراكاتك سحابياً من يوتيوب لتغذية المجموعات...');
+  let channels = [];
+  let nextPageToken = '';
+  let pages = 0;
+
+  try {
+    while (pages < 5) { // جلب لغاية 250 قناة مشترك فيها للتغطية الكاملة 👈
+      let url = `https://www.googleapis.com/youtube/v3/subscriptions?part=snippet&mine=true&maxResults=50`;
+      if (nextPageToken) url += `&pageToken=${nextPageToken}`;
+
+      const res = await fetch(url, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (!res.ok) break;
+
+      const data = await res.json();
+      if (data.items) {
+        data.items.forEach(item => {
+          if (item.snippet && item.snippet.title) {
+            channels.push(item.snippet.title);
+          }
+        });
+      }
+      nextPageToken = data.nextPageToken;
+      if (!nextPageToken) break;
+      pages++;
+    }
+
+    if (channels.length > 0) {
+      localStorage.setItem('user_subscribed_channels_list', JSON.stringify(channels));
+      logToCloudConsole(`✅ تم بنجاح جلب ومزامنة ${channels.length} قناة من اشتراكات يوتيوب لتصنيف المجموعات.`);
+      
+      // تحديث النافذة تلقائياً إن كانت مفتوحة
+      if (document.getElementById('subGroupsModal')?.style.display === 'flex') {
+        renderSubGroupChannelsList();
+      }
+    }
+  } catch (err) {
+    console.error('Error fetching cloud subscriptions channels list', err);
+  }
+}
+
+// ربط الدالة بالنافذة لتصديرها عالمياً
+window.fetchAllCloudSubscribedChannels = fetchAllCloudSubscribedChannels;
 // رندرة قائمة القنوات مع خانات الاختيار والتصفية الذكية السريعة لـ 3495 قناة
 function renderSubGroupChannelsList() {
   const select = document.getElementById('subGroupSelect');
@@ -5633,7 +5716,7 @@ function renderSubGroupsPills() {
   wrapper.appendChild(manageBtn);
 }
 
-// حفظ وحفظ الاحتياطي للمجموعات
+// حفظ وحفظ الاحتياطي للمجموعات مع المزامنة السحابية الفورية
 function saveSubGroupsToStorage() {
   localStorage.setItem('user_subscription_groups', JSON.stringify(subscriptionGroups));
   renderSubGroupsPills();
@@ -5641,6 +5724,12 @@ function saveSubGroupsToStorage() {
   // تحديث الشاشة فوراً
   currentPage = 1;
   applyFiltersAndSort();
+
+  // تفعيل المزامنة السحابية الفورية للمجلدات الجديدة إن وجد اتصال 👈
+  const token = getValidAccessToken();
+  if (token) {
+    saveBackupToGoogleDrive();
+  }
 }
 
 // ربط الدوال عالمياً للوصول الآمن من الـ HTML
