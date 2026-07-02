@@ -1328,6 +1328,35 @@
   accent-color: var(--green-color);
   cursor: pointer;
 }
+  /* صف مجموعات الاشتراكات الفرعي المنفصل والتمرير الأفقي السلس */
+.sub-groups-scroll-row {
+  max-width: 1400px;
+  margin: -10px auto 20px; /* تقريب المجموعات من الأزرار العلوية لمنع الفراغات الزائدة */
+  padding: 0 20px;
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  overflow-x: auto; /* تفعيل السحب والتمرير الأفقي */
+  scrollbar-width: none; /* إخفاء شريط التمرير في Firefox */
+  -webkit-overflow-scrolling: touch; /* تمرير مطاطي ناعم للهواتف */
+}
+
+/* إخفاء شريط التمرير الافتراضي في Chrome وسفاري ليبقى المظهر نظيفاً */
+.sub-groups-scroll-row::-webkit-scrollbar {
+  display: none;
+}
+
+/* تهيئة التجاوب الخاص بالمجموعات على الهواتف */
+@media (max-width: 768px) {
+  .sub-groups-scroll-row {
+    margin: -10px 15px 15px;
+    padding: 0;
+    width: calc(100% - 30px);
+  }
+  .sub-groups-scroll-row .category-pill-btn {
+    flex-shrink: 0 !important; /* منع انكماش حبات المجموعات أثناء السحب بالإصبع */
+  }
+}  
 
      
   </style>
@@ -1490,9 +1519,7 @@
   <div class="category-selection-area">
     <button id="pillAllBtn" class="category-pill-btn active"><span data-i18n="pillAll">الكل</span> <span class="badge" id="pillAllBadge">0</span></button>
     
-    <!-- ⬇️ الحاوية المخصصة للمجموعات المضافة حديثاً ⬇️ -->
-    <div id="subGroupsPillsWrapper" style="display: none; gap: 8px; align-items: center; flex-wrap: wrap;"></div>
-    
+      
     <!-- حاوية القائمة المنسدلة الجديدة لفرز الاشتراكات (مخفية افتراضياً وتظهر للمسجلين) 👈 -->
     <div class="dropdown-category-container" id="subscriptionsDropdownContainer" style="position: relative; display: none;">
       <button id="pillSubscriptionsDropdownBtn" class="category-pill-btn" style="color: var(--green-color);">
@@ -1511,6 +1538,8 @@
       <ul id="categoriesDropdownMenu" class="categories-dropdown-menu"></ul>
     </div>
   </div>
+  <!-- ⬇️ صف فرعي منفصل تماماً ومخصص لمجموعات الاشتراكات لتفادي التداخل البصري ⬇️ -->
+  <div id="subGroupsPillsWrapper" class="sub-groups-scroll-row" style="display: none;"></div>
 
   <!-- حاوية التحكم والمحتوى -->
   <div class="app-layout">
