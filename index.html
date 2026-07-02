@@ -1305,6 +1305,29 @@
       min-width: 160px;
       padding: 6px;
     }
+    /* تنسيق خانات اختيار قنوات المجموعات المخصصة */
+.sub-group-chan-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 10px;
+  background-color: var(--bg-secondary);
+  border: 1px solid var(--bg-tertiary);
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background-color var(--transition-speed);
+}
+
+.sub-group-chan-item:hover {
+  background-color: var(--bg-tertiary);
+}
+
+.sub-group-chan-item input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  accent-color: var(--green-color);
+  cursor: pointer;
+}
 
      
   </style>
@@ -1467,6 +1490,9 @@
   <div class="category-selection-area">
     <button id="pillAllBtn" class="category-pill-btn active"><span data-i18n="pillAll">الكل</span> <span class="badge" id="pillAllBadge">0</span></button>
     
+    <!-- ⬇️ الحاوية المخصصة للمجموعات المضافة حديثاً ⬇️ -->
+    <div id="subGroupsPillsWrapper" style="display: none; gap: 8px; align-items: center; flex-wrap: wrap;"></div>
+    
     <!-- حاوية القائمة المنسدلة الجديدة لفرز الاشتراكات (مخفية افتراضياً وتظهر للمسجلين) 👈 -->
     <div class="dropdown-category-container" id="subscriptionsDropdownContainer" style="position: relative; display: none;">
       <button id="pillSubscriptionsDropdownBtn" class="category-pill-btn" style="color: var(--green-color);">
@@ -1622,6 +1648,53 @@
       <button class="btn btn-secondary" style="font-size: 0.85rem;" onclick="toggleBulkEditMode()"><span data-i18n="closeBulkEdit">إغلاق التعديل</span></button>
     </div>
   </div>
+  </div>
+
+  <!-- ⬇️ نافذة منبثقة لإدارة مجموعات الاشتراكات المخصصة ⬇️ -->
+  <div id="subGroupsModal" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.85); z-index: 201; display: none; align-items: center; justify-content: center; padding: 20px;">
+    <div style="background-color: var(--bg-secondary); border: 1px solid var(--bg-tertiary); border-radius: var(--border-radius); padding: 22px; max-width: 550px; width: 100%; max-height: calc(100vh - 40px); overflow-y: auto; box-shadow: var(--card-shadow); text-align: start; display: flex; flex-direction: column; gap: 15px;">
+      
+      <!-- الهيدر -->
+      <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--bg-tertiary); padding-bottom: 12px;">
+        <h3 style="font-size: 1.1rem; font-weight: 700; color: var(--green-color);">⚙️ إدارة مجموعات الاشتراكات المخصصة</h3>
+        <button class="btn btn-secondary" style="padding: 4px 10px; font-size: 0.8rem; color: var(--danger-color);" onclick="closeSubGroupsModal()">❌</button>
+      </div>
+      
+      <!-- إنشاء مجموعة -->
+      <div style="display: flex; flex-direction: column; gap: 8px; background-color: var(--bg-primary); padding: 12px; border-radius: 8px; border: 1px solid var(--bg-tertiary);">
+        <label style="font-size: 0.85rem; font-weight: 700; color: var(--text-secondary);">➕ إنشاء مجموعة جديدة:</label>
+        <div style="display: flex; gap: 8px;">
+          <input type="text" id="newSubGroupNameInput" placeholder="مثال: ذكاء اصطناعي، برمجة..." style="flex-grow: 1; padding: 8px 12px; border-radius: 6px; border: 1px solid var(--bg-tertiary); background-color: var(--bg-secondary); color: var(--text-primary); font-family: 'Cairo';">
+          <button class="btn btn-primary" onclick="createSubGroup()" style="padding: 8px 14px;">حفظ</button>
+        </div>
+      </div>
+
+      <!-- اختيار المجموعة للتعديل -->
+      <div style="display: flex; flex-direction: column; gap: 8px;">
+        <label style="font-size: 0.85rem; font-weight: 700; color: var(--text-secondary);">📁 اختر مجموعة لتعديلها أو ربط القنوات بها:</label>
+        <div style="display: flex; gap: 8px;">
+          <select id="subGroupSelect" onchange="onSubGroupSelectChange()" style="flex-grow: 1; padding: 8px 12px; border-radius: 6px; border: 1px solid var(--bg-tertiary); background-color: var(--bg-primary); color: var(--text-primary); font-family: 'Cairo';">
+            <option value="">-- اختر مجموعة --</option>
+          </select>
+          <button class="btn btn-secondary" onclick="deleteActiveSubGroup()" style="color: var(--danger-color); padding: 8px 14px;">حذف المجموعة 🗑️</button>
+        </div>
+      </div>
+
+      <!-- اختيار قنوات المجموعة -->
+      <div style="display: flex; flex-direction: column; gap: 8px; flex-grow: 1;">
+        <label style="font-size: 0.85rem; font-weight: 700; color: var(--text-secondary); display: flex; justify-content: space-between;">
+          <span>🎙️ حدد القنوات التابعة للمجموعة المحددة:</span>
+          <span id="subGroupChannelCount" style="color: var(--green-color); font-weight: 800;">(0 مضافة)</span>
+        </label>
+        <div id="subGroupChannelsList" style="background-color: var(--bg-primary); border: 1px solid var(--bg-tertiary); border-radius: 8px; padding: 12px; max-height: 200px; overflow-y: auto; display: flex; flex-direction: column; gap: 8px;">
+          <p style="color: var(--text-tertiary); font-size: 0.85rem; text-align: center;">الرجاء اختيار أو إنشاء مجموعة أولاً لعرض القنوات.</p>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  
 
   <!-- شريط التنقل السفلي المطور للهواتف الذكية (4 تبويبات مريحة للإبهام) 👈 -->
   <nav class="bottom-nav">
@@ -2074,9 +2147,14 @@
 
     // متغير لتحديد التبويب النشط حالياً لتوجيه محرك البحث والفلاتر تلقائياً 👈
     let activeView = 'library'; // القيم الممكنة: 'library' أو 'subscriptions' أو 'shorts'
-
+    // متغيرات المجموعات المخصصة للاشتراكات
+    let subscriptionGroups = {};
+    let activeSubGroup = ''; // معرف المجموعة النشطة لتصفية الفيديوهات
+    
     let allVideos = [];
     let filteredVideos = [];
+
+    
     let favoriteIds = new Set();
     let currentPage = 1;
     const itemsPerPage = 50;
@@ -2256,6 +2334,7 @@
         currentPage = 1;
         
         activeView = 'library';
+        activeSubGroup = '';
 
         // تزامن تلوين زر المكتبة في شريط التنقل السفلي 👈
         document.querySelectorAll('.bottom-nav-item').forEach(btn => btn.classList.remove('active'));
@@ -2396,6 +2475,14 @@
       } catch(e) {
         subscriptionsDb = {};
       }
+      // استعادة مجموعات الاشتراكات المحفوظة
+      try {
+        const storedSubGroups = localStorage.getItem('user_subscription_groups');
+        if (storedSubGroups) subscriptionGroups = JSON.parse(storedSubGroups);
+      } catch(e) {
+        subscriptionGroups = {};
+      }
+
 
       const storedLayout = localStorage.getItem('user_youtube_layout');
       if (storedLayout) {
@@ -4677,6 +4764,7 @@ ${titles.map((t, idx) => `${idx + 1}. ${t}`).join('\n')}`;
     }
 
     function applyFiltersAndSort() {
+      renderSubGroupsPills();
       const query = searchInput.value.trim().toLowerCase();
       const chanVal = channelFilter.value;
       const durationVal = document.getElementById('durationFilter').value;
@@ -4718,6 +4806,14 @@ ${titles.map((t, idx) => `${idx + 1}. ${t}`).join('\n')}`;
         } else if (activeView === 'subscriptions') {
           if (isShortsCheck) return false;
         }
+        // تصفية الفيديوهات بحسب مجموعة الاشتراكات النشطة
+        if (activeSubGroup && (activeView === 'subscriptions' || activeView === 'shorts' || activeView === 'archive')) {
+          const allowedChannels = subscriptionGroups[activeSubGroup]?.channels || [];
+          if (!allowedChannels.includes(v.channel)) {
+            return false;
+          }
+        }
+
 
         let matchesSearch = true;
         if (query) {
@@ -5290,6 +5386,213 @@ ${titles.map((t, idx) => `${idx + 1}. ${t}`).join('\n')}`;
     window.triggerContinueImport = triggerContinueImport;
     window.triggerCancelImport = triggerCancelImport;
     window.toggleSyncDropdown = toggleSyncDropdown;
+    // =====================================================================
+// نظام إدارة مجموعات الاشتراكات المخصصة التفاعلي
+// =====================================================================
+
+// فتح نافذة الإدارة وتجهيز القنوات والمجموعات
+function openSubGroupsModal() {
+  const modal = document.getElementById('subGroupsModal');
+  const select = document.getElementById('subGroupSelect');
+  if (!modal || !select) return;
+
+  modal.style.display = 'flex';
+
+  // ملء المجموعات المتاحة في القائمة المنسدلة
+  select.innerHTML = '<option value="">-- اختر مجموعة لتعديلها --</option>';
+  Object.keys(subscriptionGroups).forEach(id => {
+    const opt = document.createElement('option');
+    opt.value = id;
+    opt.textContent = subscriptionGroups[id].name;
+    select.appendChild(opt);
+  });
+
+  renderSubGroupChannelsList();
+}
+
+function closeSubGroupsModal() {
+  const modal = document.getElementById('subGroupsModal');
+  if (modal) modal.style.display = 'none';
+}
+
+// إنشاء مجموعة جديدة
+function createSubGroup() {
+  const input = document.getElementById('newSubGroupNameInput');
+  const name = input.value.trim();
+  if (!name) {
+    showToast("⚠️ يرجى إدخال اسم المجموعة أولاً.");
+    return;
+  }
+
+  const id = 'subg_' + Date.now();
+  subscriptionGroups[id] = { name: name, channels: [] };
+  
+  saveSubGroupsToStorage();
+  input.value = '';
+  
+  // تحديث النافذة وتحديد المجموعة الجديدة تلقائياً
+  openSubGroupsModal();
+  document.getElementById('subGroupSelect').value = id;
+  onSubGroupSelectChange();
+}
+
+// حذف المجموعة النشطة
+function deleteActiveSubGroup() {
+  const select = document.getElementById('subGroupSelect');
+  const id = select.value;
+  if (!id) {
+    showToast("⚠️ يرجى اختيار مجموعة لحذفها.");
+    return;
+  }
+
+  if (confirm(`هل أنت متأكد من حذف المجموعة "${subscriptionGroups[id].name}"؟`)) {
+    delete subscriptionGroups[id];
+    if (activeSubGroup === id) activeSubGroup = '';
+    
+    saveSubGroupsToStorage();
+    openSubGroupsModal();
+  }
+}
+
+// عند اختيار مجموعة من القائمة المنسدلة بالمودال
+function onSubGroupSelectChange() {
+  renderSubGroupChannelsList();
+}
+
+// استخراج كافة القنوات الفريدة المسجلة محلياً في أرشيف الاشتراكات
+function getUniqueSubscribedChannels() {
+  const archiveChannels = Object.values(subscriptionsDb).map(v => v.channel).filter(Boolean);
+  const tempChannels = (cachedSubscriptionsFeed || []).map(v => v.channel).filter(Boolean);
+  return [...new Set([...archiveChannels, ...tempChannels])].sort();
+}
+
+// رندرة قائمة القنوات مع خانات الاختيار
+function renderSubGroupChannelsList() {
+  const select = document.getElementById('subGroupSelect');
+  const listContainer = document.getElementById('subGroupChannelsList');
+  const countSpan = document.getElementById('subGroupChannelCount');
+  
+  if (!select || !listContainer || !countSpan) return;
+
+  const activeGroupId = select.value;
+  
+  if (!activeGroupId) {
+    listContainer.innerHTML = '<p style="color: var(--text-tertiary); font-size: 0.85rem; text-align: center;">الرجاء اختيار أو إنشاء مجموعة أولاً لعرض القنوات.</p>';
+    countSpan.textContent = "(0 مضافة)";
+    return;
+  }
+
+  const channelsList = getUniqueSubscribedChannels();
+  if (channelsList.length === 0) {
+    listContainer.innerHTML = '<p style="color: var(--text-tertiary); font-size: 0.85rem; text-align: center;">لا توجد قنوات مسجلة حالياً في الأرشيف المساعد.</p>';
+    countSpan.textContent = "(0 مضافة)";
+    return;
+  }
+
+  const group = subscriptionGroups[activeGroupId];
+  countSpan.textContent = `(${group.channels.length} مضافة)`;
+  listContainer.innerHTML = '';
+
+  channelsList.forEach(chanName => {
+    const isChecked = group.channels.includes(chanName);
+    
+    const label = document.createElement('label');
+    label.className = 'sub-group-chan-item';
+    
+    const checkbox = document.createElement('input');
+    checkbox.type = 'checkbox';
+    checkbox.checked = isChecked;
+    
+    checkbox.addEventListener('change', (e) => {
+      if (e.target.checked) {
+        if (!group.channels.includes(chanName)) group.channels.push(chanName);
+      } else {
+        group.channels = group.channels.filter(c => c !== chanName);
+      }
+      countSpan.textContent = `(${group.channels.length} مضافة)`;
+      saveSubGroupsToStorage();
+    });
+
+    label.appendChild(checkbox);
+    
+    const nameSpan = document.createElement('span');
+    nameSpan.style.fontSize = '0.85rem';
+    nameSpan.style.color = 'var(--text-primary)';
+    nameSpan.textContent = chanName;
+    label.appendChild(nameSpan);
+
+    listContainer.appendChild(label);
+  });
+}
+
+// بناء وتحديث "حبات" المجموعات في شريط التصفح العلوي تلقائياً
+function renderSubGroupsPills() {
+  const wrapper = document.getElementById('subGroupsPillsWrapper');
+  if (!wrapper) return;
+
+  // المجموعات تظهر فقط في تبويب الاشتراكات / الشورتس / الأرشيف
+  if (activeView === 'subscriptions' || activeView === 'shorts' || activeView === 'archive') {
+    wrapper.style.display = 'flex';
+  } else {
+    wrapper.style.display = 'none';
+    return;
+  }
+
+  wrapper.innerHTML = '';
+
+  // إنشاء حبة لكل مجموعة
+  Object.keys(subscriptionGroups).forEach(id => {
+    const group = subscriptionGroups[id];
+    const btn = document.createElement('button');
+    btn.className = 'category-pill-btn' + (activeSubGroup === id ? ' active-gold' : '');
+    btn.style.fontSize = '0.75rem';
+    btn.style.padding = '6px 12px';
+    btn.innerHTML = `📁 ${group.name}`;
+    
+    btn.addEventListener('click', () => {
+      // إذا تم نقر الحبة النشطة بالفعل نلغي الفلترة، وإلا نفعلها
+      activeSubGroup = (activeSubGroup === id) ? '' : id;
+      renderSubGroupsPills();
+      currentPage = 1;
+      applyFiltersAndSort();
+    });
+    
+    wrapper.appendChild(btn);
+  });
+
+  // إضافة زر إدارة المجموعات الرمزي في النهاية لسهولة الوصول
+  const manageBtn = document.createElement('button');
+  manageBtn.className = 'category-pill-btn';
+  manageBtn.style.fontSize = '0.75rem';
+  manageBtn.style.padding = '6px 12px';
+  manageBtn.style.borderColor = 'var(--green-color)';
+  manageBtn.style.color = 'var(--green-color)';
+  manageBtn.innerHTML = `⚙️ المجموعات`;
+  
+  manageBtn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    openSubGroupsModal();
+  });
+  
+  wrapper.appendChild(manageBtn);
+}
+
+// حفظ وحفظ الاحتياطي للمجموعات
+function saveSubGroupsToStorage() {
+  localStorage.setItem('user_subscription_groups', JSON.stringify(subscriptionGroups));
+  renderSubGroupsPills();
+  
+  // تحديث الشاشة فوراً
+  currentPage = 1;
+  applyFiltersAndSort();
+}
+
+// ربط الدوال عالمياً للوصول الآمن من الـ HTML
+window.openSubGroupsModal = openSubGroupsModal;
+window.closeSubGroupsModal = closeSubGroupsModal;
+window.createSubGroup = createSubGroup;
+window.deleteActiveSubGroup = deleteActiveSubGroup;
+window.onSubGroupSelectChange = onSubGroupSelectChange;
   </script>
 </body>
 </html>
