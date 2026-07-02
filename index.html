@@ -4206,7 +4206,7 @@ ${titles.map((t, idx) => `${idx + 1}. ${t}`).join('\n')}`;
         fetchAllCloudSubscribedChannels(); // جلب قائمة قنواتك السحابية بالكامل لتصنيف المجموعات 👈
       }
       updateAuthUI();
-
+      }
     function getValidAccessToken() {
       const token = localStorage.getItem('user_youtube_access_token');
       const expires = localStorage.getItem('user_youtube_token_expires');
