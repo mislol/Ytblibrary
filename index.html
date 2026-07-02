@@ -1709,12 +1709,16 @@
         </div>
       </div>
 
-      <!-- اختيار قنوات المجموعة -->
+      <!-- اختيار قنوات المجموعة مع شريط البحث الذكي لمنع البطء والتصفية السريعة -->
       <div style="display: flex; flex-direction: column; gap: 8px; flex-grow: 1;">
         <label style="font-size: 0.85rem; font-weight: 700; color: var(--text-secondary); display: flex; justify-content: space-between;">
           <span>🎙️ حدد القنوات التابعة للمجموعة المحددة:</span>
           <span id="subGroupChannelCount" style="color: var(--green-color); font-weight: 800;">(0 مضافة)</span>
         </label>
+        
+        <!-- حقل البحث الذكي لتصفية الـ 3495 قناة فورياً -->
+        <input type="text" id="modalChannelSearchInput" oninput="renderSubGroupChannelsList()" placeholder="🔍 ابحث عن اسم القناة لتصفيتها سريعاً..." style="width: 100%; padding: 8px 12px; border-radius: 6px; border: 1px solid var(--bg-tertiary); background-color: var(--bg-primary); color: var(--text-primary); font-family: 'Cairo'; font-size: 0.85rem; outline: none;">
+
         <div id="subGroupChannelsList" style="background-color: var(--bg-primary); border: 1px solid var(--bg-tertiary); border-radius: 8px; padding: 12px; max-height: 200px; overflow-y: auto; display: flex; flex-direction: column; gap: 8px;">
           <p style="color: var(--text-tertiary); font-size: 0.85rem; text-align: center;">الرجاء اختيار أو إنشاء مجموعة أولاً لعرض القنوات.</p>
         </div>
@@ -5488,18 +5492,21 @@ function onSubGroupSelectChange() {
   renderSubGroupChannelsList();
 }
 
-// استخراج كافة القنوات الفريدة المسجلة محلياً في أرشيف الاشتراكات
+// استخراج كافة القنوات الفريدة المسجلة محلياً في الأرشيف وخلاصة الاشتراكات وقنوات المكتبة بالكامل (الـ 3495 قناة)
 function getUniqueSubscribedChannels() {
   const archiveChannels = Object.values(subscriptionsDb).map(v => v.channel).filter(Boolean);
   const tempChannels = (cachedSubscriptionsFeed || []).map(v => v.channel).filter(Boolean);
-  return [...new Set([...archiveChannels, ...tempChannels])].sort();
+  // دمج قنوات المكتبة الرئيسية الـ 3495 قناة لتمكين تصنيف أي قناة متواجدة لديك 👈
+  const libraryChannels = allVideos.map(v => v.channel).filter(Boolean);
+  
+  return [...new Set([...archiveChannels, ...tempChannels, ...libraryChannels])].sort();
 }
-
-// رندرة قائمة القنوات مع خانات الاختيار
+// رندرة قائمة القنوات مع خانات الاختيار والتصفية الذكية السريعة لـ 3495 قناة
 function renderSubGroupChannelsList() {
   const select = document.getElementById('subGroupSelect');
   const listContainer = document.getElementById('subGroupChannelsList');
   const countSpan = document.getElementById('subGroupChannelCount');
+  const searchInput = document.getElementById('modalChannelSearchInput');
   
   if (!select || !listContainer || !countSpan) return;
 
@@ -5508,21 +5515,41 @@ function renderSubGroupChannelsList() {
   if (!activeGroupId) {
     listContainer.innerHTML = '<p style="color: var(--text-tertiary); font-size: 0.85rem; text-align: center;">الرجاء اختيار أو إنشاء مجموعة أولاً لعرض القنوات.</p>';
     countSpan.textContent = "(0 مضافة)";
+    if (searchInput) searchInput.value = ''; // تصفير خانة البحث تلقائياً عند الإغلاق
     return;
   }
 
-  const channelsList = getUniqueSubscribedChannels();
+  let channelsList = getUniqueSubscribedChannels();
   if (channelsList.length === 0) {
-    listContainer.innerHTML = '<p style="color: var(--text-tertiary); font-size: 0.85rem; text-align: center;">لا توجد قنوات مسجلة حالياً في الأرشيف المساعد.</p>';
+    listContainer.innerHTML = '<p style="color: var(--text-tertiary); font-size: 0.85rem; text-align: center;">لا توجد قنوات مسجلة حالياً.</p>';
     countSpan.textContent = "(0 مضافة)";
     return;
+  }
+
+  // تطبيق التصفية والبحث السريع فورياً في الذاكرة
+  const query = searchInput ? searchInput.value.trim().toLowerCase() : '';
+  if (query) {
+    channelsList = channelsList.filter(chan => chan.toLowerCase().includes(query));
   }
 
   const group = subscriptionGroups[activeGroupId];
   countSpan.textContent = `(${group.channels.length} مضافة)`;
   listContainer.innerHTML = '';
 
-  channelsList.forEach(chanName => {
+  if (channelsList.length === 0) {
+    listContainer.innerHTML = '<p style="color: var(--text-tertiary); font-size: 0.85rem; text-align: center;">لا توجد قنوات مطابقة لهذا البحث.</p>';
+    return;
+  }
+
+  // ميزة تسريع الأداء على الجوال: عند عدم كتابة بحث، نعرض القنوات النشطة المختارة + أول 50 قناة فقط
+  // وعند بدء البحث، نعرض كافة النتائج المطابقة بدقة لتجنب بطء المتصفح في معالجة 3495 خانة اختيار دفعة واحدة
+  let renderedList = channelsList;
+  if (!query && channelsList.length > 100) {
+    const selectedSet = new Set(group.channels);
+    renderedList = channelsList.filter(chan => selectedSet.has(chan) || channelsList.indexOf(chan) < 50);
+  }
+
+  renderedList.forEach(chanName => {
     const isChecked = group.channels.includes(chanName);
     
     const label = document.createElement('label');
