@@ -1637,6 +1637,7 @@
           <div class="filter-group">
             <label for="sortSelect" data-i18n="filterSort">ترتيب حسب</label>
             <select id="sortSelect">
+              <option value="date-desc" data-i18n="sortDateDesc" selected>الأحدث نشراً 🆕</option>
               <option value="playlist-pos" data-i18n="sortPlaylistPos">ترتيب يوتيوب الأصلي ⏱️</option>
               <option value="id-asc" data-i18n="sortIdAsc">الرقم الافتراضي</option>
               <option value="title-asc" data-i18n="sortTitleAsc">العنوان أ - ي</option>
@@ -1862,6 +1863,7 @@
     "clearPlaylistCatsTitle": "إرجاع تصنيفات القائمة لـ غ-مصنف",
     "deletePlaylist": "🗑️ إزالة",
     "deletePlaylistTitle": "إزالة القائمة وفيديوهاتها من التطبيق فقط",
+    "sortDateDesc": "الأحدث نشراً 🆕", 
     "sortPlaylistPos": "ترتيب يوتيوب الأصلي ⏱️",
     "sortIdAsc": "الرقم الافتراضي",
     "sortTitleAsc": "العنوان أ - ي",
@@ -2029,6 +2031,7 @@
     "clearPlaylistCatsTitle": "Reset this playlist's categories to Uncategorized",
     "deletePlaylist": "🗑️ Remove",
     "deletePlaylistTitle": "Remove this playlist and its videos from the app only",
+    "sortDateDesc": "Newest Uploads 🆕",
     "sortPlaylistPos": "Original YouTube order ⏱️",
     "sortIdAsc": "Default number",
     "sortTitleAsc": "Title A–Z",
@@ -5051,6 +5054,9 @@ ${titles.map((t, idx) => `${idx + 1}. ${t}`).join('\n')}`;
       const sortVal = sortSelect.value;
       filteredVideos.sort((a, b) => {
         switch (sortVal) {
+          case 'date-desc':
+            // فرز تنازلي زمني من الأحدث نشراً للأقدم 👈
+            return (b.publishedAt || 0) - (a.publishedAt || 0);
           case 'playlist-pos':
             // ترتيب تصاعدي حسب حقل الترتيب الأصلي في يوتيوب
             return (a.position !== undefined ? a.position : 999999) - (b.position !== undefined ? b.position : 999999) || a.id - b.id;
