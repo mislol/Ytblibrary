@@ -3125,18 +3125,39 @@
 
         logToCloudConsole(`📁 تم العثور على ${subsData.items.length} قناة مشترك بها. جاري استخراج آخر الفيديوهات المرفوعة...`);
 
+        // مصفوفة لتخزين معرفات مقاطع الشورتس المكتشفة من يوتيوب لجميع قنوات الاشتراكات 👈
+        const shortsIds = [];
+
         // جلب آخر 5 فيديوهات من المرفوعات لكل قناة بالتوازي
         const promises = subsData.items.map(async (item) => {
           const channelId = item.snippet.resourceId.channelId;
           const uploadsPlaylistId = 'UU' + channelId.substring(2);
           const playlistItemsUrl = `https://www.googleapis.com/youtube/v3/playlistItems?part=snippet&playlistId=${uploadsPlaylistId}&maxResults=5`;
 
+          // إعداد رابط قائمة الشورتس الرسمية لنفس القناة 👈
+          const shortsPlaylistId = 'UUSH' + channelId.substring(2);
+          const shortsUrl = `https://www.googleapis.com/youtube/v3/playlistItems?part=snippet&playlistId=${shortsPlaylistId}&maxResults=25`;
+
           try {
-            const res = await fetch(playlistItemsUrl, {
-              headers: { 'Authorization': `Bearer ${token}` }
-            });
-            if (res.ok) {
-              const data = await res.json();
+            // تنفيذ طلبي جلب المرفوعات العامة والشورتس بالتوازي لسرعة فائقة 👈
+            const [resUploads, resShorts] = await Promise.all([
+              fetch(playlistItemsUrl, { headers: { 'Authorization': `Bearer ${token}` } }),
+              fetch(shortsUrl, { headers: { 'Authorization': `Bearer ${token}` } }).catch(() => null) // تجاهل أخطاء عدم دعم القناة للشورتس (404)
+            ]);
+
+            // استخراج معرفات مقاطع الشورتس وتخزينها في المصفوفة الموحدة إن وجدت 👈
+            if (resShorts && resShorts.ok) {
+              const shortsData = await resShorts.json();
+              if (shortsData.items) {
+                shortsData.items.forEach(sh => {
+                  const sId = sh.snippet?.resourceId?.videoId;
+                  if (sId) shortsIds.push(sId);
+                });
+              }
+            }
+
+            if (resUploads && resUploads.ok) {
+              const data = await resUploads.json();
               return data.items || [];
             }
           } catch (e) {
@@ -3173,7 +3194,8 @@
                 parentPlaylistId: 'subscriptions_feed',
                 parentPlaylistName: '🔔 خلاصة الاشتراكات',
                 publishedAt: new Date(snippet.publishedAt).getTime(),
-                duration: '00:00'
+                duration: '00:00',
+                isShort: shortsIds.includes(vId) // الحقل الجديد المضاف في سجل قاعدة البيانات 👈
               };
             }
 
@@ -3187,6 +3209,7 @@
               parentPlaylistName: '🔔 خلاصة الاشتراكات',
               publishedAt: new Date(snippet.publishedAt).getTime(),
               duration: '00:00',
+              isShort: shortsIds.includes(vId), // الحقل الجديد المضاف في سجل العرض المؤقت 👈
               category: finalCategory
             });
           }
@@ -4953,10 +4976,12 @@ ${titles.map((t, idx) => `${idx + 1}. ${t}`).join('\n')}`;
       });
 
       renderGrid();
-    } // 👈 تم قفل الدالة بشكل كامل وصحيح بنسبة 100% الآن
+    } 
+    
     // دالة ذكية ومطورة لفحص ما إذا كان الفيديو عبارة عن مقطع Short (تراعي تحديث يوتيوب لـ 3 دقائق) 👈
     function checkVideoIfShort(video) {
       if (!video) return false;
+      if (video.isShort === true) return true; // الأولوية القصوى للتحقق السحابي الرسمي لـ يوتيوب 👈
       const url = video.url || '';
       const title = (video.title || '').toLowerCase();
       const durationSeconds = parseDuration(video.duration);
