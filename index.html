@@ -1528,8 +1528,14 @@
       <ul id="subscriptionsDropdownMenu" class="categories-dropdown-menu" style="inset-inline-start: 0; min-width: 240px; z-index: 151; padding: 10px 0;">
         <!-- القسم الأول: الخلاصة المباشرة -->
         <li style="padding: 6px 15px; font-size: 0.72rem; color: var(--text-tertiary); font-weight: 800;" data-i18n="subSecLive">📡 الخلاصة المباشرة</li>
-        <li class="dropdown-item-cat" id="subOptVideos"><span data-i18n="subOptVideos">📹 فيديوهات</span></li>
-        <li class="dropdown-item-cat" id="subOptShorts"><span data-i18n="subOptShorts">📱 شورتس</span></li>
+        <li class="dropdown-item-cat" id="subOptVideos" style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
+          <span data-i18n="subOptVideos">📹 فيديوهات</span>
+          <button class="btn btn-secondary" id="btnSyncVideos" title="تحديث الفيديوهات سحابياً" style="padding: 0; font-size: 0.72rem; border-radius: 50%; height: 26px; width: 26px; display: inline-flex; align-items: center; justify-content: center; min-width: 26px; margin: 0; border: 1px solid var(--bg-tertiary);">🔄</button>
+        </li>
+        <li class="dropdown-item-cat" id="subOptShorts" style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
+          <span data-i18n="subOptShorts">📱 شورتس</span>
+          <button class="btn btn-secondary" id="btnSyncShorts" title="تحديث الشورتس سحابياً" style="padding: 0; font-size: 0.72rem; border-radius: 50%; height: 26px; width: 26px; display: inline-flex; align-items: center; justify-content: center; min-width: 26px; margin: 0; border: 1px solid var(--bg-tertiary);">🔄</button>
+        </li>
         
         <!-- خط فاصل ناعم -->
         <li style="border-top: 1px solid var(--bg-tertiary); margin: 6px 0;"></li>
@@ -2349,21 +2355,44 @@
         });
       }
 
-      // خيار فيديوهات طويلة المباشرة 📹 👈
+      // خيار فيديوهات طويلة المباشرة 📹 (يعرض الكاش المحلي فقط) 👈
       const subOptVideos = document.getElementById('subOptVideos');
       if (subOptVideos) {
-        subOptVideos.addEventListener('click', () => {
+        subOptVideos.addEventListener('click', (e) => {
+          // إذا كان النقر على زر التحديث المرفق نتخطى هذا الحدث لمنع التداخل
+          if (e.target.id === 'btnSyncVideos' || e.target.closest('#btnSyncVideos')) return;
           if (subscriptionsDropdownMenu) subscriptionsDropdownMenu.classList.remove('show');
-          fetchSubscriptionsFeed('videos');
+          fetchSubscriptionsFeed('videos', false);
         });
       }
 
-      // خيار شورتس المباشرة 📱 👈
+      // خيار شورتس المباشرة 📱 (يعرض الكاش المحلي فقط) 👈
       const subOptShorts = document.getElementById('subOptShorts');
       if (subOptShorts) {
-        subOptShorts.addEventListener('click', () => {
+        subOptShorts.addEventListener('click', (e) => {
+          // إذا كان النقر على زر التحديث المرفق نتخطى هذا الحدث لمنع التداخل
+          if (e.target.id === 'btnSyncShorts' || e.target.closest('#btnSyncShorts')) return;
           if (subscriptionsDropdownMenu) subscriptionsDropdownMenu.classList.remove('show');
-          fetchSubscriptionsFeed('shorts');
+          fetchSubscriptionsFeed('shorts', false);
+        });
+      }
+
+      // ربط أزرار التحديث المخصصة الجديدة 🔄 للاتصال السحابي الحقيقي 👈
+      const btnSyncVideos = document.getElementById('btnSyncVideos');
+      if (btnSyncVideos) {
+        btnSyncVideos.addEventListener('click', (e) => {
+          e.stopPropagation(); // منع إغلاق القائمة أو إثارة حدث النقر الخاص بـ subOptVideos
+          if (subscriptionsDropdownMenu) subscriptionsDropdownMenu.classList.remove('show');
+          fetchSubscriptionsFeed('videos', true);
+        });
+      }
+
+      const btnSyncShorts = document.getElementById('btnSyncShorts');
+      if (btnSyncShorts) {
+        btnSyncShorts.addEventListener('click', (e) => {
+          e.stopPropagation(); // منع إغلاق القائمة أو إثارة حدث النقر الخاص بـ subOptShorts
+          if (subscriptionsDropdownMenu) subscriptionsDropdownMenu.classList.remove('show');
+          fetchSubscriptionsFeed('shorts', true);
         });
       }
 
@@ -3127,22 +3156,39 @@
       };
       reader.readAsText(file, 'UTF-8');
     }
-// مصفوفة الذاكرة المؤقتة لمنع إعادة الاتصال وتوفير الكوتا السحابية والسرعة الفورية
-    let cachedSubscriptionsFeed = null;
+// مصفوفة الذاكرة المؤقتة لمنع إعادة الاتصال وتوفير الكوتا السحابية والسرعة الفورية مع استردادها محلياً 👈
+    let cachedSubscriptionsFeed = [];
+    try {
+      const savedFeed = localStorage.getItem('user_cached_subscriptions_feed');
+      if (savedFeed) cachedSubscriptionsFeed = JSON.parse(savedFeed);
+    } catch(e) {
+      cachedSubscriptionsFeed = [];
+    }
 
-    // دالة جلب وتصفية خلاصة الاشتراكات وتصنيفها بدقة للفيديوهات والشورتس (مصححة ومحدثة) 👈
-    async function fetchSubscriptionsFeed(targetType = 'videos') {
+    // دالة جلب وتصفية خلاصة الاشتراكات وتصنيفها بدقة للفيديوهات والشورتس (معدلة لدعم التحكم اليدوي التام بالكوتا) 👈
+    async function fetchSubscriptionsFeed(targetType = 'videos', forceUpdate = false) {
       const token = getValidAccessToken();
       if (!token) return;
 
-      // 1. إذا كانت خلاصة البيانات مخزنة مسبقاً، نقوم بتصفيتها وعرضها فوراً دون اتصال سحابي إضافي
-      if (cachedSubscriptionsFeed && cachedSubscriptionsFeed.length > 0) {
+      // 1. إذا طلب المستخدم العرض العادي (دون إجبار التحديث) والذاكرة المؤقتة ممتلئة 👈
+      if (!forceUpdate && cachedSubscriptionsFeed && cachedSubscriptionsFeed.length > 0) {
         renderFilteredSubscriptions(cachedSubscriptionsFeed, targetType);
         return;
       }
 
+      // 2. إذا طلب العرض العادي والذاكرة فارغة تماماً (مثل أول فتح للتطبيق على الإطلاق) 👈
+      if (!forceUpdate && (!cachedSubscriptionsFeed || cachedSubscriptionsFeed.length === 0)) {
+        logToCloudConsole('⚠️ خلاصة البث المباشر فارغة حالياً. يرجى الضغط على زر التحديث 🔄 بجانب الخيار لجلب الفيديوهات لأول مرة سحابياً.');
+        showToast('💡 انقر على زر التحديث 🔄 بجانب الخيار لجلب فيديوهاتك لأول مرة.');
+        
+        // عرض الأرشيف كبديل مؤقت تلقائياً بدلاً من ترك الشاشة بيضاء
+        showSubscriptionsArchive(targetType); 
+        return;
+      }
+
+      // 3. في حال كان forceUpdate = true (الضغط المباشر على زر 🔄) يتم البدء بالجلب السحابي الفعلي 👈
       renderSkeletons();
-      logToCloudConsole('🔔 جاري جلب قائمة الاشتراكات من حساب يوتيوب الخاص بك...');
+      logToCloudConsole('📡 جاري البدء في جلب تحديثات خلاصة الاشتراكات سحابياً بطلب مباشر منك...');
 
       try {
         // جلب أول 50 قناة مشتركة والأكثر نشاطاً وتحديثاً مؤخراً من يوتيوب 👈
@@ -3307,12 +3353,14 @@
         // ترتيب الفيديوهات تنازلياً من الأحدث للأقدم
         tempVideos.sort((a, b) => b.publishedAt - a.publishedAt);
         
-        // حفظ القائمة الكاملة مع الأوقات في الذاكرة المؤقتة لمنع استهلاك كوتا إضافية
+        // حفظ القائمة الكاملة مع الأوقات في الذاكرة المؤقتة وتخزينها محلياً لتدوم بين الـ Refresh 👈
         cachedSubscriptionsFeed = tempVideos;
+        try {
+          localStorage.setItem('user_cached_subscriptions_feed', JSON.stringify(tempVideos));
+        } catch(e) {}
 
         // تصفية وعرض النوع المطلوب
         renderFilteredSubscriptions(cachedSubscriptionsFeed, targetType);
-
       } catch (e) {
         console.error(e);
         logToCloudConsole(`❌ فشل جلب خلاصة الاشتراكات: ${e.message}`);
@@ -4246,7 +4294,8 @@ ${titles.map((t, idx) => `${idx + 1}. ${t}`).join('\n')}`;
       localStorage.removeItem('user_youtube_access_token');
       localStorage.removeItem('user_youtube_token_expires');
       localStorage.removeItem('user_google_drive_file_id');
-      cachedSubscriptionsFeed = null; // تفريغ ذاكرة الاشتراكات المؤقتة تماماً 👈
+      cachedSubscriptionsFeed = []; // تفريغ ذاكرة الاشتراكات المؤقتة تماماً 👈
+      localStorage.removeItem('user_cached_subscriptions_feed'); // مسح الكاش المستمر من المتصفح عند الخروج 👈
       logToCloudConsole('🔐 تم تسجيل الخروج بنجاح وتم مسح التراخيص المؤقتة.');
       showToast(t('toastSignedOut'));
       updateAuthUI();
