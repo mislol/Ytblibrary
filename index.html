@@ -1525,11 +1525,20 @@
       <button id="pillSubscriptionsDropdownBtn" class="category-pill-btn" style="color: var(--green-color);">
         <span id="subDropdownLabel">🔔 اشتراكات</span> <span class="arrow">▾</span>
       </button>
-      <ul id="subscriptionsDropdownMenu" class="categories-dropdown-menu" style="inset-inline-start: 0; min-width: 180px; z-index: 151;">
+      <ul id="subscriptionsDropdownMenu" class="categories-dropdown-menu" style="inset-inline-start: 0; min-width: 240px; z-index: 151; padding: 10px 0;">
+        <!-- القسم الأول: الخلاصة المباشرة -->
+        <li style="padding: 6px 15px; font-size: 0.72rem; color: var(--text-tertiary); font-weight: 800;" data-i18n="subSecLive">📡 الخلاصة المباشرة</li>
         <li class="dropdown-item-cat" id="subOptVideos"><span data-i18n="subOptVideos">📹 فيديوهات</span></li>
         <li class="dropdown-item-cat" id="subOptShorts"><span data-i18n="subOptShorts">📱 شورتس</span></li>
-        <!-- خيار أرشيف الاشتراكات التراكمي المضاف 👈 -->
-        <li class="dropdown-item-cat" id="subOptArchive"><span data-i18n="subOptArchive">📚 أرشيف الاشتراكات</span></li>
+        
+        <!-- خط فاصل ناعم -->
+        <li style="border-top: 1px solid var(--bg-tertiary); margin: 6px 0;"></li>
+        
+        <!-- القسم الثاني: الأرشيف التراكمي -->
+        <li style="padding: 6px 15px; font-size: 0.72rem; color: var(--text-tertiary); font-weight: 800;" data-i18n="subSecArchive">💾 الأرشيف التراكمي</li>
+        <li class="dropdown-item-cat" id="subOptArchiveVideos"><span data-i18n="subOptArchiveVideos">🎥 أرشيف الفيديوهات</span></li>
+        <li class="dropdown-item-cat" id="subOptArchiveShorts"><span data-i18n="subOptArchiveShorts">📱 أرشيف الشورتس</span></li>
+        <li class="dropdown-item-cat" id="subOptArchiveFull"><span data-i18n="subOptArchiveFull">📚 أرشيف الاشتراكات الكامل</span></li>
       </ul>
     </div>
     
@@ -1821,6 +1830,11 @@
     "subOptVideos": "📹 فيديوهات",
     "subOptShorts": "📱 شورتس",
     "subOptArchive": "📚 أرشيف الاشتراكات",
+    "subSecLive": "📡 الخلاصة المباشرة",
+    "subSecArchive": "💾 الأرشيف التراكمي المحفوظ",
+    "subOptArchiveVideos": "🎥 أرشيف الفيديوهات",
+    "subOptArchiveShorts": "📱 أرشيف الشورتس",
+    "subOptArchiveFull": "📚 أرشيف الاشتراكات الكامل",
     "navLibrary": "المكتبة",
     "navSubs": "الاشتراكات",
     "navFavorites": "المفضلة",
@@ -1983,6 +1997,11 @@
     "subOptVideos": "📹 Videos",
     "subOptShorts": "📱 Shorts",
     "subOptArchive": "📚 Subs Archive",
+    "subSecLive": "📡 Live Feeds",
+    "subSecArchive": "💾 Cumulative Archive",
+    "subOptArchiveVideos": "🎥 Videos Archive",
+    "subOptArchiveShorts": "📱 Shorts Archive",
+    "subOptArchiveFull": "📚 Complete Subscriptions Archive",
     "navLibrary": "Library",
     "navSubs": "Subs",
     "navFavorites": "Favorites",
@@ -2330,7 +2349,7 @@
         });
       }
 
-      // خيار فيديوهات طويلة 📹 👈
+      // خيار فيديوهات طويلة المباشرة 📹 👈
       const subOptVideos = document.getElementById('subOptVideos');
       if (subOptVideos) {
         subOptVideos.addEventListener('click', () => {
@@ -2339,7 +2358,7 @@
         });
       }
 
-      // خيار شورتس 📱 👈
+      // خيار شورتس المباشرة 📱 👈
       const subOptShorts = document.getElementById('subOptShorts');
       if (subOptShorts) {
         subOptShorts.addEventListener('click', () => {
@@ -2348,12 +2367,30 @@
         });
       }
 
-      // خيار أرشيف الاشتراكات التراكمي المضاف 👈
-      const subOptArchive = document.getElementById('subOptArchive');
-      if (subOptArchive) {
-        subOptArchive.addEventListener('click', () => {
+      // خيار أرشيف الفيديوهات التراكمي المحفوظ محلياً 🎥 👈
+      const subOptArchiveVideos = document.getElementById('subOptArchiveVideos');
+      if (subOptArchiveVideos) {
+        subOptArchiveVideos.addEventListener('click', () => {
           if (subscriptionsDropdownMenu) subscriptionsDropdownMenu.classList.remove('show');
-          showSubscriptionsArchive(); // استعراض الأرشيف محلياً التراكمي 👈
+          showSubscriptionsArchive('videos');
+        });
+      }
+
+      // خيار أرشيف الشورتس التراكمي المحفوظ محلياً 📱 👈
+      const subOptArchiveShorts = document.getElementById('subOptArchiveShorts');
+      if (subOptArchiveShorts) {
+        subOptArchiveShorts.addEventListener('click', () => {
+          if (subscriptionsDropdownMenu) subscriptionsDropdownMenu.classList.remove('show');
+          showSubscriptionsArchive('shorts');
+        });
+      }
+
+      // خيار أرشيف الاشتراكات الكامل والجامع محلياً 📚 👈
+      const subOptArchiveFull = document.getElementById('subOptArchiveFull');
+      if (subOptArchiveFull) {
+        subOptArchiveFull.addEventListener('click', () => {
+          if (subscriptionsDropdownMenu) subscriptionsDropdownMenu.classList.remove('show');
+          showSubscriptionsArchive('all');
         });
       }
 
@@ -3283,13 +3320,13 @@
       }
     }
 
-    // دالة استعراض أرشيف الاشتراكات التراكمي والتاريخي محلياً بنظام الترقيم السريع (0 كوتا) 👈
-    function showSubscriptionsArchive() {
+    // دالة استعراض أرشيف الاشتراكات التراكمي والتاريخي محلياً بحسب نوع الفرز (فيديوهات / شورتس / الكل) 👈
+    function showSubscriptionsArchive(type = 'all') {
       renderSkeletons();
       
       setTimeout(() => {
         // تحويل قاعدة بيانات الاشتراكات التراكمية من كائن (Object) إلى مصفوفة (Array) 👈
-        const archiveList = Object.keys(subscriptionsDb).map(vId => {
+        let archiveList = Object.keys(subscriptionsDb).map(vId => {
           return {
             id: 'sub_' + vId,
             title: subscriptionsDb[vId].title,
@@ -3304,8 +3341,15 @@
           };
         });
 
+        // تطبيق الفرز والتصفية الذكية بناءً على المعيار المختار 👈
+        if (type === 'videos') {
+          archiveList = archiveList.filter(v => !checkVideoIfShort(v));
+        } else if (type === 'shorts') {
+          archiveList = archiveList.filter(v => checkVideoIfShort(v));
+        }
+
         if (archiveList.length === 0) {
-          logToCloudConsole('⚠️ أرشيف الاشتراكات فارغ حالياً. تصفح التبويبات الأخرى ليتم حفظها تلقائياً.');
+          logToCloudConsole(`⚠️ أرشيف الاشتراكات المختار (${type === 'videos' ? 'فيديوهات' : type === 'shorts' ? 'شورتس' : 'الكامل'}) فارغ حالياً.`);
           initApp();
           return;
         }
@@ -3318,12 +3362,17 @@
         filteredVideos = archiveList;
         currentPage = 1;
 
-        // تحديث تلوين الأزرار والترجمة
+        // تحديث تلوين الأزرار والترجمة الذكية للعنوان العلوي النشط 👈
         document.querySelectorAll('.category-pill-btn').forEach(btn => btn.classList.remove('active', 'active-gold'));
         const subDropdownBtn = document.getElementById('pillSubscriptionsDropdownBtn');
         const subDropdownLabel = document.getElementById('subDropdownLabel');
         if (subDropdownBtn) subDropdownBtn.classList.add('active');
-        if (subDropdownLabel) subDropdownLabel.textContent = `${t('pillSubscriptions')}: ${t('subOptArchive')}`;
+        
+        if (subDropdownLabel) {
+          if (type === 'videos') subDropdownLabel.textContent = `${t('pillSubscriptions')}: 🎥 أرشيف الفيديوهات`;
+          else if (type === 'shorts') subDropdownLabel.textContent = `${t('pillSubscriptions')}: 📱 أرشيف الشورتس`;
+          else subDropdownLabel.textContent = `${t('pillSubscriptions')}: 📚 الأرشيف الكامل`;
+        }
 
         // تنشيط إضاءة تبويب الاشتراكات في شريط التنقل السفلي تلقائياً عند عرض الأرشيف 👈
         document.querySelectorAll('.bottom-nav-item').forEach(btn => btn.classList.remove('active'));
@@ -3334,11 +3383,10 @@
         const classifySubsBtn = document.getElementById('classifySubscriptionsBtn');
         if (classifySubsBtn) classifySubsBtn.style.display = 'inline-flex';
 
-        logToCloudConsole(`📚 تم استعراض أرشيف الاشتراكات التاريخي ويحتوي على ${archiveList.length} فيديو تم حفظها وتصنيفها مسبقاً.`);
+        logToCloudConsole(`📚 تم استعراض أرشيف الاشتراكات المختار (${type}) ويحتوي على ${archiveList.length} فيديو تم تخزينه وتصنيفه مسبقاً.`);
         renderGrid();
       }, 300);
     }
-
     // دالة تصفية وفصل الفيديوهات عن الشورتس مع تحديث عناوين الزر المنسدل تلقائياً 👈
     function renderFilteredSubscriptions(feedList, targetType) {
       // تحديد التبويب النشط لتوجيه محرك البحث تلقائياً 👈
