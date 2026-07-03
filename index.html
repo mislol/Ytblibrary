@@ -3108,8 +3108,8 @@
       logToCloudConsole('🔔 جاري جلب قائمة الاشتراكات من حساب يوتيوب الخاص بك...');
 
       try {
-        // جلب أول 20 قناة مشترك فيها المستخدم من خوادم يوتيوب
-        const subsUrl = 'https://www.googleapis.com/youtube/v3/subscriptions?part=snippet&mine=true&maxResults=20';
+        // جلب أول 50 قناة مشتركة والأكثر نشاطاً وتحديثاً مؤخراً من يوتيوب 👈
+        const subsUrl = 'https://www.googleapis.com/youtube/v3/subscriptions?part=snippet&mine=true&maxResults=50&order=unread';
         const subsRes = await fetch(subsUrl, {
           headers: { 'Authorization': `Bearer ${token}` }
         });
@@ -3132,8 +3132,7 @@
         const promises = subsData.items.map(async (item) => {
           const channelId = item.snippet.resourceId.channelId;
           const uploadsPlaylistId = 'UU' + channelId.substring(2);
-          const playlistItemsUrl = `https://www.googleapis.com/youtube/v3/playlistItems?part=snippet&playlistId=${uploadsPlaylistId}&maxResults=5`;
-
+          const playlistItemsUrl = `https://www.googleapis.com/youtube/v3/playlistItems?part=snippet&playlistId=${uploadsPlaylistId}&maxResults=10`;
           // إعداد رابط قائمة الشورتس الرسمية لنفس القناة 👈
           const shortsPlaylistId = 'UUSH' + channelId.substring(2);
           const shortsUrl = `https://www.googleapis.com/youtube/v3/playlistItems?part=snippet&playlistId=${shortsPlaylistId}&maxResults=25`;
