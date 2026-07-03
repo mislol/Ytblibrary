@@ -1528,13 +1528,8 @@
       <ul id="subscriptionsDropdownMenu" class="categories-dropdown-menu" style="inset-inline-start: 0; min-width: 180px; z-index: 151;">
         <li class="dropdown-item-cat" id="subOptVideos"><span data-i18n="subOptVideos">📹 فيديوهات</span></li>
         <li class="dropdown-item-cat" id="subOptShorts"><span data-i18n="subOptShorts">📱 شورتس</span></li>
-        
-        <!-- فاصل بصري ناعم لتنظيم وتسهيل تجربة الاستخدام 👈 -->
-        <li style="border-top: 1px solid var(--bg-tertiary); margin: 6px 0; pointer-events: none;"></li>
-        
-        <li class="dropdown-item-cat" id="subOptArchiveVideos"><span data-i18n="subOptArchiveVideos">🎥 أرشيف فيديوهات</span></li>
-        <li class="dropdown-item-cat" id="subOptArchiveShorts"><span data-i18n="subOptArchiveShorts">📱 أرشيف شورتس</span></li>
-        <li class="dropdown-item-cat" id="subOptArchive"><span data-i18n="subOptArchive">📚 أرشيف الاشتراكات (الكل)</span></li>
+        <!-- خيار أرشيف الاشتراكات التراكمي المضاف 👈 -->
+        <li class="dropdown-item-cat" id="subOptArchive"><span data-i18n="subOptArchive">📚 أرشيف الاشتراكات</span></li>
       </ul>
     </div>
     
@@ -1825,9 +1820,7 @@
     "pillShorts": "📱 شورتس",
     "subOptVideos": "📹 فيديوهات",
     "subOptShorts": "📱 شورتس",
-    "subOptArchive": "📚 أرشيف الاشتراكات (الكل)",
-    "subOptArchiveVideos": "🎥 أرشيف فيديوهات", // 👈 الترجمة المضافة
-    "subOptArchiveShorts": "📱 أرشيف شورتس",    // 👈 الترجمة المضافة
+    "subOptArchive": "📚 أرشيف الاشتراكات",
     "navLibrary": "المكتبة",
     "navSubs": "الاشتراكات",
     "navFavorites": "المفضلة",
@@ -1989,9 +1982,7 @@
     "pillShorts": "📱 Shorts",
     "subOptVideos": "📹 Videos",
     "subOptShorts": "📱 Shorts",
-    "subOptArchive": "📚 Subs Archive (All)",
-    "subOptArchiveVideos": "🎥 Videos Archive", // 👈 الترجمة المضافة
-    "subOptArchiveShorts": "📱 Shorts Archive",    // 👈 
+    "subOptArchive": "📚 Subs Archive",
     "navLibrary": "Library",
     "navSubs": "Subs",
     "navFavorites": "Favorites",
@@ -2358,30 +2349,11 @@
       }
 
       // خيار أرشيف الاشتراكات التراكمي المضاف 👈
-      // خيار أرشيف الاشتراكات التراكمي المضاف 👈
       const subOptArchive = document.getElementById('subOptArchive');
       if (subOptArchive) {
         subOptArchive.addEventListener('click', () => {
           if (subscriptionsDropdownMenu) subscriptionsDropdownMenu.classList.remove('show');
-          showSubscriptionsArchive('all'); // استعراض الكل 👈
-        });
-      }
-
-      // خيار أرشيف فيديوهات المضاف حديثاً 👈
-      const subOptArchiveVideos = document.getElementById('subOptArchiveVideos');
-      if (subOptArchiveVideos) {
-        subOptArchiveVideos.addEventListener('click', () => {
-          if (subscriptionsDropdownMenu) subscriptionsDropdownMenu.classList.remove('show');
-          showSubscriptionsArchive('videos'); // استعراض الفيديوهات فقط 👈
-        });
-      }
-
-      // خيار أرشيف شورتس المضاف حديثاً 👈
-      const subOptArchiveShorts = document.getElementById('subOptArchiveShorts');
-      if (subOptArchiveShorts) {
-        subOptArchiveShorts.addEventListener('click', () => {
-          if (subscriptionsDropdownMenu) subscriptionsDropdownMenu.classList.remove('show');
-          showSubscriptionsArchive('shorts'); // استعراض الشورتس فقط 👈
+          showSubscriptionsArchive(); // استعراض الأرشيف محلياً التراكمي 👈
         });
       }
 
@@ -3313,13 +3285,12 @@
     }
 
     // دالة استعراض أرشيف الاشتراكات التراكمي والتاريخي محلياً بنظام الترقيم السريع (0 كوتا) 👈
-    // دالة استعراض أرشيف الاشتراكات التراكمي والتاريخي محلياً بنظام الترقيم السريع (0 كوتا) 👈
-    function showSubscriptionsArchive(filterType = 'all') {
+    function showSubscriptionsArchive() {
       renderSkeletons();
       
       setTimeout(() => {
         // تحويل قاعدة بيانات الاشتراكات التراكمية من كائن (Object) إلى مصفوفة (Array) 👈
-        let archiveList = Object.keys(subscriptionsDb).map(vId => {
+        const archiveList = Object.keys(subscriptionsDb).map(vId => {
           return {
             id: 'sub_' + vId,
             title: subscriptionsDb[vId].title,
@@ -3330,8 +3301,7 @@
             parentPlaylistName: subscriptionsDb[vId].parentPlaylistName,
             publishedAt: subscriptionsDb[vId].publishedAt,
             duration: subscriptionsDb[vId].duration,
-            category: subscriptionsDb[vId].category,
-            isShort: subscriptionsDb[vId].isShort
+            category: subscriptionsDb[vId].category
           };
         });
 
@@ -3339,13 +3309,6 @@
           logToCloudConsole('⚠️ أرشيف الاشتراكات فارغ حالياً. تصفح التبويبات الأخرى ليتم حفظها تلقائياً.');
           initApp();
           return;
-        }
-
-        // تطبيق الفلترة والتصفية بناءً على نوع الأرشيف المختار 👈
-        if (filterType === 'videos') {
-          archiveList = archiveList.filter(v => !checkVideoIfShort(v));
-        } else if (filterType === 'shorts') {
-          archiveList = archiveList.filter(v => checkVideoIfShort(v));
         }
 
         // ترتيب الأرشيف التاريخي تنازلياً من الأحدث للأقدم 👈
@@ -3361,17 +3324,7 @@
         const subDropdownBtn = document.getElementById('pillSubscriptionsDropdownBtn');
         const subDropdownLabel = document.getElementById('subDropdownLabel');
         if (subDropdownBtn) subDropdownBtn.classList.add('active');
-        
-        // تحديث تسمية الزر المنسدل بحسب الخيار النشط حالياً 👈
-        if (subDropdownLabel) {
-          if (filterType === 'videos') {
-            subDropdownLabel.textContent = `${t('pillSubscriptions')}: ${t('subOptArchiveVideos')}`;
-          } else if (filterType === 'shorts') {
-            subDropdownLabel.textContent = `${t('pillSubscriptions')}: ${t('subOptArchiveShorts')}`;
-          } else {
-            subDropdownLabel.textContent = `${t('pillSubscriptions')}: ${t('subOptArchive')}`;
-          }
-        }
+        if (subDropdownLabel) subDropdownLabel.textContent = `${t('pillSubscriptions')}: ${t('subOptArchive')}`;
 
         // تنشيط إضاءة تبويب الاشتراكات في شريط التنقل السفلي تلقائياً عند عرض الأرشيف 👈
         document.querySelectorAll('.bottom-nav-item').forEach(btn => btn.classList.remove('active'));
@@ -3382,7 +3335,7 @@
         const classifySubsBtn = document.getElementById('classifySubscriptionsBtn');
         if (classifySubsBtn) classifySubsBtn.style.display = 'inline-flex';
 
-        logToCloudConsole(`📚 تم استعراض أرشيف الاشتراكات (${filterType === 'videos' ? 'فيديوهات' : filterType === 'shorts' ? 'شورتس' : 'الكل'}) ويحتوي على ${archiveList.length} فيديو تم حفظها مسبقاً.`);
+        logToCloudConsole(`📚 تم استعراض أرشيف الاشتراكات التاريخي ويحتوي على ${archiveList.length} فيديو تم حفظها وتصنيفها مسبقاً.`);
         renderGrid();
       }, 300);
     }
