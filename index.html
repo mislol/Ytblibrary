@@ -2570,10 +2570,11 @@
         }
       }
 
-      // استعادة تصنيفات الاشتراكات المحفوظة مسبقاً عند تشغيل التطبيق 👈
+// استعادة تصنيفات الاشتراكات المحفوظة مسبقاً عند تشغيل التطبيق 👈
       try {
         const storedSubs = localStorage.getItem('user_youtube_subscriptions_db');
         if (storedSubs) subscriptionsDb = JSON.parse(storedSubs);
+        repairSubscriptionsDbShortsFlag(); // تشغيل دالة الإصلاح الذاتي والتصنيف الفوري للأرشيف التاريخي 👈
       } catch(e) {
         subscriptionsDb = {};
       }
@@ -3265,9 +3266,10 @@
             
             let finalCategory = 'غ-مصنف'; // افتراضي
 
-            // إذا كان هذا الفيديو مصنفاً ومحفوظاً مسبقاً في قاعدة البيانات، نسترجع تصنيفه فوراً
+// إذا كان هذا الفيديو مصنفاً ومحفوظاً مسبقاً في قاعدة البيانات، نسترجع تصنيفه فوراً ونحدث وسم الشورتس لضمان دقة الأرشيف 👈
             if (subscriptionsDb[vId]) {
               finalCategory = subscriptionsDb[vId].category || 'غ-مصنف';
+              subscriptionsDb[vId].isShort = shortsIds.includes(vId); // تحديث الحقل دائماً لضمان دقة فرز الأرشيف 👈
             } else {
               // إذا كان فيديو جديد، نقوم بإنشاء سجل فارغ له في قاعدة البيانات
               subscriptionsDb[vId] = {
@@ -3438,6 +3440,43 @@
         logToCloudConsole(`📚 تم استعراض أرشيف الاشتراكات المختار (${type}) ويحتوي على ${archiveList.length} فيديو تم تخزينه وتصنيفه مسبقاً.`);
         renderGrid();
       }, 300);
+    }
+    // دالة إصلاح ذاتي تلقائية لتمشيط الأرشيف وتصنيف المقاطع التاريخية القديمة التي تفتقد لوسم الشورتس 👈
+    function repairSubscriptionsDbShortsFlag() {
+      let updated = false;
+      if (!subscriptionsDb) return;
+      
+      Object.keys(subscriptionsDb).forEach(vId => {
+        const video = subscriptionsDb[vId];
+        if (video && video.isShort === undefined) {
+          const durationSeconds = parseDuration(video.duration);
+          const url = video.url || '';
+          const title = (video.title || '').toLowerCase();
+          
+          const hasShortsTag = title.includes('#shorts') || 
+                               title.includes('#short') || 
+                               title.includes('#شورت') || 
+                               title.includes('#شورتس');
+
+          if (url.includes('/shorts/')) {
+            video.isShort = true;
+            updated = true;
+          } else if (durationSeconds > 0 && durationSeconds <= 60) {
+            video.isShort = true;
+            updated = true;
+          } else if (durationSeconds > 60 && durationSeconds <= 180 && hasShortsTag) {
+            video.isShort = true;
+            updated = true;
+          } else if (durationSeconds > 60) {
+            video.isShort = false;
+            updated = true;
+          }
+        }
+      });
+      
+      if (updated) {
+        localStorage.setItem('user_youtube_subscriptions_db', JSON.stringify(subscriptionsDb));
+      }
     }
     // دالة تصفية وفصل الفيديوهات عن الشورتس مع تحديث عناوين الزر المنسدل تلقائياً 👈
     function renderFilteredSubscriptions(feedList, targetType) {
