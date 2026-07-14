@@ -2570,11 +2570,10 @@
         }
       }
 
-// استعادة تصنيفات الاشتراكات المحفوظة مسبقاً عند تشغيل التطبيق 👈
+      // استعادة تصنيفات الاشتراكات المحفوظة مسبقاً عند تشغيل التطبيق 👈
       try {
         const storedSubs = localStorage.getItem('user_youtube_subscriptions_db');
         if (storedSubs) subscriptionsDb = JSON.parse(storedSubs);
-        repairSubscriptionsDbShortsFlag(); // تشغيل دالة الإصلاح الذاتي والتصنيف الفوري للأرشيف التاريخي 👈
       } catch(e) {
         subscriptionsDb = {};
       }
@@ -3266,10 +3265,9 @@
             
             let finalCategory = 'غ-مصنف'; // افتراضي
 
-// إذا كان هذا الفيديو مصنفاً ومحفوظاً مسبقاً في قاعدة البيانات، نسترجع تصنيفه فوراً ونحدث وسم الشورتس لضمان دقة الأرشيف 👈
+            // إذا كان هذا الفيديو مصنفاً ومحفوظاً مسبقاً في قاعدة البيانات، نسترجع تصنيفه فوراً
             if (subscriptionsDb[vId]) {
               finalCategory = subscriptionsDb[vId].category || 'غ-مصنف';
-              subscriptionsDb[vId].isShort = shortsIds.includes(vId); // تحديث الحقل دائماً لضمان دقة فرز الأرشيف 👈
             } else {
               // إذا كان فيديو جديد، نقوم بإنشاء سجل فارغ له في قاعدة البيانات
               subscriptionsDb[vId] = {
@@ -3412,8 +3410,14 @@
         archiveList.sort((a, b) => b.publishedAt - a.publishedAt);
 
         // تفعيل حالة العرض للأرشيف ليتم تفعيل البحث والفلترة داخله أيضاً 👈
-        activeView = 'archive';
-        filteredVideos = archiveList;
+                if (type === 'videos') {
+                  activeView = 'archive_videos';
+                } else if (type === 'shorts') {
+                  activeView = 'archive_shorts';
+                } else {
+                  activeView = 'archive_full';
+                }
+                filteredVideos = archiveList;
         currentPage = 1;
 
         // تحديث تلوين الأزرار والترجمة الذكية للعنوان العلوي النشط 👈
@@ -3440,43 +3444,6 @@
         logToCloudConsole(`📚 تم استعراض أرشيف الاشتراكات المختار (${type}) ويحتوي على ${archiveList.length} فيديو تم تخزينه وتصنيفه مسبقاً.`);
         renderGrid();
       }, 300);
-    }
-    // دالة إصلاح ذاتي تلقائية لتمشيط الأرشيف وتصنيف المقاطع التاريخية القديمة التي تفتقد لوسم الشورتس 👈
-    function repairSubscriptionsDbShortsFlag() {
-      let updated = false;
-      if (!subscriptionsDb) return;
-      
-      Object.keys(subscriptionsDb).forEach(vId => {
-        const video = subscriptionsDb[vId];
-        if (video && video.isShort === undefined) {
-          const durationSeconds = parseDuration(video.duration);
-          const url = video.url || '';
-          const title = (video.title || '').toLowerCase();
-          
-          const hasShortsTag = title.includes('#shorts') || 
-                               title.includes('#short') || 
-                               title.includes('#شورت') || 
-                               title.includes('#شورتس');
-
-          if (url.includes('/shorts/')) {
-            video.isShort = true;
-            updated = true;
-          } else if (durationSeconds > 0 && durationSeconds <= 60) {
-            video.isShort = true;
-            updated = true;
-          } else if (durationSeconds > 60 && durationSeconds <= 180 && hasShortsTag) {
-            video.isShort = true;
-            updated = true;
-          } else if (durationSeconds > 60) {
-            video.isShort = false;
-            updated = true;
-          }
-        }
-      });
-      
-      if (updated) {
-        localStorage.setItem('user_youtube_subscriptions_db', JSON.stringify(subscriptionsDb));
-      }
     }
     // دالة تصفية وفصل الفيديوهات عن الشورتس مع تحديث عناوين الزر المنسدل تلقائياً 👈
     function renderFilteredSubscriptions(feedList, targetType) {
@@ -5003,35 +4970,36 @@ ${titles.map((t, idx) => `${idx + 1}. ${t}`).join('\n')}`;
       let sourceList = allVideos;
       if (activeView === 'subscriptions' || activeView === 'shorts') {
         sourceList = cachedSubscriptionsFeed || [];
-      } else if (activeView === 'archive') {
-        sourceList = Object.keys(subscriptionsDb).map(vId => {
-          return {
-            id: 'sub_' + vId,
-            title: subscriptionsDb[vId].title,
-            channel: subscriptionsDb[vId].channel,
-            thumbnail: subscriptionsDb[vId].thumbnail,
-            url: subscriptionsDb[vId].url,
-            parentPlaylistId: subscriptionsDb[vId].parentPlaylistId,
-            parentPlaylistName: subscriptionsDb[vId].parentPlaylistName,
-            publishedAt: subscriptionsDb[vId].publishedAt,
-            duration: subscriptionsDb[vId].duration,
-            category: subscriptionsDb[vId].category
-          };
-        });
-        sourceList.sort((a, b) => b.publishedAt - a.publishedAt);
-      }
+      } else if (activeView === 'archive_videos' || activeView === 'archive_shorts' || activeView === 'archive_full' || activeView === 'archive') {
+              sourceList = Object.keys(subscriptionsDb).map(vId => {
+                return {
+                  id: 'sub_' + vId,
+                  title: subscriptionsDb[vId].title,
+                  channel: subscriptionsDb[vId].channel,
+                  thumbnail: subscriptionsDb[vId].thumbnail,
+                  url: subscriptionsDb[vId].url,
+                  parentPlaylistId: subscriptionsDb[vId].parentPlaylistId,
+                  parentPlaylistName: subscriptionsDb[vId].parentPlaylistName,
+                  publishedAt: subscriptionsDb[vId].publishedAt,
+                  duration: subscriptionsDb[vId].duration,
+                  isShort: subscriptionsDb[vId].isShort, // 👈 إدراج خاصية الشورتس لمنع سقوطها أثناء البحث والفلترة
+                  category: subscriptionsDb[vId].category
+                };
+              });
+              sourceList.sort((a, b) => b.publishedAt - a.publishedAt);
+            }
 
       // 2. البحث المرن المحدث والموجه للمصدر الصحيح
       filteredVideos = sourceList.filter(v => {
         // استخدام دالة الفحص الذكية والمطورة للتصنيف الدقيق 👈
         const isShortsCheck = checkVideoIfShort(v);
-        if (activeView === 'shorts') {
+        if (activeView === 'shorts' || activeView === 'archive_shorts') {
           if (!isShortsCheck) return false;
-        } else if (activeView === 'subscriptions') {
+        } else if (activeView === 'subscriptions' || activeView === 'archive_videos') {
           if (isShortsCheck) return false;
         }
         // تصفية الفيديوهات بحسب مجموعة الاشتراكات النشطة
-        if (activeSubGroup && (activeView === 'subscriptions' || activeView === 'shorts' || activeView === 'archive')) {
+        if (activeSubGroup && (activeView === 'subscriptions' || activeView === 'shorts' || activeView === 'archive' || activeView === 'archive_videos' || activeView === 'archive_shorts' || activeView === 'archive_full')) {
           const allowedChannels = subscriptionGroups[activeSubGroup]?.channels || [];
           if (!allowedChannels.includes(v.channel)) {
             return false;
