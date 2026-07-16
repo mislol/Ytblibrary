@@ -2206,6 +2206,48 @@
     // قاعدة بيانات مستقلة لحفظ تصنيفات الاشتراكات بشكل دائم ومنع ضياعها
     let subscriptionsDb = {};
 
+    // 🛡️ دالة حفظ آمنة لأرشيف الاشتراكات: تمنع ضياع التصنيفات/الفيديوهات الجديدة بصمت
+    // عند امتلاء مساحة localStorage (وهو السبب الشائع لاختفاء البيانات بعد الـ refresh).
+    // في حال فشل الحفظ بسبب امتلاء المساحة (QuotaExceededError)، تقوم تلقائياً بحذف
+    // أقدم السجلات تدريجياً وإعادة المحاولة، وتنبّه المستخدم بوضوح بدل الفشل الصامت.
+    function saveSubscriptionsDbToStorage() {
+      const attemptSave = () => {
+        localStorage.setItem('user_youtube_subscriptions_db', JSON.stringify(subscriptionsDb));
+      };
+
+      try {
+        attemptSave();
+        return true;
+      } catch (e) {
+        console.error('فشل حفظ أرشيف الاشتراكات محلياً:', e);
+
+        // محاولة تحرير مساحة تلقائياً بحذف أقدم 10% من السجلات (الأقل حداثة) ثم إعادة المحاولة
+        try {
+          const entries = Object.entries(subscriptionsDb);
+          if (entries.length > 50) {
+            entries.sort((a, b) => (a[1]?.publishedAt || 0) - (b[1]?.publishedAt || 0));
+            const removeCount = Math.max(1, Math.floor(entries.length * 0.1));
+            for (let i = 0; i < removeCount; i++) {
+              delete subscriptionsDb[entries[i][0]];
+            }
+            attemptSave();
+            if (typeof showToast === 'function') {
+              showToast(`⚠️ مساحة التخزين المحلية ممتلئة! تم حذف ${removeCount} من أقدم عناصر الأرشيف تلقائياً لإفساح المجال وحفظ بياناتك الجديدة. يُنصح بمزامنة أرشيفك مع Google Drive.`);
+            }
+            return true;
+          }
+        } catch (e2) {
+          console.error('فشلت حتى محاولة تحرير المساحة تلقائياً:', e2);
+        }
+
+        // إن فشلت حتى محاولة التحرير التلقائي، نحذر المستخدم صراحةً بدل الصمت
+        if (typeof showToast === 'function') {
+          showToast('❌ فشل حفظ الأرشيف! مساحة التخزين المحلية ممتلئة بالكامل. آخر تعديل لن يُحفظ بعد تحديث الصفحة إلا إذا فرغت مساحة أو رفعت نسخة لـ Google Drive.');
+        }
+        return false;
+      }
+    }
+
     // متغير لتحديد التبويب النشط حالياً لتوجيه محرك البحث والفلاتر تلقائياً 👈
     let activeView = 'library'; // القيم الممكنة: 'library' أو 'subscriptions' أو 'shorts'
     // متغيرات المجموعات المخصصة للاشتراكات
@@ -3301,7 +3343,7 @@
         });
 
         // حفظ السجلات الجديدة تلقائياً في قاعدة البيانات الدائمة
-        localStorage.setItem('user_youtube_subscriptions_db', JSON.stringify(subscriptionsDb));
+        saveSubscriptionsDbToStorage();
 
         if (tempVideos.length === 0) {
           logToCloudConsole('⚠️ لم نجد أي فيديوهات مرفوعة مؤخراً في قنوات اشتراكاتك.');
@@ -3351,7 +3393,7 @@
         }
 
         // حفظ التحديثات والمدد الزمنية المكتشفة نهائياً في المتصفح 👈
-        localStorage.setItem('user_youtube_subscriptions_db', JSON.stringify(subscriptionsDb));
+        saveSubscriptionsDbToStorage();
 
         // ترتيب الفيديوهات تنازلياً من الأحدث للأقدم
         tempVideos.sort((a, b) => b.publishedAt - a.publishedAt);
@@ -3552,7 +3594,7 @@
             });
 
             // حفظ التحديثات في التخزين الدائم للمتصفح 👈
-            localStorage.setItem('user_youtube_subscriptions_db', JSON.stringify(subscriptionsDb));
+            saveSubscriptionsDbToStorage();
           }
         } catch (err) {
           console.error(err);
@@ -4480,7 +4522,7 @@ ${titles.map((t, idx) => `${idx + 1}. ${t}`).join('\n')}`;
 
                   // حفظ البيانات بالكامل محلياً على المتصفح الجديد فوراً 👈
                   localStorage.setItem('user_youtube_library', JSON.stringify(allVideos));
-                  localStorage.setItem('user_youtube_subscriptions_db', JSON.stringify(subscriptionsDb));
+                  saveSubscriptionsDbToStorage();
                   localStorage.setItem('user_subscription_groups', JSON.stringify(subscriptionGroups));
                   localStorage.setItem('user_youtube_favorites', JSON.stringify([...favoriteIds]));
 
@@ -4884,7 +4926,7 @@ ${titles.map((t, idx) => `${idx + 1}. ${t}`).join('\n')}`;
             isShort: false
           };
         }
-        localStorage.setItem('user_youtube_subscriptions_db', JSON.stringify(subscriptionsDb));
+        saveSubscriptionsDbToStorage();
 
         // 2. تحديث التصنيف في الذاكرة المؤقتة النشطة للخلاصة (cachedSubscriptionsFeed)
         const cachedMatch = (cachedSubscriptionsFeed || []).find(cv => extractVideoID(cv.url) === vId);
