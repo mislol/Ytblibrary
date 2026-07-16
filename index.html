@@ -2248,6 +2248,20 @@
       }
     }
 
+    // 🛡️ نفس الحماية لخلاصة الاشتراكات المؤقتة (لم تكن محمية سابقاً وكانت تفشل بصمت catch(e){})
+    function saveCachedFeedToStorage() {
+      try {
+        localStorage.setItem('user_cached_subscriptions_feed', JSON.stringify(cachedSubscriptionsFeed));
+        return true;
+      } catch (e) {
+        console.error('فشل حفظ خلاصة الاشتراكات محلياً:', e);
+        if (typeof showToast === 'function') {
+          showToast('⚠️ تعذّر حفظ خلاصة الاشتراكات المحدّثة محلياً (مساحة التخزين ممتلئة). سوف تختفي هذه التحديثات بعد تحديث الصفحة.');
+        }
+        return false;
+      }
+    }
+
     // متغير لتحديد التبويب النشط حالياً لتوجيه محرك البحث والفلاتر تلقائياً 👈
     let activeView = 'library'; // القيم الممكنة: 'library' أو 'subscriptions' أو 'shorts'
     // متغيرات المجموعات المخصصة للاشتراكات
@@ -3400,9 +3414,13 @@
         
         // حفظ القائمة الكاملة مع الأوقات في الذاكرة المؤقتة وتخزينها محلياً لتدوم بين الـ Refresh 👈
         cachedSubscriptionsFeed = tempVideos;
-        try {
-          localStorage.setItem('user_cached_subscriptions_feed', JSON.stringify(tempVideos));
-        } catch(e) {}
+        saveCachedFeedToStorage();
+
+        // مزامنة سحابية فورية لخلاصة الاشتراكات المحدّثة (لتظهر على باقي أجهزتك) 👈
+        const feedSyncToken = getValidAccessToken();
+        if (feedSyncToken) {
+          saveBackupToGoogleDrive();
+        }
 
         // تصفية وعرض النوع المطلوب
         renderFilteredSubscriptions(cachedSubscriptionsFeed, targetType);
@@ -4421,11 +4439,12 @@ ${titles.map((t, idx) => `${idx + 1}. ${t}`).join('\n')}`;
 
       // تشكيل حزمة النسخ الاحتياطي الموحد (مزامنة كاملة للمجلدات والمفضلة) 👈
       const backupPayload = {
-        version: 2.0,
+        version: 2.1,
         library: allVideos,
         groups: subscriptionGroups,
         favorites: [...favoriteIds],
-        subscriptionsDb: subscriptionsDb
+        subscriptionsDb: subscriptionsDb,
+        subscriptionsFeed: cachedSubscriptionsFeed // 👈 مزامنة خلاصة الاشتراكات نفسها بين الأجهزة (لم تكن تُرفع سابقاً)
       };
       
       if (fileId) {
@@ -4519,10 +4538,15 @@ ${titles.map((t, idx) => `${idx + 1}. ${t}`).join('\n')}`;
                   subscriptionGroups = backupData.groups || {};
                   favoriteIds = new Set(backupData.favorites || []);
                   subscriptionsDb = backupData.subscriptionsDb || {};
+                  // استرجاع خلاصة الاشتراكات المحدّثة من الجهاز الآخر (مثل الهاتف) إن وُجدت 👈
+                  if (backupData.subscriptionsFeed && backupData.subscriptionsFeed.length > 0) {
+                    cachedSubscriptionsFeed = backupData.subscriptionsFeed;
+                  }
 
                   // حفظ البيانات بالكامل محلياً على المتصفح الجديد فوراً 👈
                   localStorage.setItem('user_youtube_library', JSON.stringify(allVideos));
                   saveSubscriptionsDbToStorage();
+                  saveCachedFeedToStorage();
                   localStorage.setItem('user_subscription_groups', JSON.stringify(subscriptionGroups));
                   localStorage.setItem('user_youtube_favorites', JSON.stringify([...favoriteIds]));
 
@@ -4932,9 +4956,7 @@ ${titles.map((t, idx) => `${idx + 1}. ${t}`).join('\n')}`;
         const cachedMatch = (cachedSubscriptionsFeed || []).find(cv => extractVideoID(cv.url) === vId);
         if (cachedMatch) {
           cachedMatch.category = newCategory;
-          try {
-            localStorage.setItem('user_cached_subscriptions_feed', JSON.stringify(cachedSubscriptionsFeed));
-          } catch(e) {}
+          saveCachedFeedToStorage();
         }
 
         // 3. تحديث مصفوفة العرض الفوري النشطة على الشاشة لمنع حدوث وميض أو اختفاء بصري
