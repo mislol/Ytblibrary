@@ -3364,12 +3364,6 @@
 
         // تصفية وعرض النوع المطلوب
         renderFilteredSubscriptions(cachedSubscriptionsFeed, targetType);
-
-        // 👈 رفع ومزامنة التحديثات الجديدة تلقائياً وبشكل صامت إلى Google Drive فور انتهاء جلب الفيديوهات
-        const token = getValidAccessToken();
-        if (token) {
-          saveBackupToGoogleDrive();
-        }
       } catch (e) {
         console.error(e);
         logToCloudConsole(`❌ فشل جلب خلاصة الاشتراكات: ${e.message}`);
@@ -4440,40 +4434,6 @@ ${titles.map((t, idx) => `${idx + 1}. ${t}`).join('\n')}`;
         }
       }
     }
-    // دالة الدمج الذكي لتجميع وتأمين قاعدة بيانات الاشتراكات التراكمية بين الأجهزة ومنع فقدان البيانات 👈
-    function mergeSubscriptionsDatabases(localDb, cloudDb) {
-      const merged = { ...(cloudDb || {}) }; // البدء بالبيانات السحابية كقاعدة أساسية
-      
-      const local = localDb || {};
-      Object.keys(local).forEach(vId => {
-        const localItem = local[vId];
-        const cloudItem = merged[vId];
-        
-        if (!cloudItem) {
-          // إذا كان الفيديو موجوداً محلياً فقط، يتم الاحتفاظ به وضمه للأرشيف
-          merged[vId] = localItem;
-        } else {
-          // حل التعارضات بذكاء: تصفية وتفضيل العناصر التي تحتوي على تصنيفات مخصصة
-          const localHasCat = localItem.category && localItem.category !== 'غ-مصنف' && localItem.category !== 'Uncategorized';
-          const cloudHasCat = cloudItem.category && cloudItem.category !== 'غ-مصنف' && cloudItem.category !== 'Uncategorized';
-          
-          if (localHasCat && !cloudHasCat) {
-            merged[vId] = localItem;
-          } else if (!localHasCat && cloudHasCat) {
-            // الاحتفاظ بالنسخة السحابية المصنفة
-          } else {
-            // دمج البيانات المكملة مع تفضيل تصنيف الجهاز الأكثر حداثة
-            merged[vId] = {
-              ...cloudItem,
-              ...localItem,
-              category: localItem.category || cloudItem.category || 'غ-مصنف'
-            };
-          }
-        }
-      });
-      
-      return merged;
-    }
 
     async function loadBackupFromGoogleDrive(token) {
       logToCloudConsole('🔍 جاري البحث في Google Drive عن نسخة احتياطية سابقة...');
@@ -4516,9 +4476,7 @@ ${titles.map((t, idx) => `${idx + 1}. ${t}`).join('\n')}`;
                   allVideos = backupData.library || [];
                   subscriptionGroups = backupData.groups || {};
                   favoriteIds = new Set(backupData.favorites || []);
-                  
-                  // 👈 دمج الأرشيف السحابي والمحلي بذكاء دون مسح أو خسارة الفيديوهات الجديدة والتصنيفات
-                  subscriptionsDb = mergeSubscriptionsDatabases(subscriptionsDb, backupData.subscriptionsDb || {});
+                  subscriptionsDb = backupData.subscriptionsDb || {};
 
                   // حفظ البيانات بالكامل محلياً على المتصفح الجديد فوراً 👈
                   localStorage.setItem('user_youtube_library', JSON.stringify(allVideos));
@@ -4527,11 +4485,8 @@ ${titles.map((t, idx) => `${idx + 1}. ${t}`).join('\n')}`;
                   localStorage.setItem('user_youtube_favorites', JSON.stringify([...favoriteIds]));
 
                   initApp();
-                  logToCloudConsole('✅ تم بنجاح تفعيل التزامن السحابي الموحد بدمج ذكي وآمن للبيانات!');
+                  logToCloudConsole('✅ تم بنجاح تفعيل التزامن السحابي الموحد (الفيديوهات + المجلدات + المفضلة)!');
                   showToast(t('toastLibraryRestored'));
-                  
-                  // 👈 بعد دمج البيانات محلياً، نرفع النسخة المدمجة فوراً لتحديث السحابة بمساهمات الجهازين
-                  saveBackupToGoogleDrive();
                 }
               }
             }
