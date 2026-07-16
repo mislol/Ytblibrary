@@ -3262,27 +3262,27 @@
           if (snippet && snippet.resourceId && snippet.resourceId.kind === 'youtube#video') {
             const vId = snippet.resourceId.videoId;
             videoIds.push(vId); // 👈 إضافة المعرف للمصفوفة بنجاح وبدون أي أخطاء
-            
+
             let finalCategory = 'غ-مصنف'; // افتراضي
 
-            // إذا كان هذا الفيديو مصنفاً ومحفوظاً مسبقاً في قاعدة البيانات، نسترجع تصنيفه فوراً
+            // إذا كان هذا الفيديو مصنفاً ومحفوظاً مسبقاً في قاعدة البيانات، نسترجع تصنيفه ونحدّث بقية الحقول
             if (subscriptionsDb[vId]) {
               finalCategory = subscriptionsDb[vId].category || 'غ-مصنف';
-            } else {
-              // إذا كان فيديو جديد، نقوم بإنشاء سجل فارغ له في قاعدة البيانات
-              subscriptionsDb[vId] = {
-                category: 'غ-مصنف',
-                title: snippet.title,
-                channel: snippet.channelTitle,
-                thumbnail: snippet.thumbnails?.high?.url || `https://img.youtube.com/vi/${vId}/hqdefault.jpg`,
-                url: `https://www.youtube.com/watch?v=${vId}`,
-                parentPlaylistId: 'subscriptions_feed',
-                parentPlaylistName: '🔔 خلاصة الاشتراكات',
-                publishedAt: new Date(snippet.publishedAt).getTime(),
-                duration: '00:00',
-                isShort: shortsIds.includes(vId) // الحقل الجديد المضاف في سجل قاعدة البيانات 👈
-              };
             }
+
+            // تحديث وتغذية السجل دائماً لضمان تصحيح المعلومات والمدد ونوع الفيديو (شورتس أو طويل) للأرشيف 👈
+            subscriptionsDb[vId] = {
+              category: finalCategory,
+              title: snippet.title,
+              channel: snippet.channelTitle,
+              thumbnail: snippet.thumbnails?.high?.url || `https://img.youtube.com/vi/${vId}/hqdefault.jpg`,
+              url: `https://www.youtube.com/watch?v=${vId}`,
+              parentPlaylistId: 'subscriptions_feed',
+              parentPlaylistName: '🔔 خلاصة الاشتراكات',
+              publishedAt: new Date(snippet.publishedAt).getTime(),
+              duration: (subscriptionsDb[vId] && subscriptionsDb[vId].duration && subscriptionsDb[vId].duration !== '00:00') ? subscriptionsDb[vId].duration : '00:00',
+              isShort: shortsIds.includes(vId) // تحديث الحقل السحابي للشورتس دائماً 👈
+            };
 
             tempVideos.push({
               id: 'sub_' + vId,
@@ -3293,7 +3293,7 @@
               parentPlaylistId: 'subscriptions_feed',
               parentPlaylistName: '🔔 خلاصة الاشتراكات',
               publishedAt: new Date(snippet.publishedAt).getTime(),
-              duration: '00:00',
+              duration: subscriptionsDb[vId].duration, // تمرير المدة المخزنة بدقة
               isShort: shortsIds.includes(vId), // الحقل الجديد المضاف في سجل العرض المؤقت 👈
               category: finalCategory
             });
@@ -4862,11 +4862,61 @@ ${titles.map((t, idx) => `${idx + 1}. ${t}`).join('\n')}`;
     } // 👈 قوس نهاية الدالة المغلق بنجاح
 
     function changeVideoCategory(id, newCategory) {
-      const targetVideo = allVideos.find(v => v.id === id);
-      if (targetVideo) {
-        targetVideo.category = newCategory;
-        saveLibraryAndBackup(allVideos);
+      const idStr = String(id);
+      if (idStr.startsWith('sub_')) {
+        const vId = idStr.replace('sub_', '');
+        
+        // 1. تحديث التصنيف في قاعدة بيانات الاشتراكات التراكمية الدائمة
+        if (subscriptionsDb[vId]) {
+          subscriptionsDb[vId].category = newCategory;
+        } else {
+          // حماية احتياطية في حال لم تكن مسجلة مسبقاً
+          subscriptionsDb[vId] = {
+            category: newCategory,
+            title: "فيديو غير معروف",
+            channel: "قناة غير معروفة",
+            thumbnail: `https://img.youtube.com/vi/${vId}/hqdefault.jpg`,
+            url: `https://www.youtube.com/watch?v=${vId}`,
+            parentPlaylistId: 'subscriptions_feed',
+            parentPlaylistName: '🔔 خلاصة الاشتراكات',
+            publishedAt: Date.now(),
+            duration: '00:00',
+            isShort: false
+          };
+        }
+        localStorage.setItem('user_youtube_subscriptions_db', JSON.stringify(subscriptionsDb));
+
+        // 2. تحديث التصنيف في الذاكرة المؤقتة النشطة للخلاصة (cachedSubscriptionsFeed)
+        const cachedMatch = (cachedSubscriptionsFeed || []).find(cv => extractVideoID(cv.url) === vId);
+        if (cachedMatch) {
+          cachedMatch.category = newCategory;
+          try {
+            localStorage.setItem('user_cached_subscriptions_feed', JSON.stringify(cachedSubscriptionsFeed));
+          } catch(e) {}
+        }
+
+        // 3. تحديث مصفوفة العرض الفوري النشطة على الشاشة لمنع حدوث وميض أو اختفاء بصري
+        const filteredMatch = filteredVideos.find(fv => fv.id === id);
+        if (filteredMatch) {
+          filteredMatch.category = newCategory;
+        }
+
+        // المزامنة السحابية الاحتياطية الفورية مع Google Drive إن وجد ترخيص
+        const token = getValidAccessToken();
+        if (token) {
+          saveBackupToGoogleDrive();
+        }
+
         showToast(t('toastCategoryChanged', {cat: newCategory}));
+        renderGrid(); // إعادة رندرة الشبكة لعكس التغيير فوراُ في الواجهة
+      } else {
+        // الفيديوهات العادية في المكتبة الرقمية
+        const targetVideo = allVideos.find(v => v.id === id);
+        if (targetVideo) {
+          targetVideo.category = newCategory;
+          saveLibraryAndBackup(allVideos);
+          showToast(t('toastCategoryChanged', {cat: newCategory}));
+        }
       }
     }
 
