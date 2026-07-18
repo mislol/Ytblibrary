@@ -1560,31 +1560,34 @@
   <div class="app-layout">
     <main class="main-content">
       
-      <!-- لوحة التصفية والبحث الفوقية -->
-      <div class="filter-panel">
-        <div class="search-row-container">
-          <!-- مربع البحث بالأعلى بشكل منفصل ليأخذ المساحة كاملة -->
-          <div class="search-box">
-            <input type="text" id="searchInput" data-i18n-ph="searchPlaceholder" placeholder="ابحث عن عنوان، قناة أو تصنيف...">
-            <span class="search-icon">🔍</span>
-          </div>
-          
-<!-- زر تصنيف الاشتراكات ذكياً المضاف حديثاً (يظهر فقط مع تبويب الاشتراكات) 👈 -->
-            <button id="classifySubscriptionsBtn" class="btn btn-gold" style="display: none;" onclick="classifySubscriptionsOnDemand()">
-              <span>🏷️ تصنيف</span>
-            </button>
+<!-- لوحة التصفية والبحث الفوقية -->
+        <div class="filter-panel">
+          <div class="search-row-container">
+            <!-- مربع البحث بالأعلى بشكل منفصل ليأخذ المساحة كاملة -->
+            <div class="search-box">
+              <input type="text" id="searchInput" data-i18n-ph="searchPlaceholder" placeholder="ابحث عن عنوان، قناة أو تصنيف...">
+              <span class="search-icon">🔍</span>
+            </div>
+            
+            <!-- حاوية لتنظيم الأزرار تحت مربع البحث بجانب بعضها بشكل أفقي 👈 -->
+            <div class="search-buttons-row">
+              <!-- زر تصنيف الاشتراكات ذكياً المضاف حديثاً (يظهر فقط مع تبويب الاشتراكات) 👈 -->
+              <button id="classifySubscriptionsBtn" class="btn btn-gold" style="display: none;" onclick="classifySubscriptionsOnDemand()">
+                <span>🏷️ تصنيف</span>
+              </button>
 
-            <!-- زر التحديث السحابي المباشر للاشتراكات والشورتس 👈 -->
-            <button id="syncSubscriptionsBtn" class="btn btn-secondary" style="display: none;" onclick="triggerSubscriptionSync()" title="تحديث فوري سحابي 🔄">
-              <span>🔄</span>
-            </button>
+              <!-- زر التحديث السحابي المباشر للاشتراكات والشورتس 👈 -->
+              <button id="syncSubscriptionsBtn" class="btn btn-secondary" style="display: none;" onclick="triggerSubscriptionSync()" title="تحديث فوري سحابي 🔄">
+                <span>🔄</span>
+              </button>
 
-            <button id="filterToggleBtn" class="btn btn-secondary" title="إظهار / إخفاء الفلاتر">
-              <span data-i18n="toggleFilters">⚙️ تصفية</span>
-            </button>
-            <button id="layoutToggleBtn" class="btn btn-secondary" data-i18n-title="viewToggleTitle" title="تغيير نمط العرض">
-              <span data-i18n="viewList">📝 القائمة </span>
-            </button>
+              <button id="filterToggleBtn" class="btn btn-secondary" title="إظهار / إخفاء الفلاتر">
+                <span data-i18n="toggleFilters">⚙️ تصفية</span>
+              </button>
+              <button id="layoutToggleBtn" class="btn btn-secondary" data-i18n-title="viewToggleTitle" title="تغيير نمط العرض">
+                <span data-i18n="viewList">📝 القائمة </span>
+              </button>
+            </div>
           </div>
         
         <!-- تم إضافة id وفئة hidden-filters لإخفائها افتراضياً -->
