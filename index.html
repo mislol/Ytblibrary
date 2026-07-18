@@ -2649,17 +2649,23 @@
       }
 
       const stored = localStorage.getItem('user_youtube_library');
-      if (stored) {
-        try {
-          allVideos = JSON.parse(stored);
-        } catch(e) {
-          allVideos = [...defaultData];
+          if (stored) {
+            try {
+              allVideos = JSON.parse(stored);
+            } catch(e) {
+              allVideos = [...defaultData];
+            }
+          } else {
+            allVideos = [...defaultData];
+          }
+          initApp();
+
+          // 👈 توجيه التطبيق ليفتح مباشرة على تبويب "اشتراكات فيديوهات" عند الإقلاع إذا كان مسجلاً
+          const token = getValidAccessToken();
+          if (token) {
+            switchNavTab('subscriptions');
+          }
         }
-      } else {
-        allVideos = [...defaultData];
-      }
-      initApp();
-    }
 
     function initApp() {
       calculateStats();
