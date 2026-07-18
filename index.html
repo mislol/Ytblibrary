@@ -1569,11 +1569,14 @@
             <span class="search-icon">🔍</span>
           </div>
           
-          <!-- حاوية الأزرار بالأسفل لتنظيمها بجانب بعضها المحدثة 👈 -->
-          <div class="search-buttons-row">
-            <!-- زر تصنيف الاشتراكات ذكياً المضاف حديثاً (يظهر فقط مع تبويب الاشتراكات) 👈 -->
+<!-- زر تصنيف الاشتراكات ذكياً المضاف حديثاً (يظهر فقط مع تبويب الاشتراكات) 👈 -->
             <button id="classifySubscriptionsBtn" class="btn btn-gold" style="display: none;" onclick="classifySubscriptionsOnDemand()">
-              <span>تصنيف</span>
+              <span>🏷️ تصنيف</span>
+            </button>
+
+            <!-- زر التحديث السحابي المباشر للاشتراكات والشورتس 👈 -->
+            <button id="syncSubscriptionsBtn" class="btn btn-secondary" style="display: none;" onclick="triggerSubscriptionSync()" title="تحديث فوري سحابي 🔄">
+              <span>🔄</span>
             </button>
 
             <button id="filterToggleBtn" class="btn btn-secondary" title="إظهار / إخفاء الفلاتر">
@@ -2365,9 +2368,11 @@
         selectedCategory = e.target.value;
         updateMenuSelection();
         applyFiltersAndSort(); 
-        // إخفاء زر تصنيف الاشتراكات عند اختيار تصنيف عادي للمكتبة 👈
+        // إخفاء أزرار الاشتراكات عند اختيار تصنيف عادي للمكتبة 👈
         const classifySubsBtn = document.getElementById('classifySubscriptionsBtn');
         if (classifySubsBtn) classifySubsBtn.style.display = 'none';
+        const syncSubsBtn = document.getElementById('syncSubscriptionsBtn');
+        if (syncSubsBtn) syncSubsBtn.style.display = 'none';
       });
       channelFilter.addEventListener('change', () => { currentPage = 1; applyFiltersAndSort(); });
       sortSelect.addEventListener('change', () => { applyFiltersAndSort(); });
@@ -2848,9 +2853,11 @@
         const subDropdownBtn = document.getElementById('pillSubscriptionsDropdownBtn');
         if (subDropdownLabel) subDropdownLabel.textContent = t('pillSubscriptions');
         if (subDropdownBtn) subDropdownBtn.classList.remove('active');
-      // إخفاء زر تصنيف الاشتراكات عند الخروج من تبويب الاشتراكات 👈
+// إخفاء أزرار الاشتراكات والتحديث عند الخروج من تبويب الاشتراكات 👈
         const classifySubsBtn = document.getElementById('classifySubscriptionsBtn');
         if (classifySubsBtn) classifySubsBtn.style.display = 'none';
+        const syncSubsBtn = document.getElementById('syncSubscriptionsBtn');
+        if (syncSubsBtn) syncSubsBtn.style.display = 'none';
       } else {
         pillAllBtn.classList.remove('active');
         if (selectedCategory === 'favorites') {
@@ -3503,9 +3510,11 @@
         const navSubs = document.getElementById('navSubsBtn');
         if (navSubs) navSubs.classList.add('active');
 
-        // إظهار زر تصنيف الأرشيف الجديد 👈
+// إظهار زر تصنيف الأرشيف وزر التحديث المباشر الجديد 👈
         const classifySubsBtn = document.getElementById('classifySubscriptionsBtn');
         if (classifySubsBtn) classifySubsBtn.style.display = 'inline-flex';
+        const syncSubsBtn = document.getElementById('syncSubscriptionsBtn');
+        if (syncSubsBtn) syncSubsBtn.style.display = 'inline-flex';
 
         logToCloudConsole(`📚 تم استعراض أرشيف الاشتراكات المختار (${type}) ويحتوي على ${archiveList.length} فيديو تم تخزينه وتصنيفه مسبقاً.`);
         renderGrid();
@@ -3549,9 +3558,11 @@
       const navSubs = document.getElementById('navSubsBtn');
       if (navSubs) navSubs.classList.add('active');
 
-      // إظهار الزر الذهبي الجديد عند عرض خلاصة الاشتراكات أو الشورتس 👈
+// إظهار الزر الذهبي وزر التحديث المباشر عند عرض خلاصة الاشتراكات أو الشورتس 👈
       const classifySubsBtn = document.getElementById('classifySubscriptionsBtn');
       if (classifySubsBtn) classifySubsBtn.style.display = 'inline-flex';
+      const syncSubsBtn = document.getElementById('syncSubscriptionsBtn');
+      if (syncSubsBtn) syncSubsBtn.style.display = 'inline-flex';
 
       renderGrid();
     }
@@ -6127,20 +6138,29 @@ function renderSubGroupsPills() {
 }
 
 // حفظ وحفظ الاحتياطي للمجموعات مع المزامنة السحابية الفورية
-function saveSubGroupsToStorage() {
-  localStorage.setItem('user_subscription_groups', JSON.stringify(subscriptionGroups));
-  renderSubGroupsPills();
-  
-  // تحديث الشاشة فوراً
-  currentPage = 1;
-  applyFiltersAndSort();
+    function saveSubGroupsToStorage() {
+      localStorage.setItem('user_subscription_groups', JSON.stringify(subscriptionGroups));
+      renderSubGroupsPills();
+      
+      // تحديث الشاشة فوراً
+      currentPage = 1;
+      applyFiltersAndSort();
 
-  // تفعيل المزامنة السحابية الفورية للمجلدات الجديدة إن وجد اتصال 👈
-  const token = getValidAccessToken();
-  if (token) {
-    saveBackupToGoogleDrive();
-  }
-}
+      // تفعيل المزامنة السحابية الفورية للمجلدات الجديدة إن وجد اتصال 👈
+      const token = getValidAccessToken();
+      if (token) {
+        saveBackupToGoogleDrive();
+      }
+    }
+
+    // دالة تحديث ومزامنة الاشتراكات الفورية سحابياً بضغطة زر واحدة من الواجهة 👈
+    function triggerSubscriptionSync() {
+      if (activeView === 'shorts') {
+        fetchSubscriptionsFeed('shorts', true);
+      } else {
+        fetchSubscriptionsFeed('videos', true);
+      }
+    }
 
 // ربط الدوال عالمياً للوصول الآمن من الـ HTML
 window.openSubGroupsModal = openSubGroupsModal;
