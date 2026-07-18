@@ -2555,8 +2555,19 @@
           });
         });
       }
-    }); // 👈 قوس نهاية الحدث المغلق بشكل سليم 100% وبدون تكرار
 
+      // 👈 دمج دالة مستمع نقر عامة وموحدة على المستند لمنع تسريب الذاكرة (Memory Leak Solution)
+      document.addEventListener('click', (e) => {
+        // إذا لم يكن النقر داخل زر القائمة أو القائمة المنسدلة نفسها، نقوم بإغلاق كل القوائم المفتوحة برمجياً
+        if (!e.target.closest('.card-menu-btn') && !e.target.closest('.card-menu-dropdown')) {
+          document.querySelectorAll('.card-menu-dropdown').forEach(dropdown => {
+            dropdown.style.display = 'none';
+            const card = dropdown.closest('.video-card');
+            if (card) card.style.zIndex = '1';
+          });
+        }
+      });
+    }); // 👈 قوس نهاية الحدث المغلق بشكل سليم 100% وبدون تكرار
     // دالة التحكم في فتح قائمة التحديث المنسدلة في الشريط العلوي
     function toggleSyncDropdown(e) {
       e.stopPropagation();
