@@ -5690,12 +5690,6 @@ ${titles.map((t, idx) => `${idx + 1}. ${t}`).join('\n')}`;
             card.style.zIndex = isHidden ? '110' : '1';
           });
 
-          // إغلاق المنسدلة عند النقر بالخارج وإرجاع الكرت لطبقته الطبيعية
-          document.addEventListener('click', () => {
-            dropdown.style.display = 'none';
-            card.style.zIndex = '1';
-          });
-
       const channelP = document.createElement('p');
       channelP.className = 'channel-name';
       channelP.style.marginTop = '4px'; // تباعد ناعم تحت العنوان مباشرة
