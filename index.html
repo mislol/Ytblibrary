@@ -1194,7 +1194,7 @@
       }
     }
 
-    /* أضف هذا الكود هنا */
+    /* أضف هذا الكود هنا لتهيئة مظهر الهواتف الذكية */
     @media (max-width: 768px) {
       .category-selection-area .dropdown-category-container {
         position: static !important;
@@ -1207,49 +1207,50 @@
         max-width: calc(100vw - 30px) !important;
         top: calc(100% + 6px) !important;
       }
-  /* تصغير حجم الأزرار لجعلها متلائمة مع عرض الهاتف */
-  .category-selection-area .category-pill-btn {
-    padding: 6px 12px !important; /* تقليل الحشوة الداخلية */
-    font-size: 0.75rem !important; /* تصغير حجم الخط قليلاً */
-    gap: 4px !important; /* تقليل المسافة بين الأيقونة والنص */
-  }
+      /* تصغير حجم الأزرار لجعلها متلائمة مع عرض الهاتف */
+      .category-selection-area .category-pill-btn {
+        padding: 6px 12px !important; /* تقليل الحشوة الداخلية */
+        font-size: 0.75rem !important; /* تصغير حجم الخط قليلاً */
+        gap: 4px !important; /* تقليل المسافة بين الأيقونة والنص */
+      }
 
-  /* تصغير شارات الأرقام داخل الأزرار */
-  .category-selection-area .badge {
-    padding: 1px 6px !important;
-    font-size: 0.7rem !important;
-  }
-      /* 1. تمديد شبكة الفيديوهات لتلتصق بحواف الهاتف تماماً وتجاوز الفراغ الجانبي للصفحة */
-  .videos-grid:not(.list-layout) {
-    margin-left: -15px !important;
-    margin-right: -15px !important;
-    width: calc(100% + 30px) !important;
-    gap: 0 !important; /* إلغاء الفراغات الافتراضية واستبدالها بفاصل سفلي يوتيوبي */
-  }
+      /* تصغير شارات الأرقام داخل الأزرار */
+      .category-selection-area .badge {
+        padding: 1px 6px !important;
+        font-size: 0.7rem !important;
+      }
 
-  /* 2. جعل كرت الفيديو يملأ عرض الشاشة بالكامل بدون حواف دائرية أو ظلال جانبية */
-  .videos-grid:not(.list-layout) .video-card {
-    border-radius: 0 !important;
-    border: none !important;
-    box-shadow: none !important; /* إزالة الظلال الجانبية لمظهر مسطح أنيق */
-    background-color: var(--bg-secondary) !important;
-    
-    /* وضع فاصل سفلي سميك وناعم بلون الخلفية الثالثية لمطابقة الفواصل الرسمية لليوتيوب */
-    border-bottom: 8px solid var(--bg-tertiary) !important;
-    margin-bottom: 0 !important;
-  }
+      /* 1. جعل شبكة الفيديوهات تتباعد بشكل متناسق ومريح عن حواف الهاتف 👈 */
+      .videos-grid:not(.list-layout) {
+        margin-left: 0 !important;
+        margin-right: 0 !important;
+        width: 100% !important;
+        padding: 0 10px !important; /* هوامش جانبية خفيفة تمنع الالتصاق بأطراف الشاشة */
+        gap: 15px !important; /* الحفاظ على تباعد متناسق بين الكروت */
+      }
 
-  /* 3. إلغاء تقويس حواف الصورة المصغرة لتلتصق بأطراف الجوال */
-  .videos-grid:not(.list-layout) .thumbnail-area {
-    border-radius: 0 !important;
-  }
+      /* 2. جعل الكارت يظهر كبطاقة عائمة ناعمة ومريحة للعين 👈 */
+      .videos-grid:not(.list-layout) .video-card {
+        border-radius: var(--border-radius) !important; /* إرجاع الانحناء الناعم للكرت (16px) */
+        border: 1px solid var(--bg-tertiary) !important; /* إرجاع الحد الرفيع الأنيق */
+        box-shadow: var(--card-shadow) !important; /* إرجاع الظل الناعم الذي يعطي عمقاً بصرياً */
+        background-color: var(--bg-secondary) !important;
+        border-bottom: none !important; /* إلغاء الفاصل السميك الملتصق */
+        margin-bottom: 5px !important; /* تباعد خفيف جداً لمنع الالتصاق بالكرت التالي */
+        overflow: hidden !important; /* تجميد تدوير الحواف على العناصر الداخلية لتقص تلقائياً */
+      }
 
-  /* 4. إبقاء النصوص والأزرار بالأسفل محميّة من الالتصاق الجانبي */
-  .videos-grid:not(.list-layout) .card-body {
-    padding: 12px 15px 15px !important; /* هامش داخلي يمنع التصاق العنوان بالتجويف الخارجي للهاتف */
-  }
-  
-}
+      /* 3. إلغاء تقويس حواف الصورة المصغرة المباشرة (حيث ستقص تلقائياً بفعل الـ overflow الخاص بالكرت الحاضن) 👈 */
+      .videos-grid:not(.list-layout) .thumbnail-area {
+        border-radius: 0 !important;
+      }
+
+      /* 4. حماية النصوص والأزرار بمسافة أمان مريحة وواسعة تمنع اختفائها واقترابها من حافظة الحماية 👈 */
+      .videos-grid:not(.list-layout) .card-body {
+        padding: 15px 18px 18px !important; /* زيادة الهامش الداخلي الجانبي لـ 18px لضمان عدم ملامسة النصوص للحواف */
+      }
+      
+    }
 .title-row {
   position: relative;
   display: flex;
