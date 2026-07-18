@@ -4464,14 +4464,16 @@ ${titles.map((t, idx) => `${idx + 1}. ${t}`).join('\n')}`;
         mimeType: 'application/json'
       };
 
-      // تشكيل حزمة النسخ الاحتياطي الموحد (مزامنة كاملة للمجلدات والمفضلة) 👈
+      const syncTime = Date.now(); // 👈 إنشاء ختم زمني موحد وفريد للحفظ الحالي
+
+      // تشكيل حزمة النسخ الاحتياطي الموحد (مزامنة كاملة للمجلدات والمفضلة مع إدراج الوقت) 👈
       const backupPayload = {
-        version: 2.1,
+        version: 2.0,
+        timestamp: syncTime, // 👈 دمج الختم الزمني في الملف السحابي لربط الأجهزة
         library: allVideos,
         groups: subscriptionGroups,
         favorites: [...favoriteIds],
-        subscriptionsDb: subscriptionsDb,
-        subscriptionsFeed: cachedSubscriptionsFeed // 👈 مزامنة خلاصة الاشتراكات نفسها بين الأجهزة (لم تكن تُرفع سابقاً)
+        subscriptionsDb: subscriptionsDb
       };
       
       if (fileId) {
@@ -4486,6 +4488,7 @@ ${titles.map((t, idx) => `${idx + 1}. ${t}`).join('\n')}`;
             body: JSON.stringify(backupPayload)
           });
           if (res.ok) {
+            localStorage.setItem('user_last_sync_time', syncTime); // 👈 تحديث الختم الزمني محلياً عند نجاح الرفع
             logToCloudConsole('✅ تم مزامنة مكتبتك ومجلداتك بنجاح على Google Drive!');
           } else {
             const err = await res.json();
@@ -4511,6 +4514,7 @@ ${titles.map((t, idx) => `${idx + 1}. ${t}`).join('\n')}`;
           if (res.ok) {
             const data = await res.json();
             localStorage.setItem('user_google_drive_file_id', data.id);
+            localStorage.setItem('user_last_sync_time', syncTime); // 👈 تحديث الختم الزمني محلياً عند نجاح أول رفع
             logToCloudConsole('✅ تم إنشاء وحفظ أول نسخة سحابية موحدة بنجاح!');
           } else {
             const err = await res.json();
@@ -4522,7 +4526,6 @@ ${titles.map((t, idx) => `${idx + 1}. ${t}`).join('\n')}`;
         }
       }
     }
-
     async function loadBackupFromGoogleDrive(token) {
       logToCloudConsole('🔍 جاري البحث في Google Drive عن نسخة احتياطية سابقة...');
       const url = `https://www.googleapis.com/drive/v3/files?q=name='yt_library_db.json'+and+trashed=false&fields=files(id,name)`;
@@ -4548,7 +4551,7 @@ ${titles.map((t, idx) => `${idx + 1}. ${t}`).join('\n')}`;
             if (contentRes.ok) {
               const backupData = await contentRes.json();
               
-              // دعم قراءة الصيغة القديمة (مصفوفة فيديوهات فقط) والصيغة الموحدة الجديدة (فيديوهات ومجلدات ومفضلة)
+              // دعم قراءة الصيغة القديمة (مصفوفة فيديوهات فقط) والصيغة الموحدة الجديدة (الفيديوهات والمجلدات والمفضلة)
               if (Array.isArray(backupData) && backupData.length > 0) {
                 if (confirm(`تم العثور على نسخة احتياطية سحابية قديمة تحتوي على ${backupData.length} فيديو. هل تود استرجاعها الآن؟`)) {
                   allVideos = backupData;
@@ -4558,28 +4561,47 @@ ${titles.map((t, idx) => `${idx + 1}. ${t}`).join('\n')}`;
                   showToast(t('toastLibraryRestored'));
                 }
               } else if (backupData && backupData.library) {
-                // استرجاع الصيغة الموحدة الشاملة 👈
+                // استرجاع الصيغة الموحدة الشاملة وتطبيق فحص الختم الزمني الذكي 👈
                 const count = backupData.library.length;
-                if (confirm(`تم العثور على نسخة سحابية موحدة تحتوي على ${count} فيديو ومجلداتك المخصصة. هل تود مزامنة هذا الجهاز معها الآن؟`)) {
-                  allVideos = backupData.library || [];
-                  subscriptionGroups = backupData.groups || {};
-                  favoriteIds = new Set(backupData.favorites || []);
-                  subscriptionsDb = backupData.subscriptionsDb || {};
-                  // استرجاع خلاصة الاشتراكات المحدّثة من الجهاز الآخر (مثل الهاتف) إن وُجدت 👈
-                  if (backupData.subscriptionsFeed && backupData.subscriptionsFeed.length > 0) {
-                    cachedSubscriptionsFeed = backupData.subscriptionsFeed;
+                const cloudTimestamp = backupData.timestamp || 0;
+                const localTimestamp = parseInt(localStorage.getItem('user_last_sync_time') || '0');
+
+                // 1. إذا كانت النسختان سحابياً ومحلياً متطابقتين بالوقت والجهاز نشط، نتخطى النافذة بصمت 👈
+                if (cloudTimestamp === localTimestamp && allVideos.length > 0) {
+                  logToCloudConsole('📊 النسخة السحابية مطابقة تماماً للمكتبة المحلية الحالية، تخطي نافذة المزامنة المزعجة.');
+                } else {
+                  // حالة 1: التطبيق فارغ تماماً (تثبيت جديد)، جلب صامت بدون إزعاج
+                  // حالة 2: الختم الزمني مختلف (أحدث على السحاب)، إظهار نافذة التأكيد لمنع تصادم التعديلات بين الأجهزة
+                  const shouldRestoreSilently = allVideos.length === 0;
+                  
+                  let confirmed = false;
+                  if (shouldRestoreSilently) {
+                    confirmed = true;
+                  } else {
+                    confirmed = confirm(`تم العثور على نسخة سحابية موحدة تحتوي على ${count} فيديو ومجلداتك المخصصة ومؤرخة بوقت مختلف، هل تود مزامنة هذا الجهاز معها الآن؟`);
                   }
 
-                  // حفظ البيانات بالكامل محلياً على المتصفح الجديد فوراً 👈
-                  localStorage.setItem('user_youtube_library', JSON.stringify(allVideos));
-                  saveSubscriptionsDbToStorage();
-                  saveCachedFeedToStorage();
-                  localStorage.setItem('user_subscription_groups', JSON.stringify(subscriptionGroups));
-                  localStorage.setItem('user_youtube_favorites', JSON.stringify([...favoriteIds]));
+                  if (confirmed) {
+                    allVideos = backupData.library || [];
+                    subscriptionGroups = backupData.groups || {};
+                    favoriteIds = new Set(backupData.favorites || []);
+                    subscriptionsDb = backupData.subscriptionsDb || {};
 
-                  initApp();
-                  logToCloudConsole('✅ تم بنجاح تفعيل التزامن السحابي الموحد (الفيديوهات + المجلدات + المفضلة)!');
-                  showToast(t('toastLibraryRestored'));
+                    // حفظ البيانات بالكامل محلياً على المتصفح الجديد فوراً 👈
+                    localStorage.setItem('user_youtube_library', JSON.stringify(allVideos));
+                    localStorage.setItem('user_youtube_subscriptions_db', JSON.stringify(subscriptionsDb));
+                    localStorage.setItem('user_subscription_groups', JSON.stringify(subscriptionGroups));
+                    localStorage.setItem('user_youtube_favorites', JSON.stringify([...favoriteIds]));
+                    
+                    // تجميد وتطابق الختم الزمني محلياً لتجنب التكرار بعد المزامنة الناجحة
+                    if (cloudTimestamp) {
+                      localStorage.setItem('user_last_sync_time', cloudTimestamp);
+                    }
+
+                    initApp();
+                    logToCloudConsole('✅ تم بنجاح تفعيل التزامن السحابي الموحد (الفيديوهات + المجلدات + المفضلة)!');
+                    showToast(t('toastLibraryRestored'));
+                  }
                 }
               }
             }
