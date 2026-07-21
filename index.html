@@ -111,12 +111,24 @@
     }
 
     /* شريط الملاحة الرئيسي - تم جعله طبيعياً وغير ملتصق للاستفادة من مساحة الشاشة بالكامل */
-    .main-header {
-      background-color: var(--bg-secondary);
-      border-bottom: 1px solid var(--bg-tertiary);
-      position: relative;
-      z-index: 100;
-    }
+    .main-header{
+    position:sticky;
+    top:0;
+    z-index:1000;
+
+    background:rgba(20,20,20,.75);
+    backdrop-filter:blur(18px);
+    -webkit-backdrop-filter:blur(18px);
+
+    border-bottom:1px solid rgba(255,255,255,.08);
+
+    box-shadow:
+    0 8px 30px rgba(0,0,0,.28);
+
+    transition:
+    background .35s,
+    box-shadow .35s;
+}
 
     .main-header::after {
       content: '';
@@ -130,86 +142,268 @@
       pointer-events: none;
     }
 
-    .header-container {
-      max-width: 1400px;
-      margin: 0 auto;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: 15px 20px;
-      flex-wrap: wrap;
-      gap: 15px;
-    }
+    .header-container{
 
-    .logo-section {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-    }
+max-width:1450px;
 
-    .logo-icon {
-      font-size: 2rem;
-    }
+margin:auto;
 
-    .logo-section h1 {
-      font-size: 1.3rem;
-      font-weight: 800;
-      letter-spacing: -0.5px;
-    }
+padding:16px 28px;
 
-    .header-actions {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      flex-wrap: wrap;
-    }
+display:flex;
+
+align-items:center;
+
+justify-content:space-between;
+
+gap:18px;
+
+flex-wrap:wrap;
+}
+
+    .logo-section{
+
+display:flex;
+
+align-items:center;
+
+gap:16px;
+
+cursor:pointer;
+
+transition:.3s;
+}
+
+.logo-section:hover{
+
+transform:translateY(-2px);
+
+}
+
+    .logo-icon{
+
+width:54px;
+
+height:54px;
+
+display:flex;
+
+align-items:center;
+
+justify-content:center;
+
+border-radius:16px;
+
+background:
+
+linear-gradient(
+135deg,
+#ff2d55,
+#ff0000);
+
+color:white;
+
+font-size:24px;
+
+box-shadow:
+
+0 10px 25px rgba(255,0,0,.35);
+
+}
+
+    .logo-section h1{
+
+font-size:1.45rem;
+
+font-weight:800;
+
+letter-spacing:-.4px;
+
+line-height:1.2;
+}
+
+    .header-actions{
+
+display:flex;
+
+align-items:center;
+
+gap:10px;
+
+flex-wrap:wrap;
+
+justify-content:flex-end;
+}
+     .header-actions .btn{
+
+min-width:44px;
+
+height:44px;
+
+border-radius:14px;
+
+padding:0 16px;
+
+white-space:nowrap;
+
+}
 
     /* الأزرار الأساسية والفرعية */
-    .btn {
-      font-family: 'Cairo', sans-serif;
-      padding: 8px 18px;
-      border-radius: 24px;
-      border: none;
-      cursor: pointer;
-      font-weight: 700;
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      gap: 8px;
-      transition: all var(--transition-speed);
-      font-size: 0.85rem;
-    }
+    .btn{
+    position:relative;
 
-    .btn-primary {
-      background-color: var(--accent-color);
-      color: #fff;
-    }
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    gap:8px;
+
+    height:44px;
+    padding:0 18px;
+
+    border:none;
+    border-radius:14px;
+
+    font-family:'Cairo',sans-serif;
+    font-size:.90rem;
+    font-weight:700;
+
+    cursor:pointer;
+
+    transition:
+    transform .25s,
+    background .25s,
+    color .25s,
+    box-shadow .25s;
+
+    overflow:hidden;
+
+    user-select:none;
+}
+
+.btn:hover{
+
+transform:translateY(-2px);
+
+}
+
+.btn:active{
+
+transform:scale(.97);
+
+}
+
+.btn:focus-visible{
+
+outline:none;
+
+box-shadow:
+0 0 0 4px rgba(255,0,0,.25);
+
+}
+
+    .btn-primary{
+
+background:linear-gradient(
+135deg,
+#ff3b30,
+#ff0000);
+
+color:#fff;
+
+box-shadow:
+
+0 10px 22px rgba(255,0,0,.28);
+
+}
+
+.btn-primary:hover{
+
+box-shadow:
+
+0 15px 28px rgba(255,0,0,.38);
+
+filter:brightness(1.05);
+
+}
 
     .btn-primary:hover {
       background-color: var(--accent-hover);
       transform: translateY(-1px);
     }
 
-    .btn-secondary {
-      background-color: var(--bg-tertiary);
-      color: var(--text-primary);
-      border: 1px solid rgba(255, 255, 255, 0.05);
-    }
+    .btn-secondary{
+
+background:#262626;
+
+color:#fff;
+
+border:1px solid rgba(255,255,255,.08);
+
+}
+
+.btn-secondary:hover{
+
+background:#313131;
+
+border-color:#444;
+
+}
 
     .btn-secondary:hover {
       background-color: var(--bg-quaternary);
       border-color: rgba(255, 255, 255, 0.1);
     }
 
-    .btn-gold {
-      background-color: var(--gold-color);
-      color: #000;
-    }
+    .btn-gold{
+
+background:linear-gradient(
+135deg,
+#ffcc00,
+#f5a623);
+
+color:#111;
+
+font-weight:800;
+
+box-shadow:
+
+0 10px 24px rgba(255,190,0,.25);
+
+}
+
+.btn-gold:hover{
+
+filter:brightness(1.04);
+
+box-shadow:
+
+0 16px 30px rgba(255,190,0,.35);
+
+}
     
     .btn-gold:hover {
       background-color: #e0a100;
       transform: translateY(-1px);
     }
+.btn .icon{
+
+display:flex;
+
+align-items:center;
+
+justify-content:center;
+
+font-size:17px;
+
+transition:transform .25s;
+
+}
+
+.btn:hover .icon{
+
+transform:scale(1.15);
+
+}
 
     /* لوحة استيراد البيانات وإدارة الملفات */
     .import-panel {
@@ -604,29 +798,89 @@
     }
 
     /* شبكة مقاطع الفيديو والبطاقات */
-    .videos-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-      gap: 20px;
-      transition: all 0.3s ease-in-out;
-    }
+    .videos-grid{
 
-   .video-card {
-      background-color: var(--bg-secondary);
-      border-radius: var(--border-radius);
-      border: 1px solid var(--bg-tertiary);
-      overflow: visible !important;
-      position: relative;
-      z-index: 1; /* 👈 سطر إضافي لضمان وجود طبقة مرجعية افتراضية للكرت */
-      display: flex;
-      flex-direction: column;
-      transition: transform var(--transition-speed), box-shadow var(--transition-speed);
-    }
+display:grid;
 
-    .video-card:hover {
-      transform: translateY(-5px);
-      box-shadow: var(--card-shadow-hover);
-    }
+grid-template-columns:
+repeat(auto-fill,minmax(340px,1fr));
+
+gap:24px;
+
+align-items:start;
+
+padding:10px 0 30px;
+
+}
+
+   .video-card{
+    background:linear-gradient(180deg,#252525,#1d1d1d);
+
+    border:1px solid rgba(255,255,255,.06);
+
+    border-radius:20px;
+
+    overflow:hidden;
+
+    position:relative;
+
+    display:flex;
+
+    flex-direction:column;
+
+    transition:
+        transform .30s,
+        box-shadow .30s,
+        border-color .30s;
+
+    box-shadow:
+        0 8px 25px rgba(0,0,0,.28);
+}
+
+.video-card::before{
+
+content:"";
+
+position:absolute;
+
+top:0;
+
+left:0;
+
+width:100%;
+
+height:4px;
+
+background:linear-gradient(
+90deg,
+#ff0000,
+#ff4d4d);
+
+transform:scaleX(0);
+
+transition:.30s;
+
+transform-origin:left;
+
+}
+
+.video-card:hover::before{
+
+transform:scaleX(1);
+
+}
+
+    .video-card:hover{
+
+transform:translateY(-8px);
+
+border-color:rgba(255,255,255,.10);
+
+box-shadow:
+
+0 20px 45px rgba(0,0,0,.45);
+
+}
 
     /* بطاقة التحميل الهيكلية (Skeleton) */
     .video-card-skeleton {
@@ -680,14 +934,21 @@
       cursor: pointer;
     }
 
-    .thumbnail-area {
-      position: relative;
-      width: 100%;
-      aspect-ratio: 16/9;
-      background-color: #000;
-      cursor: pointer;
-      overflow: hidden;
-    }
+    .thumbnail-area{
+
+position:relative;
+
+width:100%;
+
+aspect-ratio:16/9;
+
+overflow:hidden;
+
+background:#000;
+
+cursor:pointer;
+
+}
 
     /* طبقة زر التشغيل عند التحويم: تجميلية بحتة، لذلك pointer-events:none ضرورية
        حتى لا تعترض أي لمس/نقر على عناصر تحكم يوتيوب الحقيقية أسفلها بعد بدء التشغيل */
@@ -720,35 +981,63 @@
       content: none;
     }
 
-    .thumbnail-area img {
-      width: 100%;
-      height: 100%;
-      object-fit: cover;
-      transition: transform var(--transition-speed);
-    }
+    .thumbnail-area img{
 
-    .video-card:hover .thumbnail-area img {
-      transform: scale(1.05);
-    }
+width:100%;
 
-    .duration-badge {
-      position: absolute;
-      bottom: 8px;
-      left: 8px;
-      background-color: rgba(0, 0, 0, 0.85);
-      color: #fff;
-      padding: 2px 8px;
-      border-radius: 4px;
-      font-size: 0.8rem;
-      font-weight: 700;
-    }
+height:100%;
 
-    .card-body {
-      padding: 15px;
-      display: flex;
-      flex-direction: column;
-      flex-grow: 1;
-    }
+object-fit:cover;
+
+transition:
+
+transform .5s ease;
+
+}
+
+    .video-card:hover .thumbnail-area img{
+
+transform:scale(1.08);
+
+}
+
+    .duration-badge{
+
+position:absolute;
+
+left:10px;
+
+bottom:10px;
+
+background:rgba(0,0,0,.85);
+
+backdrop-filter:blur(8px);
+
+color:#fff;
+
+padding:4px 8px;
+
+border-radius:8px;
+
+font-size:.75rem;
+
+font-weight:700;
+
+}
+
+    .card-body{
+
+padding:18px;
+
+display:flex;
+
+flex-direction:column;
+
+gap:10px;
+
+flex:1;
+
+}
 
     .meta-tags-row {
       display: flex;
@@ -817,36 +1106,59 @@
       color: var(--text-tertiary) !important;
     }
 
-    .video-title {
-      font-size: 14px; /* مطابقة لحجم خط يوتيوب الرسمي */
-      font-weight: 600; /* الوزن شبه العريض Semi-Bold ليعطي شكلاً حديثاً ومريحاً للعين */
-      line-height: 1.3; /* تقريب المسافة بين السطر الأول والثاني */
-      margin-bottom: 4px; /* تضييق الفراغ بين العنوان واسم القناة */
-      cursor: pointer;
-      transition: color var(--transition-speed);
-      word-wrap: break-word;
-      word-break: break-word;
+    ..video-title{
 
-      /* ميزة يوتيوب الرسمية: تحديد سطرين كحد أقصى للعناوين الطويلة مع إظهار (...) تلقائياً */
-      display: -webkit-box;
-      -webkit-line-clamp: 2;
-      -webkit-box-orient: vertical;
-      overflow: hidden;
-    }
+font-size:15px;
 
-    .channel-name {
-      font-size: 12px; /* تصغير حجم اسم القناة والمعلومات ليتناسب مع العنوان */
-      color: var(--text-secondary);
-      margin-bottom: 10px; /* تضييق المساحة السفلية لكرت الفيديو */
-      font-weight: 400; /* خط عادي للمعلومات الثنائية */
-    }
+font-weight:700;
 
-    .card-footer {
-      margin-top: auto;
-      display: flex;
-      align-items: center;
-      gap: 6px;
-    }
+line-height:1.45;
+
+margin:0;
+
+transition:.25s;
+
+display:-webkit-box;
+
+-webkit-line-clamp:2;
+
+-webkit-box-orient:vertical;
+
+overflow:hidden;
+
+}
+
+.video-title:hover{
+
+color:var(--accent-color);
+
+}
+
+    .channel-name{
+
+font-size:13px;
+
+color:var(--text-secondary);
+
+opacity:.9;
+
+}
+
+    .card-footer{
+
+margin-top:auto;
+
+display:flex;
+
+align-items:center;
+
+gap:8px;
+
+padding-top:12px;
+
+border-top:1px solid rgba(255,255,255,.06);
+
+}
 
     .card-footer .btn {
       padding: 8px 10px;
@@ -1198,6 +1510,7 @@
     @media (max-width: 768px) {
       .category-selection-area .dropdown-category-container {
         position: static !important;
+        
       }
       .category-selection-area .categories-dropdown-menu {
         left: 15px !important;
@@ -1344,8 +1657,39 @@
   .sub-groups-scroll-row .category-pill-btn {
     flex-shrink: 0 !important; /* منع انكماش حبات المجموعات أثناء السحب بالإصبع */
   }
-}  
+  .videos-grid{
 
+grid-template-columns:1fr;
+
+gap:18px;
+
+}
+}  
+@keyframes cardAppear{
+
+from{
+
+opacity:0;
+
+transform:translateY(18px);
+
+}
+
+to{
+
+opacity:1;
+
+transform:none;
+
+}
+
+}
+
+.video-card{
+
+animation:cardAppear .45s ease;
+
+}
      
   </style>
 </head>
