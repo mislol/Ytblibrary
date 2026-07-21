@@ -4426,6 +4426,8 @@ ${titles.map((t, idx) => `${idx + 1}. ${t}`).join('\n')}`;
     function handleGoogleSignOut() {
       localStorage.removeItem('user_youtube_access_token');
       localStorage.removeItem('user_youtube_token_expires');
+      localStorage.removeItem('user_drive_access_token'); // 👈 تنظيف توكن درايف عند الخروج
+      localStorage.removeItem('user_drive_token_expires'); // 👈 تنظيف توكن درايف عند الخروج
       localStorage.removeItem('user_google_drive_file_id');
       cachedSubscriptionsFeed = []; // تفريغ ذاكرة الاشتراكات المؤقتة تماماً 👈
       localStorage.removeItem('user_cached_subscriptions_feed'); // مسح الكاش المستمر من المتصفح عند الخروج 👈
@@ -4441,14 +4443,21 @@ ${titles.map((t, idx) => `${idx + 1}. ${t}`).join('\n')}`;
         const params = new URLSearchParams(hash);
         const token = params.get('access_token');
         const expiresIn = params.get('expires_in');
-        const scope = params.get('scope'); // 👈 استخراج الصلاحيات الممنوحة حالياً من قوقل للتحقق
+        const scope = params.get('scope') || ''; // 👈 استخراج الصلاحيات الممنوحة حالياً من قوقل للتحقق
         
         if (token) {
           const expireTime = Date.now() + (parseInt(expiresIn) * 1000);
-          localStorage.setItem('user_youtube_access_token', token);
-          localStorage.setItem('user_youtube_token_expires', expireTime);
-          if (scope) {
-            localStorage.setItem('user_youtube_token_scopes', scope); // 👈 حفظ الصلاحيات الممنوحة للتحقق اللاحق من وجود صلاحية درايف
+          
+          // التحقق الذكي: إذا كان النطاق يحتوي على درايف، نحفظه كتوكن درايف منفصل ومستقل 👈
+          if (scope.includes('auth/drive.file')) {
+            localStorage.setItem('user_drive_access_token', token);
+            localStorage.setItem('user_drive_token_expires', expireTime);
+            logToCloudConsole('✅ تم استقبال وتحديث صلاحية الوصول المخصصة لـ Google Drive بنجاح!');
+          } else {
+            // وإلا، فهو توكن يوتيوب الافتراضي
+            localStorage.setItem('user_youtube_access_token', token);
+            localStorage.setItem('user_youtube_token_expires', expireTime);
+            logToCloudConsole('✅ تم استقبال وتحديث صلاحية يوتيوب بنجاح!');
           }
           
           history.replaceState(null, "", window.location.pathname + window.location.search);
@@ -4472,6 +4481,28 @@ ${titles.map((t, idx) => `${idx + 1}. ${t}`).join('\n')}`;
       }
       return null;
     }
+    // دالة مساعدة للتحقق من صلاحية توكن قوقل درايف المستقل 👈
+    function getValidDriveToken() {
+      const token = localStorage.getItem('user_drive_access_token');
+      const expires = localStorage.getItem('user_drive_token_expires');
+      if (token && expires && Date.now() < parseInt(expires)) {
+        return token;
+      }
+      return null;
+    }
+
+    // دالة طلب صلاحية Google Drive بشكل مستقل ومنفصل تماماً لعدم التصادم مع يوتيوب 👈
+    function requestDriveConsentDirect() {
+      logToCloudConsole('💾 صلاحية Google Drive غير متوفرة. جاري تحويلك للحصول عليها بشكل منفصل...');
+      const clientId = googleClientId.value.trim() || localStorage.getItem('user_google_client_id') || '';
+      const redirectUri = window.location.origin + window.location.pathname;
+      const scope = 'https://www.googleapis.com/auth/drive.file';
+      
+      // نطلب فقط صلاحية درايف وبدون include_granted_scopes لكي لا تقوم قوقل بدمج يوتيوب مع درايف وتمنع التفويض 👈
+      const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&response_type=token&scope=${encodeURIComponent(scope)}`;
+      
+      window.location.href = authUrl;
+    }
 
   // تحديث الواجهة والتحكم بظهور حاوية الاشتراكات المنسدلة سحابياً 👈
     function updateAuthUI() {
@@ -4493,13 +4524,14 @@ ${titles.map((t, idx) => `${idx + 1}. ${t}`).join('\n')}`;
     }
 
     async function saveBackupToGoogleDrive() {
-      const token = getValidAccessToken();
-      if (!token) return;
+      // نتحقق أولاً من وجود توكن يوتيوب صالح لضمان تسجيل الدخول الفعلي
+      const ytToken = getValidAccessToken();
+      if (!ytToken) return;
 
-      // 👈 التحقق مما إذا كانت صلاحية قوقل درايف ممنوحة للتوكن الحالي
-      const scopes = localStorage.getItem('user_youtube_token_scopes') || '';
-      if (!scopes.includes('auth/drive.file')) {
-        requestDriveConsentIncremental();
+      // نتحقق من وجود توكن درايف صالح ومنفصل بالكامل 👈
+      const driveToken = getValidDriveToken();
+      if (!driveToken) {
+        requestDriveConsentDirect();
         return;
       }
 
@@ -4530,7 +4562,7 @@ ${titles.map((t, idx) => `${idx + 1}. ${t}`).join('\n')}`;
           const res = await fetch(url, {
             method: 'PATCH',
             headers: {
-              'Authorization': `Bearer ${token}`,
+              'Authorization': `Bearer ${driveToken}`, // 👈 تم التعديل لاستخدام توكن درايف المخصص المنفصل
               'Content-Type': 'application/json'
             },
             body: JSON.stringify(backupPayload)
@@ -4554,7 +4586,7 @@ ${titles.map((t, idx) => `${idx + 1}. ${t}`).join('\n')}`;
           const res = await fetch(url, {
             method: 'POST',
             headers: {
-              'Authorization': `Bearer ${token}`,
+              'Authorization': `Bearer ${driveToken}`, // 👈 تم التعديل لاستخدام توكن درايف المخصص المنفصل
               'Content-Type': `multipart/related; boundary=${boundary}`
             },
             body: body
@@ -4577,11 +4609,11 @@ ${titles.map((t, idx) => `${idx + 1}. ${t}`).join('\n')}`;
     async function loadBackupFromGoogleDrive(token) {
       if (!token) return;
 
-      // 👈 التحقق مما إذا كانت صلاحية قوقل درايف ممنوحة للتوكن الحالي عند القراءة والتنزيل
-      const scopes = localStorage.getItem('user_youtube_token_scopes') || '';
-      if (!scopes.includes('auth/drive.file')) {
-        logToCloudConsole('🔍 صلاحية Google Drive مفقودة للقراءة. سيتم طلب الصلاحية تدريجياً...');
-        requestDriveConsentIncremental();
+      // نتحقق من وجود توكن درايف صالح ومنفصل عند محاولة القراءة والتنزيل 👈
+      const driveToken = getValidDriveToken();
+      if (!driveToken) {
+        logToCloudConsole('🔍 صلاحية Google Drive مفقودة للقراءة. سيتم طلب الصلاحية بشكل منفصل...');
+        requestDriveConsentDirect();
         return;
       }
 
@@ -4590,7 +4622,7 @@ ${titles.map((t, idx) => `${idx + 1}. ${t}`).join('\n')}`;
       try {
         const res = await fetch(url, {
           headers: {
-            'Authorization': `Bearer ${token}`
+            'Authorization': `Bearer ${driveToken}` // 👈 تم التعديل لاستخدام توكن درايف المخصص المنفصل
           }
         });
         if (res.ok) {
@@ -4603,7 +4635,7 @@ ${titles.map((t, idx) => `${idx + 1}. ${t}`).join('\n')}`;
             const contentUrl = `https://www.googleapis.com/drive/v3/files/${file.id}?alt=media`;
             const contentRes = await fetch(contentUrl, {
               headers: {
-                'Authorization': `Bearer ${token}`
+                'Authorization': `Bearer ${driveToken}` // 👈 تم التعديل لاستخدام توكن درايف المخصص المنفصل
               }
             });
             if (contentRes.ok) {
