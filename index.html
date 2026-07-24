@@ -1346,7 +1346,174 @@
   }
 }  
 
-     
+     /* =====================================================================
+       تنسيقات نافذة الإعدادات الموحدة الجديدة (Phase 1)
+       ===================================================================== */
+    .settings-modal {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background-color: rgba(0, 0, 0, 0.85);
+      z-index: 1200; /* أعلى من التعديل الجماعي وكافة النوافذ الحالية */
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+
+    .settings-container {
+      background-color: var(--bg-secondary);
+      border: 1px solid var(--bg-tertiary);
+      border-radius: var(--border-radius);
+      width: 850px;
+      max-width: 100%;
+      height: 600px;
+      max-height: calc(100vh - 40px);
+      display: flex;
+      overflow: hidden;
+      box-shadow: var(--card-shadow-hover);
+    }
+
+    /* الشريط الجانبي للإعدادات */
+    .settings-sidebar {
+      width: 220px;
+      background-color: var(--bg-primary);
+      border-inline-end: 1px solid var(--bg-tertiary);
+      display: flex;
+      flex-direction: column;
+      padding: 15px 10px;
+      gap: 6px;
+    }
+
+    .settings-sidebar-header {
+      padding: 10px;
+      font-weight: 800;
+      font-size: 1.05rem;
+      color: var(--text-primary);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 10px;
+    }
+
+    .settings-tab-btn {
+      background: transparent;
+      border: none;
+      color: var(--text-secondary);
+      padding: 10px 15px;
+      border-radius: var(--border-radius-sm);
+      font-family: 'Cairo', sans-serif;
+      font-size: 0.9rem;
+      font-weight: 700;
+      text-align: start;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      transition: background-color var(--transition-speed), color var(--transition-speed);
+    }
+
+    .settings-tab-btn:hover {
+      background-color: var(--bg-tertiary);
+      color: var(--text-primary);
+    }
+
+    .settings-tab-btn.active {
+      background-color: var(--accent-soft);
+      color: var(--accent-color);
+    }
+
+    /* الجزء الخاص بعرض المحتوى وتفاصيله */
+    .settings-content-wrapper {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .settings-header {
+      padding: 15px 20px;
+      border-bottom: 1px solid var(--bg-tertiary);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .settings-header h3 {
+      font-size: 1.1rem;
+      font-weight: 700;
+      color: var(--text-primary);
+    }
+
+    .settings-close-btn {
+      background: none;
+      border: none;
+      font-size: 1.2rem;
+      cursor: pointer;
+      color: var(--text-secondary);
+      transition: color var(--transition-speed);
+    }
+
+    .settings-close-btn:hover {
+      color: var(--danger-color);
+    }
+
+    .settings-body {
+      flex: 1;
+      padding: 24px;
+      overflow-y: auto;
+    }
+
+    /* حاويات الأقسام الداخلية */
+    .settings-panel {
+      display: none;
+    }
+
+    .settings-panel.active {
+      display: block;
+      animation: fadeInSettings 0.25s ease-out;
+    }
+
+    @keyframes fadeInSettings {
+      from { opacity: 0; transform: translateY(4px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .settings-placeholder-text {
+      color: var(--text-secondary);
+      font-size: 0.95rem;
+      line-height: 1.6;
+    }
+
+    /* التجاوب السلس مع شاشات الهواتف المحمولة */
+    @media (max-width: 680px) {
+      .settings-container {
+        flex-direction: column;
+        height: 90vh;
+      }
+      .settings-sidebar {
+        width: 100%;
+        flex-direction: row;
+        overflow-x: auto;
+        border-inline-end: none;
+        border-bottom: 1px solid var(--bg-tertiary);
+        padding: 10px;
+        gap: 8px;
+        scrollbar-width: none;
+      }
+      .settings-sidebar::-webkit-scrollbar {
+        display: none;
+      }
+      .settings-sidebar-header {
+        display: none;
+      }
+      .settings-tab-btn {
+        white-space: nowrap;
+        padding: 8px 12px;
+        font-size: 0.8rem;
+      }
+    }
   </style>
 </head>
 <body>
@@ -1364,7 +1531,8 @@
         <button id="redoBtn" class="btn btn-secondary btn-history" data-i18n-title="redoTitle" title="إعادة ↪️" onclick="redoAction()" disabled>↪️</button>
         <button id="langToggleBtn" class="btn btn-secondary" title="Change language / تغيير اللغة">EN</button>
         <button id="themeToggleBtn" class="btn btn-secondary" title="تبديل المظهر الداكن / النهاري">🌙</button>
-
+        <!-- زر فتح نافذة الإعدادات الموحدة المضاف حديثاً -->
+        <button id="openSettingsBtn" class="btn btn-secondary" onclick="openSettingsModal()" title="إعدادات التطبيق"><span class="icon">⚙️</span> <span data-i18n="settingsBtn">الإعدادات</span></button>
         <button id="googleSignInBtn" class="btn btn-primary" onclick="handleGoogleSignIn()"><span class="icon">🔐</span> <span data-i18n="signIn">دخول قوقل</span></button>
         
         <!-- القائمة المنسدلة للتحديث السحابي المضافة حديثاً في الأعلى -->
@@ -1464,7 +1632,94 @@
 
     </div>
   </section>
+  <!-- ⚙️ نافذة الإعدادات الاحترافية الموحدة (Phase 1) -->
+  <div id="settingsModal" class="settings-modal" onclick="if(event.target === this) closeSettingsModal()">
+    <div class="settings-container">
+      
+      <!-- الشريط الجانبي (أقسام الإعدادات) -->
+      <aside class="settings-sidebar">
+        <div class="settings-sidebar-header">
+          <span>⚙️</span>
+          <span data-i18n="settingsTitle">إعدادات التطبيق</span>
+        </div>
+        <button class="settings-tab-btn active" onclick="switchSettingsTab('interface')">
+          <span data-i18n="tabUI">🎨 الواجهة</span>
+        </button>
+        <button class="settings-tab-btn" onclick="switchSettingsTab('language')">
+          <span data-i18n="tabLang">🌐 اللغة</span>
+        </button>
+        <button class="settings-tab-btn" onclick="switchSettingsTab('youtube')">
+          <span data-i18n="tabYoutube">▶️ YouTube</span>
+        </button>
+        <button class="settings-tab-btn" onclick="switchSettingsTab('gemini')">
+          <span data-i18n="tabGemini">🤖 Gemini</span>
+        </button>
+        <button class="settings-tab-btn" onclick="switchSettingsTab('data')">
+          <span data-i18n="tabData">💾 البيانات</span>
+        </button>
+        <button class="settings-tab-btn" onclick="switchSettingsTab('notifications')">
+          <span data-i18n="tabNotifications">🔔 الإشعارات</span>
+        </button>
+        <button class="settings-tab-btn" onclick="switchSettingsTab('privacy')">
+          <span data-i18n="tabPrivacy">🔒 الخصوصية</span>
+        </button>
+        <button class="settings-tab-btn" onclick="switchSettingsTab('about')">
+          <span data-i18n="tabAbout">ℹ️ حول البرنامج</span>
+        </button>
+      </aside>
 
+      <!-- اللوحة الرئيسية لعرض المحتويات -->
+      <div class="settings-content-wrapper">
+        <header class="settings-header">
+          <h3 id="settingsModalTitle" data-i18n="settingsTitle">إعدادات التطبيق</h3>
+          <button class="settings-close-btn" onclick="closeSettingsModal()">✕</button>
+        </header>
+        
+        <div class="settings-body">
+          <!-- تبويب: الواجهة -->
+          <div id="panel-interface" class="settings-panel active">
+            <p class="settings-placeholder-text">🎨 قسم إعدادات الواجهة والمظهر والموضوعات النشطة.. سيتم نقل خيارات الثيم وتنسيقاته هنا في الخطوة القادمة.</p>
+          </div>
+
+          <!-- تبويب: اللغة -->
+          <div id="panel-language" class="settings-panel">
+            <p class="settings-placeholder-text">🌐 قسم إعدادات اللغة الافتراضية للتطبيق وترجمات الواجهات.. سيتم نقل مفتاح اللغة هنا لاحقاً.</p>
+          </div>
+
+          <!-- تبويب: يوتيوب -->
+          <div id="panel-youtube" class="settings-panel">
+            <p class="settings-placeholder-text">▶️ قسم إعدادات الاتصال وحساب Google والمزامنة مع يوتيوب سحابياً.. سيتم دمج خيارات المزامنة ومعرفات العميل والتوثيق هنا قريباً.</p>
+          </div>
+
+          <!-- تبويب: جيميناي -->
+          <div id="panel-gemini" class="settings-panel">
+            <p class="settings-placeholder-text">🤖 قسم إعدادات الذكاء الاصطناعي ومفتاح Gemini لتصنيف قوائمك بشكل تلقائي ذكي.. سيتم نقل الحقول وخيارات التحكم لتنظيف الواجهة العامة قريباً.</p>
+          </div>
+
+          <!-- تبويب: البيانات -->
+          <div id="panel-data" class="settings-panel">
+            <p class="settings-placeholder-text">💾 قسم معالجة ملفات الـ CSV، والنسخ الاحتياطية سحابياً، ومسح الذاكرة المحلية أو استعادتها.. سيتم تنظيم خيارات التصدير والاستيراد المتقدم هنا.</p>
+          </div>
+
+          <!-- تبويب: الإشعارات -->
+          <div id="panel-notifications" class="settings-panel">
+            <p class="settings-placeholder-text">🔔 خيارات التنبيهات المنبثقة ورسائل حالة المزامنة وجلب التوقيتات.. سيتم إثراء واجهة الإعدادات بهذا القسم الجديد لاحقاً.</p>
+          </div>
+
+          <!-- تبويب: الخصوصية -->
+          <div id="panel-privacy" class="settings-panel">
+            <p class="settings-placeholder-text">🔒 سياسة الخصوصية وأمان تخزين الرموز الخاصة بالوصول والتفويضات السحابية محلياً على جهازك دون إرسالها لجهات خارجية.</p>
+          </div>
+
+          <!-- تبويب: حول البرنامج -->
+          <div id="panel-about" class="settings-panel">
+            <p class="settings-placeholder-text">ℹ️ مكتبة إدارة مرئيات يوتيوب الاحترافية الشاملة - إصدار ويب مطور ومحسّن ذاتياً لتنظيم وتصنيف ملفاتك وقوائمك التفاعلية.</p>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
   <!-- نافذة إدارة التكرار التفاعلية -->
   <div id="duplicateModal" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.85); z-index: 200; display: none; align-items: center; justify-content: center; padding: 20px;">
     <div style="background-color: var(--bg-secondary); border: 1px solid var(--bg-tertiary); border-radius: var(--border-radius); padding: 22px; max-width: 500px; width: 100%; box-shadow: var(--card-shadow); text-align: start;">
@@ -1793,6 +2048,16 @@
 
     const translations = {
   "ar": {
+    "settingsBtn": "الإعدادات",
+    "settingsTitle": "إعدادات التطبيق",
+    "tabUI": "🎨 الواجهة",
+    "tabLang": "🌐 اللغة",
+    "tabYoutube": "▶️ YouTube",
+    "tabGemini": "🤖 Gemini",
+    "tabData": "💾 البيانات",
+    "tabNotifications": "🔔 الإشعارات",
+    "tabPrivacy": "🔒 الخصوصية",
+    "tabAbout": "ℹ️ حول البرنامج",
     "appTitle": "قوائمك",
     "signIn": "دخول قوقل",
     "signOut": "خروج",
@@ -1961,6 +2226,16 @@
     "confirmDeletePlaylist": "هل أنت متأكد من رغبتك في إزالة قائمة \"{name}\" وكافة الفيديوهات التابعة لها من التطبيق فقط؟\n(لن يتم حذف أي شيء من حسابك على يوتيوب)"
   },
   "en": {
+    "settingsBtn": "Settings",
+    "settingsTitle": "App Settings",
+    "tabUI": "🎨 Interface",
+    "tabLang": "🌐 Language",
+    "tabYoutube": "▶️ YouTube",
+    "tabGemini": "🤖 Gemini",
+    "tabData": "💾 Data",
+    "tabNotifications": "🔔 Notifications",
+    "tabPrivacy": "🔒 Privacy",
+    "tabAbout": "ℹ️ About",
     "appTitle": "UrPlayLists",
     "signIn": "Sign in with Google",
     "signOut": "Sign out",
@@ -6226,7 +6501,38 @@ function renderSubGroupsPills() {
         fetchSubscriptionsFeed('videos', true);
       }
     }
+// دوال التحكم وإدارة نافذة الإعدادات الموحدة الجديدة (Phase 1)
+function openSettingsModal() {
+  const modal = document.getElementById('settingsModal');
+  if (modal) {
+    modal.style.display = 'flex';
+    switchSettingsTab('interface'); // فتح تبويب الواجهة كوضع افتراضي ومألوف
+  }
+}
 
+function closeSettingsModal() {
+  const modal = document.getElementById('settingsModal');
+  if (modal) modal.style.display = 'none';
+}
+
+function switchSettingsTab(tabId) {
+  // إزالة التنشيط عن جميع أزرار التبويبات وجميع اللوحات
+  document.querySelectorAll('.settings-tab-btn').forEach(btn => btn.classList.remove('active'));
+  document.querySelectorAll('.settings-panel').forEach(panel => panel.classList.remove('active'));
+
+  // البحث عن الزر وتنشيطه
+  const targetBtn = Array.from(document.querySelectorAll('.settings-tab-btn')).find(btn => btn.getAttribute('onclick').includes(tabId));
+  if (targetBtn) targetBtn.classList.add('active');
+
+  // تنشيط اللوحة المطابقة للتبويب المختار
+  const targetPanel = document.getElementById(`panel-${tabId}`);
+  if (targetPanel) targetPanel.classList.add('active');
+}
+
+// تصدير الدوال عالمياً للوصول الآمن من الـ HTML
+window.openSettingsModal = openSettingsModal;
+window.closeSettingsModal = closeSettingsModal;
+window.switchSettingsTab = switchSettingsTab;
 // ربط الدوال عالمياً للوصول الآمن من الـ HTML
 window.openSubGroupsModal = openSubGroupsModal;
 window.closeSubGroupsModal = closeSubGroupsModal;
