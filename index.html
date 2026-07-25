@@ -1525,12 +1525,11 @@
         <span class="logo-icon">📺</span>
         <h1 data-i18n="appTitle">مكتبة مرئيات يوتيوب</h1>
       </div>
-      <div class="header-actions">
+     <div class="header-actions">
         <!-- أزرار التراجع والإعادة المضافة بجانب تبديل اللغة 👈 -->
         <button id="undoBtn" class="btn btn-secondary btn-history" data-i18n-title="undoTitle" title="تراجع ↩️" onclick="undoAction()" disabled>↩️</button>
         <button id="redoBtn" class="btn btn-secondary btn-history" data-i18n-title="redoTitle" title="إعادة ↪️" onclick="redoAction()" disabled>↪️</button>
-        <button id="langToggleBtn" class="btn btn-secondary" title="Change language / تغيير اللغة">EN</button>
-        <button id="themeToggleBtn" class="btn btn-secondary" title="تبديل المظهر الداكن / النهاري">🌙</button>
+
         <!-- زر فتح نافذة الإعدادات الموحدة المضاف حديثاً -->
         <button id="openSettingsBtn" class="btn btn-secondary" onclick="openSettingsModal()" title="إعدادات التطبيق"><span class="icon">⚙️</span> <span data-i18n="settingsBtn">الإعدادات</span></button>
         <button id="googleSignInBtn" class="btn btn-primary" onclick="handleGoogleSignIn()"><span class="icon">🔐</span> <span data-i18n="signIn">دخول قوقل</span></button>
@@ -1678,12 +1677,24 @@
         <div class="settings-body">
           <!-- تبويب: الواجهة -->
           <div id="panel-interface" class="settings-panel active">
-            <p class="settings-placeholder-text">🎨 قسم إعدادات الواجهة والمظهر والموضوعات النشطة.. سيتم نقل خيارات الثيم وتنسيقاته هنا في الخطوة القادمة.</p>
+            <div class="input-group">
+              <label for="settingsThemeSelect" data-i18n="themeSelectLabel">🎨 مظهر التطبيق (App Theme)</label>
+              <select id="settingsThemeSelect" onchange="applyTheme(this.value)">
+                <option value="light">☀️ مظهر نهاري (Light Mode)</option>
+                <option value="dark">🌙 مظهر داكن (Dark Mode)</option>
+              </select>
+            </div>
           </div>
 
           <!-- تبويب: اللغة -->
           <div id="panel-language" class="settings-panel">
-            <p class="settings-placeholder-text">🌐 قسم إعدادات اللغة الافتراضية للتطبيق وترجمات الواجهات.. سيتم نقل مفتاح اللغة هنا لاحقاً.</p>
+            <div class="input-group">
+              <label for="settingsLangSelect" data-i18n="langSelectLabel">🌐 لغة الواجهة (App Language)</label>
+              <select id="settingsLangSelect" onchange="setLanguage(this.value)">
+                <option value="ar">العربية (Arabic)</option>
+                <option value="en">English</option>
+              </select>
+            </div>
           </div>
 
           <!-- تبويب: يوتيوب -->
@@ -2019,14 +2030,11 @@
   <script>
     function applyTheme(theme) {
       document.documentElement.setAttribute('data-theme', theme);
-      try { localStorage.setItem('appTheme', theme); } catch (e) { /* تجاهل: قد يكون التخزين معطّلاً */ }
-      const btn = document.getElementById('themeToggleBtn');
-      if (btn) btn.textContent = theme === 'light' ? '🌙' : '☀️';
-    }
-
-    function toggleTheme() {
-      const current = document.documentElement.getAttribute('data-theme') || 'light';
-      applyTheme(current === 'light' ? 'dark' : 'light');
+      try { localStorage.setItem('appTheme', theme); } catch (e) { /* تجاهل */ }
+      
+      // مزامنة اختيار القائمة المنسدلة داخل نافذة الإعدادات ليبقى مطابقاً للواقع
+      const select = document.getElementById('settingsThemeSelect');
+      if (select) select.value = theme;
     }
 
     // تطبيق المظهر المحفوظ فوراً عند تحميل الصفحة (الافتراضي: نهاري)
@@ -2050,6 +2058,8 @@
   "ar": {
     "settingsBtn": "الإعدادات",
     "settingsTitle": "إعدادات التطبيق",
+    "themeSelectLabel": "🎨 اختر مظهر التطبيق المناسب لك:",
+    "langSelectLabel": "🌐 اختر لغة واجهة التطبيق:",
     "tabUI": "🎨 الواجهة",
     "tabLang": "🌐 اللغة",
     "tabYoutube": "▶️ YouTube",
@@ -2228,6 +2238,8 @@
   "en": {
     "settingsBtn": "Settings",
     "settingsTitle": "App Settings",
+    "themeSelectLabel": "🎨 Choose App Theme Style:",
+    "langSelectLabel": "🌐 Choose App Interface Language:",
     "tabUI": "🎨 Interface",
     "tabLang": "🌐 Language",
     "tabYoutube": "▶️ YouTube",
@@ -2430,10 +2442,10 @@
       document.querySelectorAll('[data-i18n-ph]').forEach(el => { el.setAttribute('placeholder', t(el.getAttribute('data-i18n-ph'))); });
       document.querySelectorAll('[data-i18n-title]').forEach(el => { el.setAttribute('title', t(el.getAttribute('data-i18n-title'))); });
 
-      const langBtn = document.getElementById('langToggleBtn');
-      if (langBtn) langBtn.textContent = currentLang === 'ar' ? 'EN' : 'AR';
+      // مزامنة اختيار قائمة اللغة في نافذة الإعدادات
+      const langSelect = document.getElementById('settingsLangSelect');
+      if (langSelect) langSelect.value = currentLang;
     }
-
     // تحديث كامل يشمل أيضاً إعادة بناء العناصر الديناميكية (البطاقات/القوائم المنسدلة)؛
     // يُستخدم فقط بعد جهوزية حالة التطبيق (أي عند تبديل اللغة وقت التشغيل من المستخدم)
     function applyTranslations() {
@@ -2588,10 +2600,7 @@
     const googleSignOutBtn = document.getElementById('googleSignOutBtn');
     const googleClientId = document.getElementById('googleClientId');
 
-    // زرّا تبديل المظهر (داكن/نهاري) واللغة (عربي/إنجليزي) في الرأس
-    const themeToggleBtn = document.getElementById('themeToggleBtn');
-    const langToggleBtn = document.getElementById('langToggleBtn');
-
+    
     // لوحة الحالة الموحدة
     const globalImportStatusContainer = document.getElementById('globalImportStatusContainer');
     const globalImportStatus = document.getElementById('globalImportStatus');
@@ -2649,9 +2658,7 @@
 
       layoutToggleBtn.addEventListener('click', () => { toggleLayout(); });
       bulkEditModeBtn.addEventListener('click', toggleBulkEditMode);
-      themeToggleBtn.addEventListener('click', toggleTheme);
-      langToggleBtn.addEventListener('click', toggleLanguage);
-
+      
       // كود إظهار وإخفاء الفلاتر عند الضغط على الزر الجديد
       const filterToggleBtn = document.getElementById('filterToggleBtn');
       const filtersRow = document.getElementById('filtersRow');
