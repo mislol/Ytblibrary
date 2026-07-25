@@ -1532,7 +1532,6 @@
 
         <!-- زر فتح نافذة الإعدادات الموحدة المضاف حديثاً -->
         <button id="openSettingsBtn" class="btn btn-secondary" onclick="openSettingsModal()" title="إعدادات التطبيق"><span class="icon">⚙️</span> <span data-i18n="settingsBtn">الإعدادات</span></button>
-        <button id="googleSignInBtn" class="btn btn-primary" onclick="handleGoogleSignIn()"><span class="icon">🔐</span> <span data-i18n="signIn">دخول قوقل</span></button>
         
         <!-- القائمة المنسدلة للتحديث السحابي المضافة حديثاً في الأعلى -->
         <div class="header-dropdown-sync" id="syncDropdownGroup" style="position: relative; display: none;">
@@ -1543,7 +1542,6 @@
           </ul>
         </div>
 
-        <button id="googleSignOutBtn" class="btn btn-secondary" style="display: none;" onclick="handleGoogleSignOut()"><span class="icon">🔓</span> <span data-i18n="signOut">خروج</span></button>
         <button id="bulkEditModeBtn" class="btn btn-secondary" style="color: var(--gold-color);"><span class="icon">⚙️</span> <span data-i18n="bulkEdit">تعديل جماعي</span></button>
 
         <!-- قائمة الأدوات المنسدلة: تجمع استيراد/تحديث التوقيتات/تصدير/مسح بدل تشتيتها كأزرار منفصلة -->
@@ -1584,16 +1582,7 @@
         </div>
       </div>
 
-      <!-- معرف عميل قوقل للاستيراد السحابي والمزامنة -->
-      <div class="input-group" style="margin-top: 20px;">
-        <label for="googleClientId" data-i18n="googleClientIdLabel">🔐 معرف عميل قوقل (Google OAuth Client ID)</label>
-        <input type="text" id="googleClientId" data-i18n-ph="googleClientIdPlaceholder" placeholder="أدخل معرف OAuth Client ID الخاص بك...">
-        <div style="margin-top: 8px; display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
-          <button id="testGoogleClientBtn" class="btn btn-secondary" style="font-size: 0.8rem; padding: 6px 12px;" onclick="testGoogleClientId()"><span data-i18n="testGoogleClientBtn">⚡ فحص معرف عميل قوقل</span></button>
-          <span id="googleClientIdTestStatus" style="font-size: 0.85rem; font-weight: 600;"></span>
-        </div>
-      </div>
-
+      
       <!-- استيراد ملف CSV / نص يدوي -->
       <div style="margin-top: 25px; border-top: 1px solid var(--bg-tertiary); padding-top: 20px;">
         <h3 style="font-size: 1rem; margin-bottom: 10px; display: flex; align-items: center; gap: 8px;" data-i18n="importSectionTitle">📄 استيراد ملف CSV / نص يدوي</h3>
@@ -1699,7 +1688,26 @@
 
           <!-- تبويب: يوتيوب -->
           <div id="panel-youtube" class="settings-panel">
-            <p class="settings-placeholder-text">▶️ قسم إعدادات الاتصال وحساب Google والمزامنة مع يوتيوب سحابياً.. سيتم دمج خيارات المزامنة ومعرفات العميل والتوثيق هنا قريباً.</p>
+            <!-- حقل معرف العميل لقوقل -->
+            <div class="input-group">
+              <label for="googleClientId" data-i18n="googleClientIdLabel">🔐 معرف عميل قوقل (Google OAuth Client ID)</label>
+              <input type="text" id="googleClientId" data-i18n-ph="googleClientIdPlaceholder" placeholder="أدخل معرف OAuth Client ID الخاص بك...">
+              <div style="margin-top: 8px; display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+                <button id="testGoogleClientBtn" class="btn btn-secondary" style="font-size: 0.8rem; padding: 6px 12px;" onclick="testGoogleClientId()"><span data-i18n="testGoogleClientBtn">⚡ فحص معرف عميل قوقل</span></button>
+                <span id="googleClientIdTestStatus" style="font-size: 0.85rem; font-weight: 600;"></span>
+              </div>
+            </div>
+
+            <!-- أزرار تسجيل الدخول وحالة الاتصال -->
+            <div style="margin-top: 25px; border-top: 1px solid var(--bg-tertiary); padding-top: 20px;">
+              <h4 style="font-size: 0.95rem; font-weight: 700; margin-bottom: 12px;" data-i18n="authSectionTitle">🔐 حالة ربط حساب Google</h4>
+              <p style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 15px;" data-i18n="authSectionDesc">يتطلب ربط حسابك لتتمكن من مزامنة قوائم التشغيل والاشتراكات سحابياً والوصول للنسخ الاحتياطية على Google Drive.</p>
+              
+              <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+                <button id="googleSignInBtn" class="btn btn-primary" onclick="handleGoogleSignIn()"><span class="icon">🔐</span> <span data-i18n="signIn">دخول قوقل</span></button>
+                <button id="googleSignOutBtn" class="btn btn-secondary" style="display: none;" onclick="handleGoogleSignOut()"><span class="icon">🔓</span> <span data-i18n="signOut">خروج</span></button>
+              </div>
+            </div>
           </div>
 
           <!-- تبويب: جيميناي -->
@@ -2060,6 +2068,8 @@
     "settingsTitle": "إعدادات التطبيق",
     "themeSelectLabel": "🎨 اختر مظهر التطبيق المناسب لك:",
     "langSelectLabel": "🌐 اختر لغة واجهة التطبيق:",
+    "authSectionTitle": "🔐 حالة ربط حساب Google",
+    "authSectionDesc": "يتطلب ربط حسابك لتتمكن من مزامنة قوائم التشغيل والاشتراكات سحابياً والوصول للنسخ الاحتياطية على Google Drive.",
     "tabUI": "🎨 الواجهة",
     "tabLang": "🌐 اللغة",
     "tabYoutube": "▶️ YouTube",
@@ -2240,6 +2250,8 @@
     "settingsTitle": "App Settings",
     "themeSelectLabel": "🎨 Choose App Theme Style:",
     "langSelectLabel": "🌐 Choose App Interface Language:",
+    "authSectionTitle": "🔐 Google Account Integration",
+    "authSectionDesc": "Connecting your account enables seamless cloud synchronization of playlists and subscriptions, and lets you back up to Google Drive.",
     "tabUI": "🎨 Interface",
     "tabLang": "🌐 Language",
     "tabYoutube": "▶️ YouTube",
