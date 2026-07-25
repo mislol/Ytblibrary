@@ -1654,26 +1654,7 @@
   <!-- لوحة استيراد البيانات وإدارة الملفات المبسطة والموحدة -->
   <section class="import-panel" id="importPanel">
     <div class="import-container">
-      
-      <!-- إدخال مفتاح ذكاء جيميناي (Gemini API Key) -->
-      <div class="input-group">
-        <label for="geminiApiKey" data-i18n="geminiKeyLabel">🤖 مفتاح ذكاء جيميناي (Gemini API Key)</label>
-        <input type="text" id="geminiApiKey" data-i18n-ph="geminiKeyPlaceholder" placeholder="أدخل مفتاح Gemini الخاص بك...">
-        
-        <!-- مربع تفعيل/تعطيل ذكاء جيميناي الجديد والمطلوب -->
-        <div class="import-options" style="display: flex; align-items: center; gap: 8px; margin-top: 10px; background: var(--bg-primary); padding: 8px 12px; border-radius: 8px; border: 1px solid var(--bg-tertiary);">
-          <input type="checkbox" id="enableAutoClassifyCheck" checked style="width:16px; height:16px; accent-color: var(--accent-color); cursor:pointer;">
-          <label for="enableAutoClassifyCheck" style="font-size:0.85rem; cursor:pointer; user-select:none;" data-i18n="autoClassifyLabel">🤖 تفعيل التصنيف التلقائي الذكي بواسطة Gemini عند المزامنة والاستيراد</label>
-        </div>
 
-        <div style="margin-top: 12px; display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
-          <button id="testGeminiBtn" class="btn btn-secondary" style="font-size: 0.8rem; padding: 6px 12px;"><span data-i18n="testGeminiBtn">⚡ فحص اتصال الذكاء الاصطناعي</span></button>
-          <button id="classifyCurrentLibraryBtn" class="btn btn-gold" style="font-size: 0.8rem; padding: 6px 12px;" onclick="startManualClassification()"><span data-i18n="classifyLibraryBtn">🏷️ تصنيف الفيديوهات غير المصنفة</span></button>
-          <span id="geminiTestStatus" style="font-size: 0.85rem; font-weight: 600;"></span>
-        </div>
-      </div>
-
-      
       <!-- استيراد ملف CSV / نص يدوي -->
       <div style="margin-top: 25px; border-top: 1px solid var(--bg-tertiary); padding-top: 20px;">
         <h3 style="font-size: 1rem; margin-bottom: 10px; display: flex; align-items: center; gap: 8px;" data-i18n="importSectionTitle">📄 استيراد ملف CSV / نص يدوي</h3>
@@ -1813,7 +1794,23 @@
 
           <!-- تبويب: جيميناي -->
           <div id="panel-gemini" class="settings-panel">
-            <p class="settings-placeholder-text">🤖 قسم إعدادات الذكاء الاصطناعي ومفتاح Gemini لتصنيف قوائمك بشكل تلقائي ذكي.. سيتم نقل الحقول وخيارات التحكم لتنظيف الواجهة العامة قريباً.</p>
+            <div class="input-group">
+              <label for="geminiApiKey" data-i18n="geminiKeyLabel">🤖 مفتاح ذكاء جيميناي (Gemini API Key)</label>
+              <input type="text" id="geminiApiKey" data-i18n-ph="geminiKeyPlaceholder" placeholder="أدخل مفتاح Gemini الخاص بك...">
+              
+              <!-- مربع تفعيل/تعطيل ذكاء جيميناي التلقائي -->
+              <div class="import-options" style="display: flex; align-items: center; gap: 8px; margin-top: 15px; background: var(--bg-primary); padding: 12px; border-radius: 8px; border: 1px solid var(--bg-tertiary);">
+                <input type="checkbox" id="enableAutoClassifyCheck" checked style="width:16px; height:16px; accent-color: var(--accent-color); cursor:pointer;">
+                <label for="enableAutoClassifyCheck" style="font-size:0.85rem; cursor:pointer; user-select:none;" data-i18n="autoClassifyLabel">🤖 تفعيل التصنيف التلقائي الذكي بواسطة Gemini عند المزامنة والاستيراد</label>
+              </div>
+
+              <!-- أزرار فحص وفحص الاتصال اليدوي بالذكاء الاصطناعي -->
+              <div style="margin-top: 20px; display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+                <button id="testGeminiBtn" class="btn btn-secondary" style="font-size: 0.8rem; padding: 6px 12px;"><span data-i18n="testGeminiBtn">⚡ فحص اتصال الذكاء الاصطناعي</span></button>
+                <button id="classifyCurrentLibraryBtn" class="btn btn-gold" style="font-size: 0.8rem; padding: 6px 12px;" onclick="startManualClassification()"><span data-i18n="classifyLibraryBtn">🏷️ تصنيف الفيديوهات غير المصنفة</span></button>
+                <span id="geminiTestStatus" style="font-size: 0.85rem; font-weight: 600;"></span>
+              </div>
+            </div>
           </div>
 
           <!-- تبويب: البيانات -->
