@@ -1346,8 +1346,8 @@
   }
 }  
 
-     /* =====================================================================
-       تنسيقات نافذة الإعدادات الموحدة الجديدة (Phase 1)
+   /* =====================================================================
+       تنسيقات نافذة الإعدادات الموحدة الجديدة (تحديث: Drill-down للهواتف)
        ===================================================================== */
     .settings-modal {
       position: fixed;
@@ -1356,7 +1356,7 @@
       width: 100%;
       height: 100%;
       background-color: rgba(0, 0, 0, 0.85);
-      z-index: 1200; /* أعلى من التعديل الجماعي وكافة النوافذ الحالية */
+      z-index: 1200;
       display: none;
       align-items: center;
       justify-content: center;
@@ -1374,9 +1374,9 @@
       display: flex;
       overflow: hidden;
       box-shadow: var(--card-shadow-hover);
+      position: relative; /* ضروري كمرجع لانزلاق شاشات الجوال */
     }
 
-    /* الشريط الجانبي للإعدادات */
     .settings-sidebar {
       width: 220px;
       background-color: var(--bg-primary);
@@ -1425,7 +1425,6 @@
       color: var(--accent-color);
     }
 
-    /* الجزء الخاص بعرض المحتوى وتفاصيله */
     .settings-content-wrapper {
       flex: 1;
       display: flex;
@@ -1459,13 +1458,16 @@
       color: var(--danger-color);
     }
 
+    .settings-back-btn {
+      display: none; /* مخفي دائماً في الكمبيوتر */
+    }
+
     .settings-body {
       flex: 1;
       padding: 24px;
       overflow-y: auto;
     }
 
-    /* حاويات الأقسام الداخلية */
     .settings-panel {
       display: none;
     }
@@ -1486,32 +1488,93 @@
       line-height: 1.6;
     }
 
-    /* التجاوب السلس مع شاشات الهواتف المحمولة */
+    /* =====================================================================
+       تجاوب الهواتف (نمط WhatsApp Drill-down لشاشة كاملة)
+       ===================================================================== */
     @media (max-width: 680px) {
+      .settings-modal {
+        padding: 0;
+      }
+
       .settings-container {
-        flex-direction: column;
-        height: 90vh;
+        width: 100vw;
+        height: 100vh;
+        max-height: 100vh;
+        border-radius: 0;
+        border: none;
       }
+
+      /* إدارة إخفاء وتبادل ظهور القائمة والمحتوى عبر كلاس show-content */
       .settings-sidebar {
-        width: 100%;
-        flex-direction: row;
-        overflow-x: auto;
+        width: 100% !important;
         border-inline-end: none;
-        border-bottom: 1px solid var(--bg-tertiary);
-        padding: 10px;
-        gap: 8px;
-        scrollbar-width: none;
+        height: 100%;
+        display: flex !important;
       }
-      .settings-sidebar::-webkit-scrollbar {
-        display: none;
+
+      .settings-content-wrapper {
+        display: none; /* مخفي افتراضياً لبدء تصفح القائمة */
+        width: 100%;
+        height: 100%;
+        position: absolute;
+        top: 0;
+        left: 0;
+        z-index: 10;
+        background-color: var(--bg-secondary);
       }
-      .settings-sidebar-header {
-        display: none;
+
+      /* عند تصفح لوحة فرعية (تفعيل الكلاس) */
+      .settings-container.show-content .settings-sidebar {
+        display: none !important;
       }
+
+      .settings-container.show-content .settings-content-wrapper {
+        display: flex !important;
+      }
+
+      /* زر العودة الذكي في الجوال */
+      .settings-back-btn {
+        display: inline-flex;
+        background: none;
+        border: none;
+        color: var(--text-primary);
+        font-size: 1.4rem;
+        cursor: pointer;
+        padding: 0 5px;
+        align-items: center;
+        justify-content: center;
+      }
+
+      /* سهم العودة يدعم الاتجاه التلقائي بمحاذاة اتجاه الكتابة (عربي/إنجليزي) */
+      .settings-back-btn::before {
+        content: '→'; /* افتراضي للعربية RTL */
+      }
+      [dir="ltr"] .settings-back-btn::before {
+        content: '←'; /* للإنجليزية LTR */
+      }
+
+      /* تنسيق التبويبات كقائمة واتساب مسطحة ومريحة للأصابع */
       .settings-tab-btn {
-        white-space: nowrap;
-        padding: 8px 12px;
-        font-size: 0.8rem;
+        width: 100%;
+        padding: 14px 15px;
+        border-bottom: 1px solid var(--bg-tertiary);
+        border-radius: 0;
+        justify-content: space-between;
+      }
+
+      .settings-tab-btn::after {
+        content: '◀'; /* يشير لليسار في اتجاه القراءة العربي */
+        font-size: 0.7rem;
+        color: var(--text-tertiary);
+      }
+      [dir="ltr"] .settings-tab-btn::after {
+        content: '▶'; /* يشير لليمين في اتجاه القراءة الإنجليزي */
+      }
+
+      /* إلغاء تلوين التبويب النشط في الجوال لمحاكاة التطبيقات الأصلية */
+      .settings-tab-btn.active {
+        background-color: transparent;
+        color: var(--text-primary);
       }
     }
   </style>
@@ -1659,7 +1722,11 @@
       <!-- اللوحة الرئيسية لعرض المحتويات -->
       <div class="settings-content-wrapper">
         <header class="settings-header">
-          <h3 id="settingsModalTitle" data-i18n="settingsTitle">إعدادات التطبيق</h3>
+          <div style="display: flex; align-items: center; gap: 10px;">
+            <!-- زر العودة للجوال فقط (RTL/LTR) -->
+            <button class="settings-back-btn" onclick="goBackToSettingsMenu()"></button>
+            <h3 id="settingsModalTitle" data-i18n="settingsTitle">إعدادات التطبيق</h3>
+          </div>
           <button class="settings-close-btn" onclick="closeSettingsModal()">✕</button>
         </header>
         
@@ -6520,12 +6587,23 @@ function renderSubGroupsPills() {
         fetchSubscriptionsFeed('videos', true);
       }
     }
-// دوال التحكم وإدارة نافذة الإعدادات الموحدة الجديدة (Phase 1)
+// دوال التحكم وإدارة نافذة الإعدادات الموحدة المحدثة (تحديث: Drill-down للهواتف)
 function openSettingsModal() {
   const modal = document.getElementById('settingsModal');
   if (modal) {
     modal.style.display = 'flex';
-    switchSettingsTab('interface'); // فتح تبويب الواجهة كوضع افتراضي ومألوف
+    
+    // إزالة حالة عرض المحتوى لنضمن البدء بالقائمة الرئيسية للإعدادات في الجوال
+    const container = document.querySelector('.settings-container');
+    if (container) container.classList.remove('show-content');
+
+    // على الحاسوب فقط: نفتح تبويب الواجهة تلقائياً وبشكل افتراضي
+    if (window.innerWidth > 680) {
+      switchSettingsTab('interface');
+    } else {
+      // على الهاتف: نزيل التنشيط اللوني الافتراضي لنعرض القائمة فقط
+      document.querySelectorAll('.settings-tab-btn').forEach(btn => btn.classList.remove('active'));
+    }
   }
 }
 
@@ -6546,12 +6624,26 @@ function switchSettingsTab(tabId) {
   // تنشيط اللوحة المطابقة للتبويب المختار
   const targetPanel = document.getElementById(`panel-${tabId}`);
   if (targetPanel) targetPanel.classList.add('active');
+
+  // على الهاتف: عند تصفح أي تبويب، نظهر لوحة المحتوى ونخفي القائمة
+  const container = document.querySelector('.settings-container');
+  if (container && window.innerWidth <= 680) {
+    container.classList.add('show-content');
+  }
+}
+
+function goBackToSettingsMenu() {
+  const container = document.querySelector('.settings-container');
+  if (container) {
+    container.classList.remove('show-content');
+  }
 }
 
 // تصدير الدوال عالمياً للوصول الآمن من الـ HTML
 window.openSettingsModal = openSettingsModal;
 window.closeSettingsModal = closeSettingsModal;
 window.switchSettingsTab = switchSettingsTab;
+window.goBackToSettingsMenu = goBackToSettingsMenu;
 // ربط الدوال عالمياً للوصول الآمن من الـ HTML
 window.openSubGroupsModal = openSubGroupsModal;
 window.closeSubGroupsModal = closeSubGroupsModal;
