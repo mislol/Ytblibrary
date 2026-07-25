@@ -1488,12 +1488,40 @@
       line-height: 1.6;
     }
 
+    /* زر إغلاق القائمة الرئيسية للإعدادات في الجوال */
+    .settings-close-sidebar-btn {
+      display: none; /* مخفي دائماً في الكمبيوتر */
+    }
+
     /* =====================================================================
        تجاوب الهواتف (نمط WhatsApp Drill-down لشاشة كاملة)
        ===================================================================== */
     @media (max-width: 680px) {
       .settings-modal {
         padding: 0;
+      }
+
+      /* تنسيق هيدر القائمة الرئيسية في الجوال */
+      .settings-sidebar-header {
+        padding: 15px 20px;
+        border-bottom: 1px solid var(--bg-tertiary);
+        margin-bottom: 0;
+        background-color: var(--bg-secondary);
+      }
+
+      /* إظهار وتنسيق زر الإغلاق في الجوال */
+      .settings-close-sidebar-btn {
+        display: inline-flex;
+        background: none;
+        border: none;
+        font-size: 1.2rem;
+        cursor: pointer;
+        color: var(--text-secondary);
+        transition: color var(--transition-speed);
+        padding: 5px;
+      }
+      .settings-close-sidebar-btn:hover {
+        color: var(--danger-color);
       }
 
       .settings-container {
@@ -1690,8 +1718,14 @@
       <!-- الشريط الجانبي (أقسام الإعدادات) -->
       <aside class="settings-sidebar">
         <div class="settings-sidebar-header">
-          <span>⚙️</span>
-          <span data-i18n="settingsTitle">إعدادات التطبيق</span>
+          <div style="display: flex; align-items: center; justify-content: space-between; width: 100%;">
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <span>⚙️</span>
+              <span data-i18n="settingsTitle">إعدادات التطبيق</span>
+            </div>
+            <!-- زر إغلاق الإعدادات للجوال فقط في القائمة الرئيسية -->
+            <button class="settings-close-sidebar-btn" onclick="closeSettingsModal()">✕</button>
+          </div>
         </div>
         <button class="settings-tab-btn active" onclick="switchSettingsTab('interface')">
           <span data-i18n="tabUI">🎨 الواجهة</span>
@@ -6593,6 +6627,10 @@ function openSettingsModal() {
   if (modal) {
     modal.style.display = 'flex';
     
+    // إخفاء شريط التنقل السفلي للهواتف تماماً لمنع ظهوره وتداخله أثناء السحب
+    const bottomNav = document.querySelector('.bottom-nav');
+    if (bottomNav) bottomNav.style.setProperty('display', 'none', 'important');
+
     // إزالة حالة عرض المحتوى لنضمن البدء بالقائمة الرئيسية للإعدادات في الجوال
     const container = document.querySelector('.settings-container');
     if (container) container.classList.remove('show-content');
@@ -6609,7 +6647,15 @@ function openSettingsModal() {
 
 function closeSettingsModal() {
   const modal = document.getElementById('settingsModal');
-  if (modal) modal.style.display = 'none';
+  if (modal) {
+    modal.style.display = 'none';
+    
+    // إعادة إظهار شريط التنقل السفلي للهواتف بمجرد إغلاق نافذة الإعدادات
+    const bottomNav = document.querySelector('.bottom-nav');
+    if (bottomNav && window.innerWidth <= 768) {
+      bottomNav.style.setProperty('display', 'flex', 'important');
+    }
+  }
 }
 
 function switchSettingsTab(tabId) {
