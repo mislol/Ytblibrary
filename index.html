@@ -1346,265 +1346,7 @@
   }
 }  
 
-   /* =====================================================================
-       تنسيقات نافذة الإعدادات الموحدة الجديدة (تحديث: Drill-down للهواتف)
-       ===================================================================== */
-    .settings-modal {
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      background-color: rgba(0, 0, 0, 0.85);
-      z-index: 1200;
-      display: none;
-      align-items: center;
-      justify-content: center;
-      padding: 20px;
-    }
-
-    .settings-container {
-      background-color: var(--bg-secondary);
-      border: 1px solid var(--bg-tertiary);
-      border-radius: var(--border-radius);
-      width: 850px;
-      max-width: 100%;
-      height: 600px;
-      max-height: calc(100vh - 40px);
-      display: flex;
-      overflow: hidden;
-      box-shadow: var(--card-shadow-hover);
-      position: relative; /* ضروري كمرجع لانزلاق شاشات الجوال */
-    }
-
-    .settings-sidebar {
-      width: 220px;
-      background-color: var(--bg-primary);
-      border-inline-end: 1px solid var(--bg-tertiary);
-      display: flex;
-      flex-direction: column;
-      padding: 15px 10px;
-      gap: 6px;
-    }
-
-    .settings-sidebar-header {
-      padding: 10px;
-      font-weight: 800;
-      font-size: 1.05rem;
-      color: var(--text-primary);
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      margin-bottom: 10px;
-    }
-
-    .settings-tab-btn {
-      background: transparent;
-      border: none;
-      color: var(--text-secondary);
-      padding: 10px 15px;
-      border-radius: var(--border-radius-sm);
-      font-family: 'Cairo', sans-serif;
-      font-size: 0.9rem;
-      font-weight: 700;
-      text-align: start;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      transition: background-color var(--transition-speed), color var(--transition-speed);
-    }
-
-    .settings-tab-btn:hover {
-      background-color: var(--bg-tertiary);
-      color: var(--text-primary);
-    }
-
-    .settings-tab-btn.active {
-      background-color: var(--accent-soft);
-      color: var(--accent-color);
-    }
-
-    .settings-content-wrapper {
-      flex: 1;
-      display: flex;
-      flex-direction: column;
-    }
-
-    .settings-header {
-      padding: 15px 20px;
-      border-bottom: 1px solid var(--bg-tertiary);
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-    }
-
-    .settings-header h3 {
-      font-size: 1.1rem;
-      font-weight: 700;
-      color: var(--text-primary);
-    }
-
-    .settings-close-btn {
-      background: none;
-      border: none;
-      font-size: 1.2rem;
-      cursor: pointer;
-      color: var(--text-secondary);
-      transition: color var(--transition-speed);
-    }
-
-    .settings-close-btn:hover {
-      color: var(--danger-color);
-    }
-
-    .settings-back-btn {
-      display: none; /* مخفي دائماً في الكمبيوتر */
-    }
-
-    .settings-body {
-      flex: 1;
-      padding: 24px;
-      overflow-y: auto;
-    }
-
-    .settings-panel {
-      display: none;
-    }
-
-    .settings-panel.active {
-      display: block;
-      animation: fadeInSettings 0.25s ease-out;
-    }
-
-    @keyframes fadeInSettings {
-      from { opacity: 0; transform: translateY(4px); }
-      to { opacity: 1; transform: translateY(0); }
-    }
-
-    .settings-placeholder-text {
-      color: var(--text-secondary);
-      font-size: 0.95rem;
-      line-height: 1.6;
-    }
-
-    /* زر إغلاق القائمة الرئيسية للإعدادات في الجوال */
-    .settings-close-sidebar-btn {
-      display: none; /* مخفي دائماً في الكمبيوتر */
-    }
-
-    /* =====================================================================
-       تجاوب الهواتف (نمط WhatsApp Drill-down لشاشة كاملة)
-       ===================================================================== */
-    @media (max-width: 680px) {
-      .settings-modal {
-        padding: 0;
-      }
-
-      /* تنسيق هيدر القائمة الرئيسية في الجوال */
-      .settings-sidebar-header {
-        padding: 15px 20px;
-        border-bottom: 1px solid var(--bg-tertiary);
-        margin-bottom: 0;
-        background-color: var(--bg-secondary);
-      }
-
-      /* إظهار وتنسيق زر الإغلاق في الجوال */
-      .settings-close-sidebar-btn {
-        display: inline-flex;
-        background: none;
-        border: none;
-        font-size: 1.2rem;
-        cursor: pointer;
-        color: var(--text-secondary);
-        transition: color var(--transition-speed);
-        padding: 5px;
-      }
-      .settings-close-sidebar-btn:hover {
-        color: var(--danger-color);
-      }
-
-      .settings-container {
-        width: 100vw;
-        height: 100vh;
-        max-height: 100vh;
-        border-radius: 0;
-        border: none;
-      }
-
-      /* إدارة إخفاء وتبادل ظهور القائمة والمحتوى عبر كلاس show-content */
-      .settings-sidebar {
-        width: 100% !important;
-        border-inline-end: none;
-        height: 100%;
-        display: flex !important;
-      }
-
-      .settings-content-wrapper {
-        display: none; /* مخفي افتراضياً لبدء تصفح القائمة */
-        width: 100%;
-        height: 100%;
-        position: absolute;
-        top: 0;
-        left: 0;
-        z-index: 10;
-        background-color: var(--bg-secondary);
-      }
-
-      /* عند تصفح لوحة فرعية (تفعيل الكلاس) */
-      .settings-container.show-content .settings-sidebar {
-        display: none !important;
-      }
-
-      .settings-container.show-content .settings-content-wrapper {
-        display: flex !important;
-      }
-
-      /* زر العودة الذكي في الجوال */
-      .settings-back-btn {
-        display: inline-flex;
-        background: none;
-        border: none;
-        color: var(--text-primary);
-        font-size: 1.4rem;
-        cursor: pointer;
-        padding: 0 5px;
-        align-items: center;
-        justify-content: center;
-      }
-
-      /* سهم العودة يدعم الاتجاه التلقائي بمحاذاة اتجاه الكتابة (عربي/إنجليزي) */
-      .settings-back-btn::before {
-        content: '→'; /* افتراضي للعربية RTL */
-      }
-      [dir="ltr"] .settings-back-btn::before {
-        content: '←'; /* للإنجليزية LTR */
-      }
-
-      /* تنسيق التبويبات كقائمة واتساب مسطحة ومريحة للأصابع */
-      .settings-tab-btn {
-        width: 100%;
-        padding: 14px 15px;
-        border-bottom: 1px solid var(--bg-tertiary);
-        border-radius: 0;
-        justify-content: space-between;
-      }
-
-      .settings-tab-btn::after {
-        content: '◀'; /* يشير لليسار في اتجاه القراءة العربي */
-        font-size: 0.7rem;
-        color: var(--text-tertiary);
-      }
-      [dir="ltr"] .settings-tab-btn::after {
-        content: '▶'; /* يشير لليمين في اتجاه القراءة الإنجليزي */
-      }
-
-      /* إلغاء تلوين التبويب النشط في الجوال لمحاكاة التطبيقات الأصلية */
-      .settings-tab-btn.active {
-        background-color: transparent;
-        color: var(--text-primary);
-      }
-    }
+     
   </style>
 </head>
 <body>
@@ -1616,13 +1358,14 @@
         <span class="logo-icon">📺</span>
         <h1 data-i18n="appTitle">مكتبة مرئيات يوتيوب</h1>
       </div>
-     <div class="header-actions">
+      <div class="header-actions">
         <!-- أزرار التراجع والإعادة المضافة بجانب تبديل اللغة 👈 -->
         <button id="undoBtn" class="btn btn-secondary btn-history" data-i18n-title="undoTitle" title="تراجع ↩️" onclick="undoAction()" disabled>↩️</button>
         <button id="redoBtn" class="btn btn-secondary btn-history" data-i18n-title="redoTitle" title="إعادة ↪️" onclick="redoAction()" disabled>↪️</button>
+        <button id="langToggleBtn" class="btn btn-secondary" title="Change language / تغيير اللغة">EN</button>
+        <button id="themeToggleBtn" class="btn btn-secondary" title="تبديل المظهر الداكن / النهاري">🌙</button>
 
-        <!-- زر فتح نافذة الإعدادات الموحدة المضاف حديثاً -->
-        <button id="openSettingsBtn" class="btn btn-secondary" onclick="openSettingsModal()" title="إعدادات التطبيق"><span class="icon">⚙️</span> <span data-i18n="settingsBtn">الإعدادات</span></button>
+        <button id="googleSignInBtn" class="btn btn-primary" onclick="handleGoogleSignIn()"><span class="icon">🔐</span> <span data-i18n="signIn">دخول قوقل</span></button>
         
         <!-- القائمة المنسدلة للتحديث السحابي المضافة حديثاً في الأعلى -->
         <div class="header-dropdown-sync" id="syncDropdownGroup" style="position: relative; display: none;">
@@ -1633,6 +1376,7 @@
           </ul>
         </div>
 
+        <button id="googleSignOutBtn" class="btn btn-secondary" style="display: none;" onclick="handleGoogleSignOut()"><span class="icon">🔓</span> <span data-i18n="signOut">خروج</span></button>
         <button id="bulkEditModeBtn" class="btn btn-secondary" style="color: var(--gold-color);"><span class="icon">⚙️</span> <span data-i18n="bulkEdit">تعديل جماعي</span></button>
 
         <!-- قائمة الأدوات المنسدلة: تجمع استيراد/تحديث التوقيتات/تصدير/مسح بدل تشتيتها كأزرار منفصلة -->
@@ -1654,6 +1398,34 @@
   <!-- لوحة استيراد البيانات وإدارة الملفات المبسطة والموحدة -->
   <section class="import-panel" id="importPanel">
     <div class="import-container">
+      
+      <!-- إدخال مفتاح ذكاء جيميناي (Gemini API Key) -->
+      <div class="input-group">
+        <label for="geminiApiKey" data-i18n="geminiKeyLabel">🤖 مفتاح ذكاء جيميناي (Gemini API Key)</label>
+        <input type="text" id="geminiApiKey" data-i18n-ph="geminiKeyPlaceholder" placeholder="أدخل مفتاح Gemini الخاص بك...">
+        
+        <!-- مربع تفعيل/تعطيل ذكاء جيميناي الجديد والمطلوب -->
+        <div class="import-options" style="display: flex; align-items: center; gap: 8px; margin-top: 10px; background: var(--bg-primary); padding: 8px 12px; border-radius: 8px; border: 1px solid var(--bg-tertiary);">
+          <input type="checkbox" id="enableAutoClassifyCheck" checked style="width:16px; height:16px; accent-color: var(--accent-color); cursor:pointer;">
+          <label for="enableAutoClassifyCheck" style="font-size:0.85rem; cursor:pointer; user-select:none;" data-i18n="autoClassifyLabel">🤖 تفعيل التصنيف التلقائي الذكي بواسطة Gemini عند المزامنة والاستيراد</label>
+        </div>
+
+        <div style="margin-top: 12px; display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+          <button id="testGeminiBtn" class="btn btn-secondary" style="font-size: 0.8rem; padding: 6px 12px;"><span data-i18n="testGeminiBtn">⚡ فحص اتصال الذكاء الاصطناعي</span></button>
+          <button id="classifyCurrentLibraryBtn" class="btn btn-gold" style="font-size: 0.8rem; padding: 6px 12px;" onclick="startManualClassification()"><span data-i18n="classifyLibraryBtn">🏷️ تصنيف الفيديوهات غير المصنفة</span></button>
+          <span id="geminiTestStatus" style="font-size: 0.85rem; font-weight: 600;"></span>
+        </div>
+      </div>
+
+      <!-- معرف عميل قوقل للاستيراد السحابي والمزامنة -->
+      <div class="input-group" style="margin-top: 20px;">
+        <label for="googleClientId" data-i18n="googleClientIdLabel">🔐 معرف عميل قوقل (Google OAuth Client ID)</label>
+        <input type="text" id="googleClientId" data-i18n-ph="googleClientIdPlaceholder" placeholder="أدخل معرف OAuth Client ID الخاص بك...">
+        <div style="margin-top: 8px; display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+          <button id="testGoogleClientBtn" class="btn btn-secondary" style="font-size: 0.8rem; padding: 6px 12px;" onclick="testGoogleClientId()"><span data-i18n="testGoogleClientBtn">⚡ فحص معرف عميل قوقل</span></button>
+          <span id="googleClientIdTestStatus" style="font-size: 0.85rem; font-weight: 600;"></span>
+        </div>
+      </div>
 
       <!-- استيراد ملف CSV / نص يدوي -->
       <div style="margin-top: 25px; border-top: 1px solid var(--bg-tertiary); padding-top: 20px;">
@@ -1692,151 +1464,7 @@
 
     </div>
   </section>
-  <!-- ⚙️ نافذة الإعدادات الاحترافية الموحدة (Phase 1) -->
-  <div id="settingsModal" class="settings-modal" onclick="if(event.target === this) closeSettingsModal()">
-    <div class="settings-container">
-      
-      <!-- الشريط الجانبي (أقسام الإعدادات) -->
-      <aside class="settings-sidebar">
-        <div class="settings-sidebar-header">
-          <div style="display: flex; align-items: center; justify-content: space-between; width: 100%;">
-            <div style="display: flex; align-items: center; gap: 8px;">
-              <span>⚙️</span>
-              <span data-i18n="settingsTitle">إعدادات التطبيق</span>
-            </div>
-            <!-- زر إغلاق الإعدادات للجوال فقط في القائمة الرئيسية -->
-            <button class="settings-close-sidebar-btn" onclick="closeSettingsModal()">✕</button>
-          </div>
-        </div>
-        <button class="settings-tab-btn active" onclick="switchSettingsTab('interface')">
-          <span data-i18n="tabUI">🎨 الواجهة</span>
-        </button>
-        <button class="settings-tab-btn" onclick="switchSettingsTab('language')">
-          <span data-i18n="tabLang">🌐 اللغة</span>
-        </button>
-        <button class="settings-tab-btn" onclick="switchSettingsTab('youtube')">
-          <span data-i18n="tabYoutube">▶️ YouTube</span>
-        </button>
-        <button class="settings-tab-btn" onclick="switchSettingsTab('gemini')">
-          <span data-i18n="tabGemini">🤖 Gemini</span>
-        </button>
-        <button class="settings-tab-btn" onclick="switchSettingsTab('data')">
-          <span data-i18n="tabData">💾 البيانات</span>
-        </button>
-        <button class="settings-tab-btn" onclick="switchSettingsTab('notifications')">
-          <span data-i18n="tabNotifications">🔔 الإشعارات</span>
-        </button>
-        <button class="settings-tab-btn" onclick="switchSettingsTab('privacy')">
-          <span data-i18n="tabPrivacy">🔒 الخصوصية</span>
-        </button>
-        <button class="settings-tab-btn" onclick="switchSettingsTab('about')">
-          <span data-i18n="tabAbout">ℹ️ حول البرنامج</span>
-        </button>
-      </aside>
 
-      <!-- اللوحة الرئيسية لعرض المحتويات -->
-      <div class="settings-content-wrapper">
-        <header class="settings-header">
-          <div style="display: flex; align-items: center; gap: 10px;">
-            <!-- زر العودة للجوال فقط (RTL/LTR) -->
-            <button class="settings-back-btn" onclick="goBackToSettingsMenu()"></button>
-            <h3 id="settingsModalTitle" data-i18n="settingsTitle">إعدادات التطبيق</h3>
-          </div>
-          <button class="settings-close-btn" onclick="closeSettingsModal()">✕</button>
-        </header>
-        
-        <div class="settings-body">
-          <!-- تبويب: الواجهة -->
-          <div id="panel-interface" class="settings-panel active">
-            <div class="input-group">
-              <label for="settingsThemeSelect" data-i18n="themeSelectLabel">🎨 مظهر التطبيق (App Theme)</label>
-              <select id="settingsThemeSelect" onchange="applyTheme(this.value)">
-                <option value="light">☀️ مظهر نهاري (Light Mode)</option>
-                <option value="dark">🌙 مظهر داكن (Dark Mode)</option>
-              </select>
-            </div>
-          </div>
-
-          <!-- تبويب: اللغة -->
-          <div id="panel-language" class="settings-panel">
-            <div class="input-group">
-              <label for="settingsLangSelect" data-i18n="langSelectLabel">🌐 لغة الواجهة (App Language)</label>
-              <select id="settingsLangSelect" onchange="setLanguage(this.value)">
-                <option value="ar">العربية (Arabic)</option>
-                <option value="en">English</option>
-              </select>
-            </div>
-          </div>
-
-          <!-- تبويب: يوتيوب -->
-          <div id="panel-youtube" class="settings-panel">
-            <!-- حقل معرف العميل لقوقل -->
-            <div class="input-group">
-              <label for="googleClientId" data-i18n="googleClientIdLabel">🔐 معرف عميل قوقل (Google OAuth Client ID)</label>
-              <input type="text" id="googleClientId" data-i18n-ph="googleClientIdPlaceholder" placeholder="أدخل معرف OAuth Client ID الخاص بك...">
-              <div style="margin-top: 8px; display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
-                <button id="testGoogleClientBtn" class="btn btn-secondary" style="font-size: 0.8rem; padding: 6px 12px;" onclick="testGoogleClientId()"><span data-i18n="testGoogleClientBtn">⚡ فحص معرف عميل قوقل</span></button>
-                <span id="googleClientIdTestStatus" style="font-size: 0.85rem; font-weight: 600;"></span>
-              </div>
-            </div>
-
-            <!-- أزرار تسجيل الدخول وحالة الاتصال -->
-            <div style="margin-top: 25px; border-top: 1px solid var(--bg-tertiary); padding-top: 20px;">
-              <h4 style="font-size: 0.95rem; font-weight: 700; margin-bottom: 12px;" data-i18n="authSectionTitle">🔐 حالة ربط حساب Google</h4>
-              <p style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 15px;" data-i18n="authSectionDesc">يتطلب ربط حسابك لتتمكن من مزامنة قوائم التشغيل والاشتراكات سحابياً والوصول للنسخ الاحتياطية على Google Drive.</p>
-              
-              <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
-                <button id="googleSignInBtn" class="btn btn-primary" onclick="handleGoogleSignIn()"><span class="icon">🔐</span> <span data-i18n="signIn">دخول قوقل</span></button>
-                <button id="googleSignOutBtn" class="btn btn-secondary" style="display: none;" onclick="handleGoogleSignOut()"><span class="icon">🔓</span> <span data-i18n="signOut">خروج</span></button>
-              </div>
-            </div>
-          </div>
-
-          <!-- تبويب: جيميناي -->
-          <div id="panel-gemini" class="settings-panel">
-            <div class="input-group">
-              <label for="geminiApiKey" data-i18n="geminiKeyLabel">🤖 مفتاح ذكاء جيميناي (Gemini API Key)</label>
-              <input type="text" id="geminiApiKey" data-i18n-ph="geminiKeyPlaceholder" placeholder="أدخل مفتاح Gemini الخاص بك...">
-              
-              <!-- مربع تفعيل/تعطيل ذكاء جيميناي التلقائي -->
-              <div class="import-options" style="display: flex; align-items: center; gap: 8px; margin-top: 15px; background: var(--bg-primary); padding: 12px; border-radius: 8px; border: 1px solid var(--bg-tertiary);">
-                <input type="checkbox" id="enableAutoClassifyCheck" checked style="width:16px; height:16px; accent-color: var(--accent-color); cursor:pointer;">
-                <label for="enableAutoClassifyCheck" style="font-size:0.85rem; cursor:pointer; user-select:none;" data-i18n="autoClassifyLabel">🤖 تفعيل التصنيف التلقائي الذكي بواسطة Gemini عند المزامنة والاستيراد</label>
-              </div>
-
-              <!-- أزرار فحص وفحص الاتصال اليدوي بالذكاء الاصطناعي -->
-              <div style="margin-top: 20px; display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
-                <button id="testGeminiBtn" class="btn btn-secondary" style="font-size: 0.8rem; padding: 6px 12px;"><span data-i18n="testGeminiBtn">⚡ فحص اتصال الذكاء الاصطناعي</span></button>
-                <button id="classifyCurrentLibraryBtn" class="btn btn-gold" style="font-size: 0.8rem; padding: 6px 12px;" onclick="startManualClassification()"><span data-i18n="classifyLibraryBtn">🏷️ تصنيف الفيديوهات غير المصنفة</span></button>
-                <span id="geminiTestStatus" style="font-size: 0.85rem; font-weight: 600;"></span>
-              </div>
-            </div>
-          </div>
-
-          <!-- تبويب: البيانات -->
-          <div id="panel-data" class="settings-panel">
-            <p class="settings-placeholder-text">💾 قسم معالجة ملفات الـ CSV، والنسخ الاحتياطية سحابياً، ومسح الذاكرة المحلية أو استعادتها.. سيتم تنظيم خيارات التصدير والاستيراد المتقدم هنا.</p>
-          </div>
-
-          <!-- تبويب: الإشعارات -->
-          <div id="panel-notifications" class="settings-panel">
-            <p class="settings-placeholder-text">🔔 خيارات التنبيهات المنبثقة ورسائل حالة المزامنة وجلب التوقيتات.. سيتم إثراء واجهة الإعدادات بهذا القسم الجديد لاحقاً.</p>
-          </div>
-
-          <!-- تبويب: الخصوصية -->
-          <div id="panel-privacy" class="settings-panel">
-            <p class="settings-placeholder-text">🔒 سياسة الخصوصية وأمان تخزين الرموز الخاصة بالوصول والتفويضات السحابية محلياً على جهازك دون إرسالها لجهات خارجية.</p>
-          </div>
-
-          <!-- تبويب: حول البرنامج -->
-          <div id="panel-about" class="settings-panel">
-            <p class="settings-placeholder-text">ℹ️ مكتبة إدارة مرئيات يوتيوب الاحترافية الشاملة - إصدار ويب مطور ومحسّن ذاتياً لتنظيم وتصنيف ملفاتك وقوائمك التفاعلية.</p>
-          </div>
-        </div>
-      </div>
-
-    </div>
-  </div>
   <!-- نافذة إدارة التكرار التفاعلية -->
   <div id="duplicateModal" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.85); z-index: 200; display: none; align-items: center; justify-content: center; padding: 20px;">
     <div style="background-color: var(--bg-secondary); border: 1px solid var(--bg-tertiary); border-radius: var(--border-radius); padding: 22px; max-width: 500px; width: 100%; box-shadow: var(--card-shadow); text-align: start;">
@@ -2136,11 +1764,14 @@
   <script>
     function applyTheme(theme) {
       document.documentElement.setAttribute('data-theme', theme);
-      try { localStorage.setItem('appTheme', theme); } catch (e) { /* تجاهل */ }
-      
-      // مزامنة اختيار القائمة المنسدلة داخل نافذة الإعدادات ليبقى مطابقاً للواقع
-      const select = document.getElementById('settingsThemeSelect');
-      if (select) select.value = theme;
+      try { localStorage.setItem('appTheme', theme); } catch (e) { /* تجاهل: قد يكون التخزين معطّلاً */ }
+      const btn = document.getElementById('themeToggleBtn');
+      if (btn) btn.textContent = theme === 'light' ? '🌙' : '☀️';
+    }
+
+    function toggleTheme() {
+      const current = document.documentElement.getAttribute('data-theme') || 'light';
+      applyTheme(current === 'light' ? 'dark' : 'light');
     }
 
     // تطبيق المظهر المحفوظ فوراً عند تحميل الصفحة (الافتراضي: نهاري)
@@ -2162,20 +1793,6 @@
 
     const translations = {
   "ar": {
-    "settingsBtn": "الإعدادات",
-    "settingsTitle": "إعدادات التطبيق",
-    "themeSelectLabel": "🎨 اختر مظهر التطبيق المناسب لك:",
-    "langSelectLabel": "🌐 اختر لغة واجهة التطبيق:",
-    "authSectionTitle": "🔐 حالة ربط حساب Google",
-    "authSectionDesc": "يتطلب ربط حسابك لتتمكن من مزامنة قوائم التشغيل والاشتراكات سحابياً والوصول للنسخ الاحتياطية على Google Drive.",
-    "tabUI": "🎨 الواجهة",
-    "tabLang": "🌐 اللغة",
-    "tabYoutube": "▶️ YouTube",
-    "tabGemini": "🤖 Gemini",
-    "tabData": "💾 البيانات",
-    "tabNotifications": "🔔 الإشعارات",
-    "tabPrivacy": "🔒 الخصوصية",
-    "tabAbout": "ℹ️ حول البرنامج",
     "appTitle": "قوائمك",
     "signIn": "دخول قوقل",
     "signOut": "خروج",
@@ -2344,20 +1961,6 @@
     "confirmDeletePlaylist": "هل أنت متأكد من رغبتك في إزالة قائمة \"{name}\" وكافة الفيديوهات التابعة لها من التطبيق فقط؟\n(لن يتم حذف أي شيء من حسابك على يوتيوب)"
   },
   "en": {
-    "settingsBtn": "Settings",
-    "settingsTitle": "App Settings",
-    "themeSelectLabel": "🎨 Choose App Theme Style:",
-    "langSelectLabel": "🌐 Choose App Interface Language:",
-    "authSectionTitle": "🔐 Google Account Integration",
-    "authSectionDesc": "Connecting your account enables seamless cloud synchronization of playlists and subscriptions, and lets you back up to Google Drive.",
-    "tabUI": "🎨 Interface",
-    "tabLang": "🌐 Language",
-    "tabYoutube": "▶️ YouTube",
-    "tabGemini": "🤖 Gemini",
-    "tabData": "💾 Data",
-    "tabNotifications": "🔔 Notifications",
-    "tabPrivacy": "🔒 Privacy",
-    "tabAbout": "ℹ️ About",
     "appTitle": "UrPlayLists",
     "signIn": "Sign in with Google",
     "signOut": "Sign out",
@@ -2552,10 +2155,10 @@
       document.querySelectorAll('[data-i18n-ph]').forEach(el => { el.setAttribute('placeholder', t(el.getAttribute('data-i18n-ph'))); });
       document.querySelectorAll('[data-i18n-title]').forEach(el => { el.setAttribute('title', t(el.getAttribute('data-i18n-title'))); });
 
-      // مزامنة اختيار قائمة اللغة في نافذة الإعدادات
-      const langSelect = document.getElementById('settingsLangSelect');
-      if (langSelect) langSelect.value = currentLang;
+      const langBtn = document.getElementById('langToggleBtn');
+      if (langBtn) langBtn.textContent = currentLang === 'ar' ? 'EN' : 'AR';
     }
+
     // تحديث كامل يشمل أيضاً إعادة بناء العناصر الديناميكية (البطاقات/القوائم المنسدلة)؛
     // يُستخدم فقط بعد جهوزية حالة التطبيق (أي عند تبديل اللغة وقت التشغيل من المستخدم)
     function applyTranslations() {
@@ -2710,7 +2313,10 @@
     const googleSignOutBtn = document.getElementById('googleSignOutBtn');
     const googleClientId = document.getElementById('googleClientId');
 
-    
+    // زرّا تبديل المظهر (داكن/نهاري) واللغة (عربي/إنجليزي) في الرأس
+    const themeToggleBtn = document.getElementById('themeToggleBtn');
+    const langToggleBtn = document.getElementById('langToggleBtn');
+
     // لوحة الحالة الموحدة
     const globalImportStatusContainer = document.getElementById('globalImportStatusContainer');
     const globalImportStatus = document.getElementById('globalImportStatus');
@@ -2768,7 +2374,9 @@
 
       layoutToggleBtn.addEventListener('click', () => { toggleLayout(); });
       bulkEditModeBtn.addEventListener('click', toggleBulkEditMode);
-      
+      themeToggleBtn.addEventListener('click', toggleTheme);
+      langToggleBtn.addEventListener('click', toggleLanguage);
+
       // كود إظهار وإخفاء الفلاتر عند الضغط على الزر الجديد
       const filterToggleBtn = document.getElementById('filterToggleBtn');
       const filtersRow = document.getElementById('filtersRow');
@@ -6618,75 +6226,7 @@ function renderSubGroupsPills() {
         fetchSubscriptionsFeed('videos', true);
       }
     }
-// دوال التحكم وإدارة نافذة الإعدادات الموحدة المحدثة (تحديث: Drill-down للهواتف)
-function openSettingsModal() {
-  const modal = document.getElementById('settingsModal');
-  if (modal) {
-    modal.style.display = 'flex';
-    
-    // إخفاء شريط التنقل السفلي للهواتف تماماً لمنع ظهوره وتداخله أثناء السحب
-    const bottomNav = document.querySelector('.bottom-nav');
-    if (bottomNav) bottomNav.style.setProperty('display', 'none', 'important');
 
-    // إزالة حالة عرض المحتوى لنضمن البدء بالقائمة الرئيسية للإعدادات في الجوال
-    const container = document.querySelector('.settings-container');
-    if (container) container.classList.remove('show-content');
-
-    // على الحاسوب فقط: نفتح تبويب الواجهة تلقائياً وبشكل افتراضي
-    if (window.innerWidth > 680) {
-      switchSettingsTab('interface');
-    } else {
-      // على الهاتف: نزيل التنشيط اللوني الافتراضي لنعرض القائمة فقط
-      document.querySelectorAll('.settings-tab-btn').forEach(btn => btn.classList.remove('active'));
-    }
-  }
-}
-
-function closeSettingsModal() {
-  const modal = document.getElementById('settingsModal');
-  if (modal) {
-    modal.style.display = 'none';
-    
-    // إعادة إظهار شريط التنقل السفلي للهواتف بمجرد إغلاق نافذة الإعدادات
-    const bottomNav = document.querySelector('.bottom-nav');
-    if (bottomNav && window.innerWidth <= 768) {
-      bottomNav.style.setProperty('display', 'flex', 'important');
-    }
-  }
-}
-
-function switchSettingsTab(tabId) {
-  // إزالة التنشيط عن جميع أزرار التبويبات وجميع اللوحات
-  document.querySelectorAll('.settings-tab-btn').forEach(btn => btn.classList.remove('active'));
-  document.querySelectorAll('.settings-panel').forEach(panel => panel.classList.remove('active'));
-
-  // البحث عن الزر وتنشيطه
-  const targetBtn = Array.from(document.querySelectorAll('.settings-tab-btn')).find(btn => btn.getAttribute('onclick').includes(tabId));
-  if (targetBtn) targetBtn.classList.add('active');
-
-  // تنشيط اللوحة المطابقة للتبويب المختار
-  const targetPanel = document.getElementById(`panel-${tabId}`);
-  if (targetPanel) targetPanel.classList.add('active');
-
-  // على الهاتف: عند تصفح أي تبويب، نظهر لوحة المحتوى ونخفي القائمة
-  const container = document.querySelector('.settings-container');
-  if (container && window.innerWidth <= 680) {
-    container.classList.add('show-content');
-  }
-}
-
-function goBackToSettingsMenu() {
-  const container = document.querySelector('.settings-container');
-  if (container) {
-    container.classList.remove('show-content');
-  }
-}
-
-// تصدير الدوال عالمياً للوصول الآمن من الـ HTML
-window.openSettingsModal = openSettingsModal;
-window.closeSettingsModal = closeSettingsModal;
-window.switchSettingsTab = switchSettingsTab;
-window.goBackToSettingsMenu = goBackToSettingsMenu;
 // ربط الدوال عالمياً للوصول الآمن من الـ HTML
 window.openSubGroupsModal = openSubGroupsModal;
 window.closeSubGroupsModal = closeSubGroupsModal;
